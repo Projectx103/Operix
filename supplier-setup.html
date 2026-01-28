@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supplier Setup - Operix</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  .progress-step {
+    transition: all 0.3s ease;
+  }
+  
+  .progress-step.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  
+  .progress-step.completed {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Icons
+const ArrowLeft = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+const Save = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+  </svg>
+);
+
+const CheckCircle = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const Building = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const CreditCard = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+  </svg>
+);
+
+const Globe = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+  </svg>
+);
+
+const Phone = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+  </svg>
+);
+
+// Operix Logo
+const OperixLogo = ({ size = 'default' }) => {
+  const dimensions = size === 'small' ? { w: 40, h: 40 } : { w: 60, h: 60 };
+  
+  return (
+    <svg width={dimensions.w} height={dimensions.h} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="8" fill="#050C9C"/>
+      <path d="M20 10 C25 10 28 13 28 18 C28 23 25 26 20 26 C15 26 12 23 12 18 C12 13 15 10 20 10 Z M20 14 C17 14 16 15.5 16 18 C16 20.5 17 22 20 22 C23 22 24 20.5 24 18 C24 15.5 23 14 20 14 Z" fill="white"/>
+      <rect x="18" y="26" width="4" height="4" fill="white"/>
+    </svg>
+  );
+};
+
+function SupplierSetup() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [supplier, setSupplier] = useState(null);
+  const [activeStep, setActiveStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  
+// Encryption key - In production, this should be stored securely (e.g., environment variable)
+  const ENCRYPTION_KEY = 'your-secret-key-change-this-in-production-use-env-variable';
+  
+  const encryptData = (data) => {
+    if (!data || data.trim() === '') return '';
+    return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
+  };
+  
+  const decryptData = (encryptedData) => {
+    if (!encryptedData || encryptedData.trim() === '') return '';
+    try {
+      const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
+      return bytes.toString(CryptoJS.enc.Utf8);
+    } catch (error) {
+      console.error('Decryption error:', error);
+      return '';
+    }
+  };
+
+
+
+
+
+  const [supplierData, setSupplierData] = useState({
+    // Basic Info (from existing supplier)
+    supplierCode: '',
+    name: '',
+    email: '',
+    contactPerson: '',
+    address: '',
+    
+    // Company Profile
+    legalEntityName: '',
+    registrationNumber: '',
+    dateEstablished: '',
+    businessType: '',
+    industry: '',
+    website: '',
+    phoneNumber: '',
+    faxNumber: '',
+    
+    // Tax Information
+    taxId: '',
+    vatNumber: '',
+    taxExempt: false,
+    taxExemptionReason: '',
+    
+    // Financial Information
+    bankName: '',
+    accountNumber: '',
+    accountHolderName: '',
+    swiftCode: '',
+    iban: '',
+    routingNumber: '',
+    
+    // Additional Details
+    paymentTerms: '',
+    currency: '',
+    modeOfShipment: '',
+    creditLimit: '',
+    discountRate: '',
+    notes: ''
+  });
+
+  useEffect(() => {
+    const initFirebase = () => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+        authDomain: "operix-c8a8c.firebaseapp.com",
+        projectId: "operix-c8a8c",
+        storageBucket: "operix-c8a8c.firebasestorage.app",
+        messagingSenderId: "794223223499",
+        appId: "1:794223223499:web:f059007b909cc15766f14e",
+        measurementId: "G-6E4BD657K1"
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+
+      const auth = firebase.auth();
+      auth.onAuthStateChanged(async (currentUser) => {
+        if (currentUser) {
+          const db = firebase.firestore();
+          const userDoc = await db.collection('users').doc(currentUser.uid).get();
+          
+          if (userDoc.exists && userDoc.data().role === 'admin') {
+            setUser({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              ...userDoc.data()
+            });
+            
+            // Load supplier data
+            const urlParams = new URLSearchParams(window.location.search);
+            const supplierId = urlParams.get('id');
+            
+            if (supplierId) {
+              await loadSupplierData(db, supplierId);
+            } else {
+              alert('No supplier ID provided');
+              window.location.href = 'dashboard.html';
+            }
+          } else {
+            window.location.href = 'login.html';
+          }
+        } else {
+          window.location.href = 'login.html';
+        }
+        setLoading(false);
+      });
+    };
+
+    initFirebase();
+  }, []);
+
+const loadSupplierData = async (db, supplierId) => {
+    try {
+      const supplierDoc = await db.collection('suppliers').doc(supplierId).get();
+      
+      if (supplierDoc.exists) {
+        const data = supplierDoc.data();
+        
+        // Decrypt sensitive fields
+        const decryptedData = {
+          ...data,
+          // Financial fields
+          bankName: data.bankName ? decryptData(data.bankName) : '',
+          accountHolderName: data.accountHolderName ? decryptData(data.accountHolderName) : '',
+          accountNumber: data.accountNumber ? decryptData(data.accountNumber) : '',
+          swiftCode: data.swiftCode ? decryptData(data.swiftCode) : '',
+          iban: data.iban ? decryptData(data.iban) : '',
+          routingNumber: data.routingNumber ? decryptData(data.routingNumber) : '',
+          // Tax fields
+          taxId: data.taxId ? decryptData(data.taxId) : '',
+          vatNumber: data.vatNumber ? decryptData(data.vatNumber) : '',
+          registrationNumber: data.registrationNumber ? decryptData(data.registrationNumber) : ''
+        };
+        
+        setSupplier({ id: supplierId, ...data });
+        setSupplierData(prevData => ({
+          ...prevData,
+          ...decryptedData
+        }));
+      } else {
+        alert('Supplier not found');
+        window.location.href = 'dashboard.html';
+      }
+    } catch (error) {
+      console.error('Error loading supplier:', error);
+      alert('Error loading supplier data');
+    }
+  };
+
+const saveSupplierData = async () => {
+    try {
+      setSaving(true);
+      const db = firebase.firestore();
+      
+      // Encrypt sensitive fields before saving
+      const encryptedData = {
+        ...supplierData,
+        // Financial fields - ENCRYPTED
+        bankName: supplierData.bankName ? encryptData(supplierData.bankName) : '',
+        accountHolderName: supplierData.accountHolderName ? encryptData(supplierData.accountHolderName) : '',
+        accountNumber: supplierData.accountNumber ? encryptData(supplierData.accountNumber) : '',
+        swiftCode: supplierData.swiftCode ? encryptData(supplierData.swiftCode) : '',
+        iban: supplierData.iban ? encryptData(supplierData.iban) : '',
+        routingNumber: supplierData.routingNumber ? encryptData(supplierData.routingNumber) : '',
+        // Tax fields - ENCRYPTED
+        taxId: supplierData.taxId ? encryptData(supplierData.taxId) : '',
+        vatNumber: supplierData.vatNumber ? encryptData(supplierData.vatNumber) : '',
+        registrationNumber: supplierData.registrationNumber ? encryptData(supplierData.registrationNumber) : '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      
+      await db.collection('suppliers').doc(supplier.id).update(encryptedData);
+      
+      alert('Supplier information saved successfully!');
+    } catch (error) {
+      console.error('Error saving supplier:', error);
+      alert('Error saving supplier data');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+const calculateCompletion = () => {
+  const fields = [
+    // Basic Info - 7 fields
+    supplierData.name,
+    supplierData.contactPerson,
+    supplierData.email,
+    supplierData.address,
+    supplierData.paymentTerms,
+    supplierData.currency,
+    supplierData.modeOfShipment,
+    
+    // Company Profile - 5 fields
+    supplierData.registrationNumber,
+    supplierData.dateEstablished,
+    supplierData.businessType,
+    supplierData.industry,
+    supplierData.phoneNumber,
+    
+    // Tax Information - 1 field (TIN OR VAT)
+    supplierData.taxId || supplierData.vatNumber ? 'filled' : '',
+    
+    // Financial Details - 2 fields (Bank Name + Account Holder + one of Account/IBAN)
+    supplierData.bankName,
+    supplierData.accountHolderName,
+    supplierData.accountNumber || supplierData.iban ? 'filled' : ''
+  ];
+  
+  const filledFields = fields.filter(f => f && String(f).trim() !== '').length;
+  const totalFields = fields.length;
+  const percentage = Math.round((filledFields / totalFields) * 100);
+  
+  return percentage;
+};
+
+  const handleLogout = async () => {
+    try {
+      await firebase.auth().signOut();
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading Supplier Setup...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const steps = [
+    { id: 1, name: 'Company Profile', icon: Building },
+    { id: 2, name: 'Tax Information', icon: CreditCard },
+    { id: 3, name: 'Financial Details', icon: Globe },
+    { id: 4, name: 'Additional Info', icon: Phone }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-30">
+        <div className="px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.location.href = 'dashboard.html'}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <ArrowLeft />
+              <span>Back to Dashboard</span>
+            </button>
+            <div className="flex items-center gap-3">
+              <OperixLogo size="small" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">Supplier Setup</h1>
+                <p className="text-sm text-gray-500">{supplierData.name} ({supplierData.supplierCode})</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Completion Badge */}
+            <div className="px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg">
+              <p className="text-xs text-gray-600">Profile Completion</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 bg-gray-200 rounded-full h-2 w-32">
+                  <div 
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${calculateCompletion()}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-bold text-purple-600">{calculateCompletion()}%</span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Progress Steps */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = activeStep === step.id;
+              const isCompleted = activeStep > step.id;
+              
+              return (
+                <React.Fragment key={step.id}>
+                  <button
+                    onClick={() => setActiveStep(step.id)}
+                    className={`flex flex-col items-center gap-2 px-6 py-4 rounded-lg transition-all ${
+                      isActive ? 'progress-step active' : 
+                      isCompleted ? 'progress-step completed' : 
+                      'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Icon />
+                    <span className="text-sm font-medium">{step.name}</span>
+                    {isCompleted && (
+                      <CheckCircle className="w-4 h-4" />
+                    )}
+                  </button>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 ${
+                      isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                    }`}></div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {/* Step 1: Company Profile */}
+          {activeStep === 1 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Building />
+                  Company Profile
+                </h2>
+                <p className="text-gray-600 mt-1">Basic company information and registration details</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Legal Entity Name *</label>
+  <input
+    type="text"
+    value={supplierData.name}
+    readOnly
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+  />
+  <p className="text-xs text-gray-500 mt-1">Automatically populated from supplier name</p>
+</div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Registration Number</label>
+                  <input
+                    type="text"
+                    value={supplierData.registrationNumber}
+                    onChange={(e) => setSupplierData({...supplierData, registrationNumber: e.target.value})}
+                    placeholder="Business registration number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date Established</label>
+                  <input
+                    type="date"
+                    value={supplierData.dateEstablished}
+                    onChange={(e) => setSupplierData({...supplierData, dateEstablished: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
+                  <select
+                    value={supplierData.businessType}
+                    onChange={(e) => setSupplierData({...supplierData, businessType: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="">Select type</option>
+                    <option value="Corporation">Corporation</option>
+                    <option value="LLC">LLC</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Sole Proprietorship">Sole Proprietorship</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                  <input
+                    type="text"
+                    value={supplierData.industry}
+                    onChange={(e) => setSupplierData({...supplierData, industry: e.target.value})}
+                    placeholder="e.g., Manufacturing, Retail, Services"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <input
+                    type="url"
+                    value={supplierData.website}
+                    onChange={(e) => setSupplierData({...supplierData, website: e.target.value})}
+                    placeholder="https://www.example.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                  <input
+                    type="tel"
+                    value={supplierData.phoneNumber}
+                    onChange={(e) => setSupplierData({...supplierData, phoneNumber: e.target.value})}
+                    placeholder="+1 (555) 123-4567"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fax Number</label>
+                  <input
+                    type="tel"
+                    value={supplierData.faxNumber}
+                    onChange={(e) => setSupplierData({...supplierData, faxNumber: e.target.value})}
+                    placeholder="+1 (555) 123-4568"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Tax Information */}
+          {activeStep === 2 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <CreditCard />
+                  Tax Information
+                </h2>
+                <p className="text-gray-600 mt-1">Tax identification and compliance details</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax ID / EIN / TIN*</label>
+                  <input
+                    type="text"
+                    value={supplierData.taxId}
+                    onChange={(e) => setSupplierData({...supplierData, taxId: e.target.value})}
+                    placeholder="XX-XXXXXXX"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">VAT Number</label>
+                  <input
+                    type="text"
+                    value={supplierData.vatNumber}
+                    onChange={(e) => setSupplierData({...supplierData, vatNumber: e.target.value})}
+                    placeholder="VAT registration number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={supplierData.taxExempt}
+                      onChange={(e) => setSupplierData({...supplierData, taxExempt: e.target.checked})}
+                      className="w-4 h-4 text-purple-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Tax Exempt</span>
+                  </label>
+                </div>
+
+                {supplierData.taxExempt && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tax Exemption Reason</label>
+                    <textarea
+                      value={supplierData.taxExemptionReason}
+                      onChange={(e) => setSupplierData({...supplierData, taxExemptionReason: e.target.value})}
+                      placeholder="Explain why this supplier is tax exempt"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                      rows="3"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Note:</strong> Please ensure all tax information is accurate and up to date. This information will be used for financial reporting and compliance.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Financial Details */}
+          {activeStep === 3 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Globe />
+                  Financial Details
+                </h2>
+                <p className="text-gray-600 mt-1">Banking information for payments and transactions</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name *</label>
+                  <input
+                    type="text"
+                    value={supplierData.bankName}
+                    onChange={(e) => setSupplierData({...supplierData, bankName: e.target.value})}
+                    placeholder="Name of the bank"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name</label>
+                  <input
+                    type="text"
+                    value={supplierData.accountHolderName}
+                    onChange={(e) => setSupplierData({...supplierData, accountHolderName: e.target.value})}
+                    placeholder="Name on the account"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Number *</label>
+                  <input
+                    type="text"
+                    value={supplierData.accountNumber}
+                    onChange={(e) => setSupplierData({...supplierData, accountNumber: e.target.value})}
+                    placeholder="Bank account number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">SWIFT/BIC Code</label>
+                  <input
+                    type="text"
+                    value={supplierData.swiftCode}
+                    onChange={(e) => setSupplierData({...supplierData, swiftCode: e.target.value})}
+                    placeholder="SWIFT or BIC code"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+                  <input
+                    type="text"
+                    value={supplierData.iban}
+                    onChange={(e) => setSupplierData({...supplierData, iban: e.target.value})}
+                    placeholder="International Bank Account Number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Routing Number</label>
+                  <input
+                    type="text"
+                    value={supplierData.routingNumber}
+                    onChange={(e) => setSupplierData({...supplierData, routingNumber: e.target.value})}
+                    placeholder="Bank routing number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Security:</strong> All financial information is encrypted and securely stored. Only authorized personnel can access this data.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Additional Info */}
+          {activeStep === 4 && (
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Phone />
+                  Additional Information
+                </h2>
+                <p className="text-gray-600 mt-1">Payment terms and other important details</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+                  <input
+                    type="text"
+                    value={supplierData.paymentTerms}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Set in basic supplier info</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                  <input
+                    type="text"
+                    value={supplierData.currency}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Set in basic supplier info</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Credit Limit</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={supplierData.creditLimit}
+                    onChange={(e) => setSupplierData({...supplierData, creditLimit: e.target.value})}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Discount Rate (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={supplierData.discountRate}
+                    onChange={(e) => setSupplierData({...supplierData, discountRate: e.target.value})}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={supplierData.notes}
+                    onChange={(e) => setSupplierData({...supplierData, notes: e.target.value})}
+                    placeholder="Additional notes or special instructions"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    rows="4"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Profile {calculateCompletion()}% Complete</h3>
+                <p className="text-sm text-gray-600">
+                  {calculateCompletion() === 100 ? 
+                    'All required information has been provided!' : 
+                    'Fill in all required fields to complete the profile setup.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+            <button
+              onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
+              disabled={activeStep === 1}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+
+            <div className="flex gap-3">
+              <button
+                onClick={saveSupplierData}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save />
+                    Save Progress
+                  </>
+                )}
+              </button>
+
+              {activeStep < 4 ? (
+                <button
+                  onClick={() => setActiveStep(Math.min(4, activeStep + 1))}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    saveSupplierData();
+                    setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                  }}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all"
+                >
+                  Finish & Return
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<SupplierSetup />, document.getElementById('root'));
+</script>
+</body>
+</html>
