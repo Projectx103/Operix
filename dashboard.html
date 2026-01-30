@@ -687,6 +687,29 @@ const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState(null);
 const [suppliers, setSuppliers] = useState([]);
 const [showAddSupplier, setShowAddSupplier] = useState(false);
 const [editingSupplier, setEditingSupplier] = useState(null);
+
+const [supplierSettings, setSupplierSettings] = useState({
+  codePrefix: 'SUP',
+  startingNumber: 1,
+  paymentTermsOptions: ['30 Days', '60 Days', '90 Days', 'COD', 'Net 15', 'Net 30'],
+  currencyOptions: ['PHP', 'USD', 'EUR', 'JPY', 'GBP'],
+  shipmentModeOptions: ['Air Freight', 'Sea Freight', 'Land Transport', 'Express Courier']
+});
+
+
+
+const [showDeleteSupplierModal, setShowDeleteSupplierModal] = useState(false);
+const [supplierToDelete, setSupplierToDelete] = useState(null);
+const [deleteConfirmChecked, setDeleteConfirmChecked] = useState(false);
+const [selectedSuppliers, setSelectedSuppliers] = useState([]);
+const [supplierSortConfig, setSupplierSortConfig] = useState({ key: 'supplierCode', direction: 'asc' });
+const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+const [bulkDeleteConfirmChecked, setBulkDeleteConfirmChecked] = useState(false);
+const [showSupplierInfo, setShowSupplierInfo] = useState(false);
+const [selectedSupplierInfo, setSelectedSupplierInfo] = useState(null);
+
+
+
 const [supplierForm, setSupplierForm] = useState({
   supplierCode: '',
   name: '',
@@ -698,15 +721,7 @@ const [supplierForm, setSupplierForm] = useState({
   modeOfShipment: 'Air Freight'
 });
 
-// Supplier Settings states
-const [showSupplierSettings, setShowSupplierSettings] = useState(false);
-const [supplierSettings, setSupplierSettings] = useState({
-  codePrefix: 'SUP',
-  startingNumber: 1,
-  paymentTermsOptions: ['30 Days', '60 Days', '90 Days', 'COD', 'Net 15'],
-  currencyOptions: ['PHP', 'USD', 'EUR', 'JPY'],
-  shipmentModeOptions: ['Air Freight', 'Sea Freight', 'Land Transport', 'Courier']
-});
+
 
 // Invoice settings states
 const [showInvoiceSettings, setShowInvoiceSettings] = useState(false);
@@ -918,15 +933,27 @@ if (role === 'admin') {
 
 const loadSuppliers = async (db, userId) => {
   try {
+    // Load supplier settings first
+    const settingsDoc = await db.collection('supplierSettings').doc(userId).get();
+    if (settingsDoc.exists) {
+      setSupplierSettings(settingsDoc.data());
+    }
+    
     const suppliersSnapshot = await db.collection('suppliers')
       .where('createdBy', '==', userId)
       .orderBy('createdAt', 'desc')
       .get();
     
-    const suppliersData = suppliersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+const suppliersData = suppliersSnapshot.docs
+  .map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }))
+  .sort((a, b) => {
+    const codeA = a.supplierCode || '';
+    const codeB = b.supplierCode || '';
+    return codeA.localeCompare(codeB);
+  });
     
     setSuppliers(suppliersData);
   } catch (error) {
@@ -971,16 +998,7 @@ const calculateSupplierCompletion = (supplier) => {
 
 
 
-const loadSupplierSettings = async (db) => {
-  try {
-    const settingsDoc = await db.collection('supplierSettings').doc(user.uid).get();
-    if (settingsDoc.exists) {
-      setSupplierSettings(settingsDoc.data());
-    }
-  } catch (error) {
-    console.error('Error loading supplier settings:', error);
-  }
-};
+
 
 const loadInvoiceSettings = async (db, userId) => {
   try {
@@ -1520,22 +1538,69 @@ const saveSupplier = async () => {
       supplierCode = await generateSupplierCode();
     }
     
+    // ONLY save the 8 basic fields that were edited in dashboard
     const supplierData = {
-      ...supplierForm,
       supplierCode,
+      name: supplierForm.name,
+      email: supplierForm.email,
+      contactPerson: supplierForm.contactPerson,
+      address: supplierForm.address,
+      paymentTerms: supplierForm.paymentTerms,
+      currency: supplierForm.currency,
+      modeOfShipment: supplierForm.modeOfShipment,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
     if (editingSupplier) {
+      // When editing, ONLY update the 8 basic fields (don't touch other fields)
       await db.collection('suppliers').doc(editingSupplier.id).update(supplierData);
-      alert('Supplier updated successfully!');
+      alert('Supplier basic info updated successfully!');
     } else {
-      await db.collection('suppliers').add({
+      // When creating new, set all other fields to empty strings or defaults
+      const newSupplierData = {
         ...supplierData,
         createdBy: user.uid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      alert('Supplier added successfully!');
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        
+        // Company Profile - empty by default
+        phoneNumber: '',
+        registrationNumber: '',
+        dateEstablished: '',
+        businessType: '',
+        industry: '',
+        website: '',
+        faxNumber: '',
+        
+        // Tax Information - empty by default (will be encrypted when filled in supplier-setup.html)
+        taxId: '',
+        vatNumber: '',
+        taxExempt: false,
+        taxExemptionReason: '',
+        
+        // Banking Information - empty by default (will be encrypted when filled in supplier-setup.html)
+        bankName: '',
+        accountHolderName: '',
+        accountNumber: '',
+        swiftCode: '',
+        iban: '',
+        routingNumber: '',
+        
+        // Financial Details - empty by default
+        creditLimit: '',
+        discountRate: '',
+        
+        // Payment Method - empty by default
+        paymentMethod: '',
+        
+        // Terms Date Basis - empty by default
+        termsDateBasis: '',
+        
+        // Additional
+        notes: ''
+      };
+      
+      await db.collection('suppliers').add(newSupplierData);
+      alert('Supplier added successfully! You can add more details in the Supplier Setup page.');
     }
 
     await loadSuppliers(db, user.uid);
@@ -1549,18 +1614,153 @@ const saveSupplier = async () => {
 };
 
 const deleteSupplier = async (supplierId) => {
-  if (!confirm('Are you sure you want to delete this supplier?')) return;
-  
   try {
     const db = firebase.firestore();
+    const supplier = suppliers.find(s => s.id === supplierId);
+    
+    // Delete the supplier
     await db.collection('suppliers').doc(supplierId).delete();
-    await loadSuppliers(db);
+    
+    // Create admin log for deletion
+    await db.collection('adminLogs').add({
+      adminId: user.uid,
+      adminName: user.displayName,
+      action: 'Deleted Supplier',
+      details: `Deleted supplier: ${supplier.name} (${supplier.supplierCode})`,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+   // Create notification for Recent Admin Activity
+    await db.collection('notifications').add({
+      type: 'supplier-delete',
+      message: `Supplier deleted: ${supplier.name}`,
+      details: {
+        supplierName: supplier.name,
+        supplierCode: supplier.supplierCode,
+        action: 'deleted',
+        deletedBy: user.displayName,
+        deletedAt: new Date().toISOString()
+      },
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      read: false,
+      userId: user.uid,
+      userRole: 'admin'
+    });
+    
+    await loadSuppliers(db, user.uid);
+    setShowDeleteSupplierModal(false);
+    setSupplierToDelete(null);
+    setDeleteConfirmChecked(false);
     alert('Supplier deleted successfully!');
   } catch (error) {
     console.error('Error deleting supplier:', error);
     alert('Error deleting supplier. Please try again.');
   }
 };
+
+
+
+const toggleSupplierSelection = (supplierId) => {
+  setSelectedSuppliers(prev => {
+    if (prev.includes(supplierId)) {
+      return prev.filter(id => id !== supplierId);
+    } else {
+      return [...prev, supplierId];
+    }
+  });
+};
+
+const toggleSelectAll = () => {
+  if (selectedSuppliers.length === suppliers.length) {
+    setSelectedSuppliers([]);
+  } else {
+    setSelectedSuppliers(suppliers.map(s => s.id));
+  }
+};
+
+const bulkDeleteSuppliers = async () => {
+  try {
+    const db = firebase.firestore();
+    const batch = db.batch();
+    
+    // Get supplier details before deleting
+    const suppliersToDelete = selectedSuppliers.map(id => {
+      const supplier = suppliers.find(s => s.id === id);
+      return {
+        id,
+        name: supplier?.name || 'Unknown',
+        code: supplier?.supplierCode || 'N/A'
+      };
+    });
+    
+    selectedSuppliers.forEach(supplierId => {
+      const supplierRef = db.collection('suppliers').doc(supplierId);
+      batch.delete(supplierRef);
+    });
+    
+    await batch.commit();
+    
+    // Create notification for bulk delete
+    await db.collection('notifications').add({
+      type: 'supplier-delete',
+      message: `Bulk delete: ${selectedSuppliers.length} supplier(s) deleted`,
+      details: {
+        action: 'bulk-deleted',
+        count: selectedSuppliers.length,
+        deletedBy: user.displayName,
+        deletedAt: new Date().toISOString(),
+        suppliers: suppliersToDelete.map(s => `${s.name} (${s.code})`).join(', ')
+      },
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      read: false,
+      userId: user.uid,
+      userRole: 'admin'
+    });
+    
+    await loadSuppliers(db, user.uid);
+    
+    setShowBulkDeleteModal(false);
+    setSelectedSuppliers([]);
+    setBulkDeleteConfirmChecked(false);
+    alert(`Successfully deleted ${selectedSuppliers.length} supplier(s)!`);
+  } catch (error) {
+    console.error('Error bulk deleting suppliers:', error);
+    alert('Error deleting suppliers. Please try again.');
+  }
+};
+
+const loadSupplierInfo = async (supplierId) => {
+  try {
+    const db = firebase.firestore();
+    const supplierDoc = await db.collection('suppliers').doc(supplierId).get();
+    
+    if (supplierDoc.exists) {
+      const supplierData = supplierDoc.data();
+      
+      // Get creator info
+      let creatorName = 'Unknown';
+      if (supplierData.createdBy) {
+        const creatorDoc = await db.collection('users').doc(supplierData.createdBy).get();
+        if (creatorDoc.exists) {
+          creatorName = creatorDoc.data().fullName || creatorDoc.data().email || 'Unknown';
+        }
+      }
+      
+      setSelectedSupplierInfo({
+        ...supplierData,
+        creatorName,
+        createdAt: supplierData.createdAt,
+        updatedAt: supplierData.updatedAt,
+        isManuallyCreated: !supplierData.importedFrom
+      });
+      setShowSupplierInfo(true);
+    }
+  } catch (error) {
+    console.error('Error loading supplier info:', error);
+    alert('Error loading supplier information.');
+  }
+};
+
 
 const resetSupplierForm = () => {
   setSupplierForm({
@@ -1575,21 +1775,7 @@ const resetSupplierForm = () => {
   });
 };
 
-const saveSupplierSettings = async () => {
-  try {
-    const db = firebase.firestore();
-    await db.collection('supplierSettings').doc(user.uid).set({
-      ...supplierSettings,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    setShowSupplierSettings(false);
-    alert('Supplier settings saved successfully!');
-  } catch (error) {
-    console.error('Error saving supplier settings:', error);
-    alert('Error saving settings. Please try again.');
-  }
-};
+
 
 const saveInvoiceSettings = async () => {
   try {
@@ -3265,15 +3451,86 @@ return (
 {/* Suppliers Module (Admin Only) */}
 {activeModule === 'suppliers' && userRole === 'admin' && (
   <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-semibold">Supplier Management</h2>
-      <div className="flex gap-3">
-        <button
-          onClick={() => setShowSupplierSettings(true)}
-          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
-        >
-          <Settings className="w-4 h-4" /> Settings
-        </button>
+{(() => {
+
+
+// Sort suppliers
+const sortSuppliers = () => {
+  const sorted = [...suppliers].sort((a, b) => {
+    let aValue = a[supplierSortConfig.key] || '';
+    let bValue = b[supplierSortConfig.key] || '';
+    
+    // Handle completion percentage sorting
+    if (supplierSortConfig.key === 'completion') {
+      aValue = calculateSupplierCompletion(a).percentage;
+      bValue = calculateSupplierCompletion(b).percentage;
+    }
+    
+    // Convert to string for comparison
+    aValue = String(aValue).toLowerCase();
+    bValue = String(bValue).toLowerCase();
+    
+    if (aValue < bValue) {
+      return supplierSortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return supplierSortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+  return sorted;
+};
+
+const sortedSuppliers = sortSuppliers();
+
+const handleSupplierSort = (key) => {
+  setSupplierSortConfig(prevConfig => ({
+    key,
+    direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+  }));
+};
+
+return (
+  <>
+
+
+
+
+
+
+<div className="flex justify-between items-center">
+  <h2 className="text-xl font-semibold">Supplier Management</h2>
+
+  <div className="flex gap-3">
+    {selectedSuppliers.length === 1 && (
+      <button
+        onClick={() => loadSupplierInfo(selectedSuppliers[0])}
+        className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all"
+        title="View Supplier Info"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Info
+      </button>
+    )}
+    
+    {selectedSuppliers.length > 0 && (
+      <button
+        onClick={() => setShowBulkDeleteModal(true)}
+        className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all"
+      >
+        <Trash />
+        Delete Selected ({selectedSuppliers.length})
+      </button>
+    )}
+    
+    <button
+      onClick={() => window.location.href = 'supplier-settings.html'}
+      className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all"
+    >
+      <Settings className="w-4 h-4" /> Settings
+    </button>
         <button
           onClick={() => { setShowAddSupplier(true); resetSupplierForm(); setEditingSupplier(null); }}
           className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-green-500 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all"
@@ -3289,45 +3546,185 @@ return (
         <table className="min-w-full divide-y divide-gray-200">
 <thead className="bg-gray-50">
   <tr>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Code</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Person</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipment Mode</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+      <input
+        type="checkbox"
+        checked={selectedSuppliers.length === suppliers.length && suppliers.length > 0}
+        onChange={toggleSelectAll}
+        className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer"
+      />
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('supplierCode')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Supplier Code
+        {supplierSortConfig.key === 'supplierCode' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('name')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Name
+        {supplierSortConfig.key === 'name' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('contactPerson')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Contact Person
+        {supplierSortConfig.key === 'contactPerson' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('email')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Email
+        {supplierSortConfig.key === 'email' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('paymentTerms')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Payment Terms
+        {supplierSortConfig.key === 'paymentTerms' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('currency')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Currency
+        {supplierSortConfig.key === 'currency' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('modeOfShipment')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Shipment Mode
+        {supplierSortConfig.key === 'modeOfShipment' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
+    <th 
+      onClick={() => handleSupplierSort('completion')}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+    >
+      <div className="flex items-center gap-2">
+        Completion
+        {supplierSortConfig.key === 'completion' && (
+          <span className="text-purple-600">
+            {supplierSortConfig.direction === 'asc' ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </th>
     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
   </tr>
 </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-{suppliers.map(supplier => {
+<tbody className="bg-white divide-y divide-gray-200">
+{sortedSuppliers.map(supplier => {
   const completion = calculateSupplierCompletion(supplier);
-  return (
-              <tr key={supplier.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-semibold text-gray-900">
-                  {supplier.supplierCode}
-                </td>
-<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-  <a href={'supplier-setup.html?id=' + supplier.id} className="text-blue-600 hover:text-blue-800 hover:no-underline transition-colors">{supplier.name}</a>
+return (
+<tr key={supplier.id} className="hover:bg-gray-50">
+
+{/* Checkbox */}
+<td className="px-6 py-4 whitespace-nowrap">
+  <input
+    type="checkbox"
+    checked={selectedSuppliers.includes(supplier.id)}
+    onChange={() => toggleSupplierSelection(supplier.id)}
+    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 cursor-pointer"
+  />
 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {supplier.contactPerson}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {supplier.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                    {supplier.paymentTerms}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {supplier.currency}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                  {supplier.modeOfShipment}
-                </td>
+
+{/* Supplier Code */}
+<td className="px-6 py-4 whitespace-nowrap font-mono text-sm font-semibold text-gray-900">
+  {supplier.supplierCode || 'N/A'}
+</td>
+
+{/* Name - with link */}
+<td className="px-6 py-4 text-sm font-medium" style={{ maxWidth: '250px' }}>
+  <a 
+    href={'supplier-setup.html?id=' + supplier.id} 
+    className="text-blue-600 hover:text-blue-800 hover:no-underline transition-colors block truncate" 
+    title={supplier.name || 'Unnamed Supplier'}
+  >
+    {supplier.name || 'Unnamed Supplier'}
+  </a>
+</td>
+
+{/* Contact Person */}
+<td className="px-6 py-4 text-sm text-gray-700" style={{ maxWidth: '180px' }}>
+  <div className="truncate" title={supplier.contactPerson || 'Not provided'}>
+    {supplier.contactPerson || '—'}
+  </div>
+</td>
+
+{/* Email */}
+<td className="px-6 py-4 text-sm text-gray-700" style={{ maxWidth: '220px' }}>
+  <div className="truncate" title={supplier.email || 'Not provided'}>
+    {supplier.email || '—'}
+  </div>
+</td>
+
+{/* Payment Terms */}
+<td className="px-6 py-4 whitespace-nowrap">
+  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+    {supplier.paymentTerms || 'N/A'}
+  </span>
+</td>
+
+{/* Currency */}
+<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+  {supplier.currency || '—'}
+</td>
+
+{/* Mode of Shipment */}
+<td className="px-6 py-4 text-sm text-gray-700" style={{ maxWidth: '140px' }}>
+  <div className="truncate" title={supplier.modeOfShipment || 'Not specified'}>
+    {supplier.modeOfShipment || '—'}
+  </div>
+</td>
 
 <td className="px-6 py-4 whitespace-nowrap">
   <div className="flex items-center gap-2">
@@ -3341,29 +3738,58 @@ return (
 
 
 
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingSupplier(supplier);
-                        setShowAddSupplier(true);
-                        setSupplierForm(supplier);
-                      }}
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Edit"
-                    >
-                      <Edit />
-                    </button>
-                    <button
-                      onClick={() => deleteSupplier(supplier.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <Trash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+<td className="px-6 py-4 whitespace-nowrap text-sm">
+  <div className="flex gap-2">
+    {/* View Full Profile Button */}
+    <a
+      href={`supplier-setup.html?id=${supplier.id}`}
+      className="text-purple-600 hover:text-purple-800"
+      title="View Full Profile"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    </a>
+    
+    {/* Edit Basic Info Button */}
+    <button
+      onClick={() => {
+        const basicSupplierData = {
+          supplierCode: supplier.supplierCode || '',
+          name: supplier.name || '',
+          email: supplier.email || '',
+          contactPerson: supplier.contactPerson || '',
+          address: supplier.address || '',
+          paymentTerms: supplier.paymentTerms || '30 Days',
+          currency: supplier.currency || 'PHP',
+          modeOfShipment: supplier.modeOfShipment || 'Air Freight'
+        };
+        
+        setEditingSupplier({ id: supplier.id, ...basicSupplierData });
+        setShowAddSupplier(true);
+        setSupplierForm(basicSupplierData);
+      }}
+      className="text-blue-600 hover:text-blue-800"
+      title="Edit Basic Info"
+    >
+      <Edit />
+    </button>
+    
+    {/* Delete Button */}
+<button
+  onClick={() => {
+    setSupplierToDelete(supplier);
+    setShowDeleteSupplierModal(true);
+  }}
+  className="text-red-600 hover:text-red-800"
+  title="Delete"
+>
+  <Trash />
+</button>
+</div>
+</td>
+</tr>
 );
           })}
           </tbody>
@@ -3377,6 +3803,10 @@ return (
         </div>
       )}
     </div>
+
+</>
+);
+})()}
   </div>
 )}
 
@@ -4071,13 +4501,92 @@ return (
 
 
 
-    <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl shadow-2xl p-8 border border-purple-200">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-          Reports & Analytics Hub
-        </h2>
-        <p className="text-gray-600">Choose your report type to explore insights</p>
-      </div>
+<div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl shadow-2xl p-8 border border-purple-200">
+  <div className="flex items-start justify-between mb-8">
+    <div className="text-center flex-1">
+      <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+        Reports & Analytics Hub
+      </h2>
+      <p className="text-gray-600">Choose your report type to explore insights</p>
+    </div>
+    
+    {/* Quick Export Buttons */}
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Quick Export</p>
+      <button 
+        onClick={() => {
+          const csv = [
+            ['Product Name', 'SKU', 'Category', 'Price', 'Stock', 'Unit', 'Supplier'].join(','),
+            ...products.map(p => [p.name, p.sku, p.category, p.price, p.stock, p.unit, p.supplier || ''].join(','))
+          ].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+        }}
+        className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 shadow-sm"
+      >
+        <FileText className="w-3 h-3" />
+        Products
+      </button>
+      <button 
+        onClick={() => {
+          const csv = [
+            ['Order #', 'Customer', 'Email', 'Items', 'Total', 'Status', 'Date'].join(','),
+            ...orders.map(o => [
+              o.orderNumber, 
+              o.customerName, 
+              o.customerEmail, 
+              o.items?.length || 0, 
+              o.totalAmount.toFixed(2), 
+              o.status, 
+              o.createdAt?.toDate().toLocaleDateString() || ''
+            ].join(','))
+          ].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+        }}
+        className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 shadow-sm"
+      >
+        <FileText className="w-3 h-3" />
+        Orders
+      </button>
+      <button 
+        onClick={() => {
+          const csv = [
+            ['Supplier Code', 'Name', 'Email', 'Contact Person', 'Address', 'Phone', 'Payment Terms', 'Currency', 'Shipment Mode'].join(','),
+            ...suppliers.map(s => [
+              s.supplierCode || '', 
+              s.name || '', 
+              s.email || '', 
+              s.contactPerson || '', 
+              s.address || '', 
+              s.phoneNumber || '',
+              s.paymentTerms || '', 
+              s.currency || '', 
+              s.modeOfShipment || ''
+            ].join(','))
+          ].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `suppliers_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+        }}
+        className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-lg transition-all text-xs font-medium flex items-center gap-1.5 shadow-sm"
+      >
+        <Users className="w-3 h-3" />
+        Suppliers
+      </button>
+    </div>
+  </div>
 
 
       {/* Report Category Selector */}
@@ -4604,66 +5113,6 @@ return (
     </div>
   </div>
 )}
-
-
-
-
-
-
-
-
-
-
-      {/* Quick Export Actions */}
-      <div className="mt-8 pt-8 border-t border-purple-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Quick Export</h3>
-        <div className="flex flex-wrap justify-center gap-3">
-          <button 
-            onClick={() => {
-              const csv = [
-                ['Product Name', 'SKU', 'Category', 'Price', 'Stock', 'Unit', 'Supplier'].join(','),
-                ...products.map(p => [p.name, p.sku, p.category, p.price, p.stock, p.unit, p.supplier || ''].join(','))
-              ].join('\n');
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
-              a.click();
-            }}
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Export Products CSV
-          </button>
-          <button 
-            onClick={() => {
-              const csv = [
-                ['Order #', 'Customer', 'Email', 'Items', 'Total', 'Status', 'Date'].join(','),
-                ...orders.map(o => [
-                  o.orderNumber, 
-                  o.customerName, 
-                  o.customerEmail, 
-                  o.items?.length || 0, 
-                  o.totalAmount.toFixed(2), 
-                  o.status, 
-                  o.createdAt?.toDate().toLocaleDateString() || ''
-                ].join(','))
-              ].join('\n');
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
-              a.click();
-            }}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Export Orders CSV
-          </button>
-        </div>
-      </div>
     </div>
 
    
@@ -4677,26 +5126,33 @@ return (
       </div>
       <div className="p-6">
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {notifications
-            .filter(n => n.type === 'product-edit' || n.type === 'order-status')
-            .slice(0, 20)
-            .map(log => (
+{notifications
+  .filter(n => n.type === 'product-edit' || n.type === 'order-status' || n.type === 'supplier-delete')
+  .slice(0, 20)
+  .map(log => (
               <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  log.type === 'product-edit' ? 'bg-blue-600' : 'bg-green-600'
-                }`}></div>
+<div className={`w-2 h-2 rounded-full mt-2 ${
+  log.type === 'product-edit' ? 'bg-blue-600' : 
+  log.type === 'order-status' ? 'bg-green-600' : 
+  'bg-red-600'
+}`}></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-800">{log.message}</p>
-                  {log.details && (
-                    <div className="text-xs text-gray-600 mt-1 space-y-0.5">
-                      {log.details.productName && <p>• Product: {log.details.productName}</p>}
-                      {log.details.sku && <p>• SKU: {log.details.sku}</p>}
-                      {log.details.action && <p>• Action: {log.details.action}</p>}
-                      {log.details.changes && <p>• {log.details.changes}</p>}
-                      {log.details.orderNumber && <p>• Order: {log.details.orderNumber}</p>}
-                      {log.details.oldStatus && <p>• Status: {log.details.oldStatus} → {log.details.newStatus}</p>}
-                    </div>
-                  )}
+{log.details && (
+  <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+    {log.details.productName && <p>• Product: {log.details.productName}</p>}
+    {log.details.sku && <p>• SKU: {log.details.sku}</p>}
+    {log.details.action && <p>• Action: {log.details.action}</p>}
+    {log.details.changes && <p>• {log.details.changes}</p>}
+    {log.details.orderNumber && <p>• Order: {log.details.orderNumber}</p>}
+    {log.details.oldStatus && <p>• Status: {log.details.oldStatus} → {log.details.newStatus}</p>}
+    {log.details.supplierName && <p>• Supplier: {log.details.supplierName}</p>}
+    {log.details.supplierCode && <p>• Code: {log.details.supplierCode}</p>}
+    {log.details.deletedBy && <p>• Deleted by: {log.details.deletedBy}</p>}
+    {log.details.count && <p>• Count: {log.details.count} suppliers</p>}
+    {log.details.suppliers && <p>• {log.details.suppliers}</p>}
+  </div>
+)}
                   <p className="text-xs text-gray-500 mt-1">{log.timeAgo}</p>
                 </div>
               </div>
@@ -4768,12 +5224,22 @@ return (
           </h3>
           {userRole === 'admin' && (
             <button
-              onClick={() => {
-                const newName = prompt('Enter your new full name:', user?.displayName || '');
-                if (newName && newName.trim() !== '' && newName !== user?.displayName) {
-                  updateUserProfile(newName.trim());
-                }
-              }}
+onClick={async () => {
+  const newName = prompt('Enter your new full name:', user?.displayName || '');
+  if (newName && newName.trim() !== '' && newName !== user?.displayName) {
+    try {
+      const db = firebase.firestore();
+      await db.collection('users').doc(user.uid).update({
+        fullName: newName.trim()
+      });
+      setUser({...user, displayName: newName.trim()});
+      alert('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile');
+    }
+  }
+}}
               className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
             >
               <Edit className="w-4 h-4" />
@@ -5569,19 +6035,28 @@ return (
 {showAddSupplier && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
     <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl my-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">{editingSupplier ? 'Edit Supplier' : 'Add New Supplier'}</h2>
-        <button
-          onClick={() => {
-            setShowAddSupplier(false);
-            setEditingSupplier(null);
-            resetSupplierForm();
-          }}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
+<div className="flex items-center justify-between mb-6">
+  <div>
+    <h2 className="text-2xl font-bold">
+      {editingSupplier ? 'Edit Supplier - Basic Info' : 'Add New Supplier - Basic Info'}
+    </h2>
+    <p className="text-sm text-gray-500 mt-1">
+      {editingSupplier 
+        ? 'Update basic supplier information. Use "View Full Profile" to edit all fields.' 
+        : 'Add basic supplier information. You can add more details later in the Supplier Setup page.'}
+    </p>
+  </div>
+  <button
+    onClick={() => {
+      setShowAddSupplier(false);
+      setEditingSupplier(null);
+      resetSupplierForm();
+    }}
+    className="text-gray-400 hover:text-gray-600"
+  >
+    <X className="w-6 h-6" />
+  </button>
+</div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {editingSupplier && (
@@ -5702,191 +6177,7 @@ return (
   </div>
 )}
 
-{/* Supplier Settings Modal */}
-{showSupplierSettings && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl my-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Supplier Settings</h2>
-        <button
-          onClick={() => setShowSupplierSettings(false)}
-          className="text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
 
-      <div className="space-y-6">
-        {/* Code Settings */}
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-gray-800 mb-4">Supplier Code Settings</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Code Prefix</label>
-              <input
-                type="text"
-                value={supplierSettings.codePrefix}
-                onChange={(e) => setSupplierSettings({...supplierSettings, codePrefix: e.target.value.toUpperCase()})}
-                placeholder="SUP"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Example: SUP, PUR, VEND</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Starting Number</label>
-              <input
-                type="number"
-                min="1"
-                value={supplierSettings.startingNumber}
-                onChange={(e) => setSupplierSettings({...supplierSettings, startingNumber: parseInt(e.target.value) || 1})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-1">Next code: {supplierSettings.codePrefix}-{String(supplierSettings.startingNumber).padStart(4, '0')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Terms */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Terms Options</label>
-          <div className="space-y-2">
-            {supplierSettings.paymentTermsOptions.map((term, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={term}
-                  onChange={(e) => {
-                    const newTerms = [...supplierSettings.paymentTermsOptions];
-                    newTerms[idx] = e.target.value;
-                    setSupplierSettings({...supplierSettings, paymentTermsOptions: newTerms});
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const newTerms = supplierSettings.paymentTermsOptions.filter((_, i) => i !== idx);
-                    setSupplierSettings({...supplierSettings, paymentTermsOptions: newTerms});
-                  }}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={() => {
-                setSupplierSettings({
-                  ...supplierSettings,
-                  paymentTermsOptions: [...supplierSettings.paymentTermsOptions, 'New Term']
-                });
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Add Payment Term
-            </button>
-          </div>
-        </div>
-
-        {/* Currency Options */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Currency Options</label>
-          <div className="space-y-2">
-            {supplierSettings.currencyOptions.map((curr, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={curr}
-                  onChange={(e) => {
-                    const newCurr = [...supplierSettings.currencyOptions];
-                    newCurr[idx] = e.target.value.toUpperCase();
-                    setSupplierSettings({...supplierSettings, currencyOptions: newCurr});
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const newCurr = supplierSettings.currencyOptions.filter((_, i) => i !== idx);
-                    setSupplierSettings({...supplierSettings, currencyOptions: newCurr});
-                  }}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={() => {
-                setSupplierSettings({
-                  ...supplierSettings,
-                  currencyOptions: [...supplierSettings.currencyOptions, 'XXX']
-                });
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Add Currency
-            </button>
-          </div>
-        </div>
-
-        {/* Shipment Mode Options */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Shipment Mode Options</label>
-          <div className="space-y-2">
-            {supplierSettings.shipmentModeOptions.map((mode, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={mode}
-                  onChange={(e) => {
-                    const newModes = [...supplierSettings.shipmentModeOptions];
-                    newModes[idx] = e.target.value;
-                    setSupplierSettings({...supplierSettings, shipmentModeOptions: newModes});
-                  }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const newModes = supplierSettings.shipmentModeOptions.filter((_, i) => i !== idx);
-                    setSupplierSettings({...supplierSettings, shipmentModeOptions: newModes});
-                  }}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={() => {
-                setSupplierSettings({
-                  ...supplierSettings,
-                  shipmentModeOptions: [...supplierSettings.shipmentModeOptions, 'New Mode']
-                });
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Add Shipment Mode
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
-        <button
-          onClick={() => setShowSupplierSettings(false)}
-          className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={saveSupplierSettings}
-          className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:shadow-lg transition-all"
-        >
-          Save Settings
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
 {/* Invoice Settings Modal */}
 {showInvoiceSettings && (
@@ -5983,6 +6274,288 @@ return (
 )}
 
 
+
+{/* Supplier Info Modal */}
+{showSupplierInfo && selectedSupplierInfo && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">Supplier Information</h2>
+        </div>
+        <button
+          onClick={() => {
+            setShowSupplierInfo(false);
+            setSelectedSupplierInfo(null);
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {/* Supplier Name */}
+        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+          <h3 className="text-lg font-bold text-gray-900">{selectedSupplierInfo.name}</h3>
+          <p className="text-sm text-gray-600 mt-1">{selectedSupplierInfo.supplierCode}</p>
+        </div>
+
+        {/* Creation Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <p className="text-xs font-semibold text-green-600 uppercase">Created</p>
+            </div>
+            <p className="text-sm font-medium text-gray-800 mb-1">
+              {selectedSupplierInfo.isManuallyCreated ? '✍️ Manually Created' : '📤 Bulk Imported'}
+            </p>
+            <p className="text-xs text-gray-600">
+              <strong>By:</strong> {selectedSupplierInfo.creatorName}
+            </p>
+            <p className="text-xs text-gray-600">
+              <strong>Date:</strong> {selectedSupplierInfo.createdAt ? selectedSupplierInfo.createdAt.toDate().toLocaleString() : 'N/A'}
+            </p>
+          </div>
+
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <p className="text-xs font-semibold text-blue-600 uppercase">Last Updated</p>
+            </div>
+            <p className="text-sm font-medium text-gray-800 mb-1">
+              {selectedSupplierInfo.updatedBy || 'System'}
+            </p>
+            <p className="text-xs text-gray-600">
+              <strong>Date:</strong> {selectedSupplierInfo.updatedAt ? selectedSupplierInfo.updatedAt.toDate().toLocaleString() : 'N/A'}
+            </p>
+          </div>
+        </div>
+
+        {/* Additional Details */}
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Contact Information</h4>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-gray-500">Email</p>
+              <p className="font-medium text-gray-800">{selectedSupplierInfo.email || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Contact Person</p>
+              <p className="font-medium text-gray-800">{selectedSupplierInfo.contactPerson || 'N/A'}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-xs text-gray-500">Address</p>
+              <p className="font-medium text-gray-800">{selectedSupplierInfo.address || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+        <button
+          onClick={() => {
+            setShowSupplierInfo(false);
+            setSelectedSupplierInfo(null);
+          }}
+          className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{/* Bulk Delete Warning Modal */}
+{showBulkDeleteModal && selectedSuppliers.length > 0 && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">Bulk Delete Warning</h2>
+        </div>
+        <button
+          onClick={() => {
+            setShowBulkDeleteModal(false);
+            setBulkDeleteConfirmChecked(false);
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg mb-4">
+          <p className="text-sm text-gray-800 mb-2">
+            You are about to delete:
+          </p>
+          <p className="text-2xl font-bold text-red-700 mb-3">
+            {selectedSuppliers.length} Supplier{selectedSuppliers.length > 1 ? 's' : ''}
+          </p>
+          <p className="text-sm text-gray-700 font-semibold mb-2">
+            ⚠️ This action will:
+          </p>
+          <ul className="text-sm text-gray-700 space-y-1 ml-4">
+            <li>• Delete all selected suppliers permanently</li>
+            <li>• Remove all stored records and data</li>
+            <li>• Cannot be undone or recovered</li>
+          </ul>
+        </div>
+
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={bulkDeleteConfirmChecked}
+              onChange={(e) => setBulkDeleteConfirmChecked(e.target.checked)}
+              className="mt-1 w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+            />
+            <span className="text-sm text-gray-800 font-medium">
+              Yes, I want to delete these {selectedSuppliers.length} supplier{selectedSuppliers.length > 1 ? 's' : ''} and all stored information permanently.
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button
+          onClick={() => {
+            setShowBulkDeleteModal(false);
+            setBulkDeleteConfirmChecked(false);
+          }}
+          className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            if (bulkDeleteConfirmChecked) {
+              bulkDeleteSuppliers();
+            }
+          }}
+          disabled={!bulkDeleteConfirmChecked}
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+            bulkDeleteConfirmChecked
+              ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-lg'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+
+
+
+{/* Delete Supplier Warning Modal */}
+{showDeleteSupplierModal && supplierToDelete && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">Delete Supplier Warning</h2>
+        </div>
+        <button
+          onClick={() => {
+            setShowDeleteSupplierModal(false);
+            setSupplierToDelete(null);
+            setDeleteConfirmChecked(false);
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg mb-4">
+          <p className="text-sm text-gray-800 mb-2">
+            You are about to delete the supplier:
+          </p>
+          <p className="text-lg font-bold text-red-700 mb-3">
+            "{supplierToDelete.name}"
+          </p>
+          <p className="text-sm text-gray-700 font-semibold mb-2">
+            ⚠️ This action will:
+          </p>
+          <ul className="text-sm text-gray-700 space-y-1 ml-4">
+            <li>• Delete all supplier information permanently</li>
+            <li>• Remove all stored records and data</li>
+            <li>• Cannot be undone or recovered</li>
+          </ul>
+        </div>
+
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={deleteConfirmChecked}
+              onChange={(e) => setDeleteConfirmChecked(e.target.checked)}
+              className="mt-1 w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+            />
+            <span className="text-sm text-gray-800 font-medium">
+              Yes, I want to delete this supplier and all stored information it contains, permanently.
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button
+          onClick={() => {
+            setShowDeleteSupplierModal(false);
+            setSupplierToDelete(null);
+            setDeleteConfirmChecked(false);
+          }}
+          className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            if (deleteConfirmChecked) {
+              deleteSupplier(supplierToDelete.id);
+            }
+          }}
+          disabled={!deleteConfirmChecked}
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${
+            deleteConfirmChecked
+              ? 'bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-lg'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
 
