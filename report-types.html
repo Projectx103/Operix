@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Operix — Report Types</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#F8FAFC; --surface:#fff; --border:#E2E8F0; --border2:#CBD5E1;
+  --ink:#0F172A; --ink2:#334155; --ink3:#64748B; --ink4:#94A3B8;
+  --blue:#2563EB; --blue-lt:#3B82F6; --blue-bg:#EFF6FF; --blue-border:#BFDBFE;
+  --purple:#7C3AED; --purple-bg:#F5F3FF; --purple-border:#DDD6FE;
+  --green:#059669; --green-bg:#ECFDF5; --green-border:#A7F3D0;
+  --amber:#D97706; --amber-bg:#FFFBEB; --amber-border:#FDE68A;
+  --red:#DC2626; --red-bg:#FEF2F2; --red-border:#FECACA;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* ── Top bar ── */
+.topbar{background:var(--ink);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-logo{width:32px;height:32px;flex-shrink:0;}
+.topbar-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.topbar-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#93C5FD;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);padding:2px 8px;border-radius:3px;}
+.topbar-back{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#94A3B8;text-decoration:none;border:1px solid #334155;padding:5px 14px;border-radius:6px;transition:all .14s;}
+.topbar-back:hover{color:#fff;border-color:#64748B;}
+
+/* ── Page ── */
+.page{max-width:980px;margin:0 auto;padding:36px 24px 64px;}
+.page-header{margin-bottom:32px;}
+.page-title{font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-.5px;margin-bottom:6px;}
+.page-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:620px;}
+
+/* ── Group ── */
+.group{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.group-header{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);}
+.group-accent{width:4px;height:20px;border-radius:2px;flex-shrink:0;}
+.group-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--ink2);}
+.group-count{margin-left:auto;font-size:11px;font-weight:600;color:var(--ink4);}
+
+/* ── Report row ── */
+.report-row{display:flex;align-items:flex-start;gap:16px;padding:16px 22px;border-bottom:1px solid #F8FAFC;transition:background .12s;}
+.report-row:last-child{border-bottom:none;}
+.report-row:hover{background:#FAFBFC;}
+.report-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.report-body{flex:1;min-width:0;}
+.report-name-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+.report-name{font-size:14px;font-weight:700;color:var(--ink);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap;}
+.badge-fin-on{color:#059669;background:#F0FDF4;border-color:#A7F3D0;}
+.badge-fin-off{color:#94A3B8;background:#F1F5F9;border-color:#E2E8F0;}
+.report-desc{font-size:13px;color:var(--ink3);line-height:1.6;}
+
+/* ── Parameters card ── */
+.params{margin-top:12px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.params-header{padding:7px 14px;background:#F1F5F9;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+.params-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0;}
+.param-item{padding:10px 14px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.param-item:last-child{border-bottom:none;}
+.param-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4);margin-bottom:3px;}
+.param-value{font-size:12px;color:var(--ink2);font-family:'IBM Plex Mono',monospace;}
+
+/* ── Financial notice ── */
+.fin-notice{display:flex;align-items:flex-start;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:12px 16px;margin-bottom:24px;}
+.fin-notice svg{flex-shrink:0;margin-top:1px;}
+.fin-notice-text{font-size:13px;color:#92400E;line-height:1.6;}
+
+/* ── Footer ── */
+.footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.footer-text{font-size:11px;color:var(--ink4);}
+.footer-brand{font-size:11px;font-weight:700;color:var(--ink3);}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg class="topbar-logo" viewBox="0 0 40 40">
+      <rect width="40" height="40" rx="7" fill="#1B2A8A"/>
+      <path d="M20 10C25 10 28 13 28 18C28 23 25 26 20 26C15 26 12 23 12 18C12 13 15 10 20 10ZM20 14C17 14 16 15.5 16 18C16 20.5 17 22 20 22C23 22 24 20.5 24 18C24 15.5 23 14 20 14Z" fill="white"/>
+      <rect x="18" y="26" width="4" height="4" fill="white"/>
+    </svg>
+    <span class="topbar-name">Operix</span>
+    <span class="topbar-tag">Report Types Reference</span>
+  </div>
+  <a class="topbar-back" href="dashboard.html">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+    Back to Dashboard
+  </a>
+</div>
+
+<!-- Page content -->
+<div class="page">
+
+  <div class="page-header">
+    <div class="page-title">Available Report Types</div>
+    <div class="page-sub">
+      All reports are generated through the <strong>Request Center</strong> on the Reports module.
+      Select a report type, configure parameters, choose an output format and submit — the request is queued and the output captured as an immutable snapshot.
+    </div>
+  </div>
+
+  <!-- Financial notice -->
+  <div class="fin-notice">
+    <svg width="16" height="16" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div class="fin-notice-text">
+      Reports marked <strong>Financial</strong> require the <em>Financial Reports</em> feature to be enabled for your company by the Master Administrator
+      (Company Features → Financial Reports). If disabled, those report types will appear grayed out in the Request Center.
+    </div>
+  </div>
+
+  <!-- ══ GROUP 1: PROCUREMENT ══ -->
+  <div class="group">
+    <div class="group-header">
+      <div class="group-accent" style="background:#2563EB;"></div>
+      <div class="group-title">Procurement</div>
+      <div class="group-count">2 reports</div>
+    </div>
+
+    <!-- Purchase Order Report -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#EFF6FF;border:1px solid #BFDBFE;">
+        <svg width="18" height="18" fill="none" stroke="#2563EB" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Purchase Order Report</span>
+        </div>
+        <div class="report-desc">
+          Full listing of purchase orders with all line items, quantities, unit costs, subtotals, supplier details, payment terms and current approval status.
+          Supports filtering by a single PO number or a range (PO From → PO To). Leave both parameters blank to include all POs.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">PO Number From</div><div class="param-value">e.g. PO-2024-001 &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">PO Number To</div><div class="param-value">same as From = single PO</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receiving Transaction Summary -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#EFF6FF;border:1px solid #BFDBFE;">
+        <svg width="18" height="18" fill="none" stroke="#2563EB" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Receiving Transaction Summary</span>
+        </div>
+        <div class="report-desc">
+          Itemised goods receipt log per purchase order. Lists quantities ordered vs. quantities received, variance amounts, receipt dates, receiving party and linked PO references.
+          Filter by date range and optionally by a specific PO number.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Date From</div><div class="param-value">receipt date range start</div></div>
+            <div class="param-item"><div class="param-label">Date To</div><div class="param-value">receipt date range end</div></div>
+            <div class="param-item"><div class="param-label">PO Number</div><div class="param-value">blank = all POs</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 2: INVENTORY ══ -->
+  <div class="group">
+    <div class="group-header">
+      <div class="group-accent" style="background:#7C3AED;"></div>
+      <div class="group-title">Inventory</div>
+      <div class="group-count">1 report</div>
+    </div>
+
+    <!-- Inventory Report -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#F5F3FF;border:1px solid #DDD6FE;">
+        <svg width="18" height="18" fill="none" stroke="#7C3AED" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Inventory Report</span>
+        </div>
+        <div class="report-desc">
+          Complete product catalogue snapshot with current stock levels, reorder thresholds, category classification, unit pricing, supplier linkage, lead times and MOQ.
+          Optionally filter by category name and/or stock level status (all, low stock only, out of stock only).
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Category</div><div class="param-value">e.g. Electronics &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">Stock Status</div><div class="param-value">All · Low Stock · Out of Stock</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 3: SUPPLIER MANAGEMENT ══ -->
+  <div class="group">
+    <div class="group-header">
+      <div class="group-accent" style="background:#059669;"></div>
+      <div class="group-title">Supplier Management</div>
+      <div class="group-count">2 reports</div>
+    </div>
+
+    <!-- Supplier Report -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#ECFDF5;border:1px solid #A7F3D0;">
+        <svg width="18" height="18" fill="none" stroke="#059669" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Supplier Report</span>
+        </div>
+        <div class="report-desc">
+          Master supplier directory including full contact details, payment terms, default shipment mode, preferred currency, TIN/tax identification, compliance status and registration date.
+          Filter by supplier code (exact or prefix) and/or status.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Supplier Code</div><div class="param-value">e.g. SUP-001 &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">Status</div><div class="param-value">All · Active · Inactive · Blacklisted</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supplier Spend Analysis -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#ECFDF5;border:1px solid #A7F3D0;">
+        <svg width="18" height="18" fill="none" stroke="#059669" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+          <polyline points="16 7 22 7 22 13"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Supplier Spend Analysis</span>
+          <span class="badge badge-fin-on">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Financial
+          </span>
+        </div>
+        <div class="report-desc">
+          Aggregated spend per supplier over a configurable period — total PO value issued, number of orders placed and average order size.
+          Useful for vendor performance review and contract negotiations.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Supplier Filter</div><div class="param-value">supplier name/code &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">Period</div><div class="param-value">All Time · This Month · Last Month · This Quarter · This Year</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 4: FINANCIAL & PAYABLES ══ -->
+  <div class="group">
+    <div class="group-header">
+      <div class="group-accent" style="background:#D97706;"></div>
+      <div class="group-title">Financial &amp; Payables</div>
+      <div class="group-count">4 reports &nbsp;·&nbsp; all require Financial Reports feature</div>
+    </div>
+
+    <!-- Purchase Order Summary -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#FFFBEB;border:1px solid #FDE68A;">
+        <svg width="18" height="18" fill="none" stroke="#D97706" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+          <line x1="12" y1="6" x2="16" y2="6"/><line x1="12" y1="10" x2="16" y2="10"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Purchase Order Summary</span>
+          <span class="badge badge-fin-on">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Financial
+          </span>
+        </div>
+        <div class="report-desc">
+          Financial summary of purchase orders within a specified date range — subtotals, shipping charges, discounts, grand totals, payment terms and status breakdown.
+          Suitable for period-end close and financial reconciliation.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Date From</div><div class="param-value">PO creation date start</div></div>
+            <div class="param-item"><div class="param-label">Date To</div><div class="param-value">PO creation date end</div></div>
+            <div class="param-item"><div class="param-label">Status Filter</div><div class="param-value">All · Approved · Pending Approval · Received · Closed</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Report -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#FFFBEB;border:1px solid #FDE68A;">
+        <svg width="18" height="18" fill="none" stroke="#D97706" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Budget Report</span>
+          <span class="badge badge-fin-on">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Financial
+          </span>
+        </div>
+        <div class="report-desc">
+          Department and fiscal period budget utilisation compared against approved PO spend and committed amounts.
+          Highlights over-budget and under-utilised cost centres per quarter or fiscal period.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Department</div><div class="param-value">department name &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">Fiscal Period</div><div class="param-value">Current · Q1 · Q2 · Q3 · Q4</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Register -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#FFFBEB;border:1px solid #FDE68A;">
+        <svg width="18" height="18" fill="none" stroke="#D97706" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Payment Register</span>
+          <span class="badge badge-fin-on">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Financial
+          </span>
+        </div>
+        <div class="report-desc">
+          Register of approved vendor payments with due dates, payment terms, payment status and outstanding balances per supplier.
+          Filter by payment date range and payment status for cash flow planning and AP reconciliation.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Payment Date From</div><div class="param-value">payment date range start</div></div>
+            <div class="param-item"><div class="param-label">Payment Date To</div><div class="param-value">payment date range end</div></div>
+            <div class="param-item"><div class="param-label">Payment Status</div><div class="param-value">All · Paid · Pending · Overdue</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Aging Report -->
+    <div class="report-row">
+      <div class="report-icon" style="background:#FFFBEB;border:1px solid #FDE68A;">
+        <svg width="18" height="18" fill="none" stroke="#D97706" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div class="report-body">
+        <div class="report-name-row">
+          <span class="report-name">Invoice Aging Report</span>
+          <span class="badge badge-fin-on">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Financial
+          </span>
+        </div>
+        <div class="report-desc">
+          Outstanding payables bucketed by aging interval: current (0–30 days), 31–60 days, 61–90 days and over 90 days.
+          Critical for identifying overdue payables and managing supplier relationships before penalty clauses activate.
+        </div>
+        <div class="params">
+          <div class="params-header">Parameters</div>
+          <div class="params-grid">
+            <div class="param-item"><div class="param-label">Aging Bucket</div><div class="param-value">All · Current · 31–60 d · 61–90 d · 90+ d</div></div>
+            <div class="param-item"><div class="param-label">Supplier Filter</div><div class="param-value">supplier name/code &nbsp;·&nbsp; blank = all</div></div>
+            <div class="param-item"><div class="param-label">Output Format</div><div class="param-value">PDF · Excel · HTML</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">All reports are generated as snapshots — output reflects data at time of submission and is immutable thereafter.</div>
+    <div class="footer-brand">Operix Procurement Platform</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operix — System Administration</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0A0C10; --bg2:#0F1117; --bg3:#151822; --border:#1E2330; --border2:#262D3D;
+  --text:#E2E8F0; --text2:#8892A4; --text3:#525D6E;
+  --blue:#3B7FE8; --blue-lt:#5B9BFF; --blue-bg:rgba(59,127,232,.1);
+  --green:#22C55E; --green-bg:rgba(34,197,94,.1);
+  --amber:#F59E0B; --amber-bg:rgba(245,158,11,.1);
+  --red:#EF4444; --red-bg:rgba(239,68,68,.1);
+  --purple:#A855F7; --purple-bg:rgba(168,85,247,.1);
+  --cyan:#06B6D4; --cyan-bg:rgba(6,182,212,.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.topbar{height:52px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:200;}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-brand-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.topbar-brand-env{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-lt);background:var(--blue-bg);border:1px solid rgba(91,155,255,.2);padding:2px 7px;border-radius:3px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-user{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;}
+.topbar-avatar{width:26px;height:26px;border-radius:5px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.topbar-username{font-size:12px;font-weight:600;color:var(--text2);}
+.topbar-role-badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);background:var(--amber-bg);border:1px solid rgba(245,158,11,.2);padding:2px 6px;border-radius:3px;}
+.icon-btn{width:32px;height:32px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);transition:all .14s;position:relative;}
+.icon-btn:hover{background:var(--border2);color:var(--text);}
+.icon-btn .badge{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--red);color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.layout{display:flex;height:calc(100vh - 52px);}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-section{padding:16px 12px 8px;}
+.sidebar-section-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;padding:0 4px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);transition:all .13s;margin-bottom:1px;border:1px solid transparent;user-select:none;}
+.nav-item:hover{background:var(--bg3);color:var(--text);border-color:var(--border);}
+.nav-item.active{background:var(--blue-bg);color:var(--blue-lt);border-color:rgba(59,127,232,.25);}
+.nav-item .nav-count{margin-left:auto;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:500;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:3px;}
+.nav-item.active .nav-count{background:rgba(59,127,232,.2);color:var(--blue-lt);}
+.main{flex:1;overflow-y:auto;background:var(--bg);}
+.page{padding:24px 28px;}
+.page-header{margin-bottom:20px;}
+.page-title{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px;display:flex;align-items:center;gap:10px;}
+.page-title-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.page-subtitle{font-size:12px;color:var(--text3);margin-top:3px;margin-left:38px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:8px 8px 0 0;}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.purple::before{background:var(--purple);}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.stat-value{font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);letter-spacing:-1px;line-height:1;margin-bottom:4px;}
+.stat-sub{font-size:11px;color:var(--text3);}
+.stat-icon{position:absolute;bottom:12px;right:14px;opacity:.08;}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);border-top:1px solid var(--border);}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+.data-table tr:hover td{background:var(--bg3);color:var(--text);}
+.data-table tr:last-child td{border-bottom:none;}
+.table-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+.table-header-title{font-size:13px;font-weight:600;color:var(--text);}
+.table-header-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;border:1px solid;white-space:nowrap;}
+.badge-green{color:var(--green);background:var(--green-bg);border-color:rgba(34,197,94,.2);}
+.badge-blue{color:var(--blue-lt);background:var(--blue-bg);border-color:rgba(91,155,255,.2);}
+.badge-amber{color:var(--amber);background:var(--amber-bg);border-color:rgba(245,158,11,.2);}
+.badge-red{color:var(--red);background:var(--red-bg);border-color:rgba(239,68,68,.2);}
+.badge-purple{color:var(--purple);background:var(--purple-bg);border-color:rgba(168,85,247,.2);}
+.badge-cyan{color:var(--cyan);background:var(--cyan-bg);border-color:rgba(6,182,212,.2);}
+.badge-gray{color:var(--text3);background:var(--bg3);border-color:var(--border);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .14s;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-primary:hover{background:var(--blue-lt);border-color:var(--blue-lt);}
+.btn-secondary{background:var(--bg3);color:var(--text2);border-color:var(--border2);}
+.btn-secondary:hover{background:var(--border);color:var(--text);}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:rgba(239,68,68,.2);}
+.btn-danger:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-success{background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.2);}
+.btn-success:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-icon{padding:6px;width:30px;height:30px;justify-content:center;}
+.form-label{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;}
+.form-input{width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;font-size:13px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none;transition:border-color .14s;}
+.form-input:focus{border-color:var(--blue);background:var(--bg2);}
+.form-input::placeholder{color:var(--text3);}
+.form-input:disabled{opacity:.5;cursor:not-allowed;}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23525D6E' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.form-group{margin-bottom:14px;}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-hint{font-size:10px;color:var(--text3);margin-top:4px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:90vh;}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.modal-body{padding:20px;overflow-y:auto;flex:1;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;}
+.role-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;transition:all .14s;position:relative;}
+.role-card:hover{border-color:var(--border2);background:var(--bg2);}
+.role-card.selected{border-color:var(--blue);background:var(--blue-bg);}
+.role-card-desc{font-size:11px;color:var(--text3);line-height:1.4;}
+.role-card-check{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;transition:all .14s;}
+.role-card.selected .role-card-check{background:var(--blue);border-color:var(--blue);}
+.workflow-chain{display:flex;align-items:stretch;gap:0;margin-top:12px;}
+.workflow-step{flex:1;background:var(--bg3);border:1px solid var(--border);padding:12px 14px;border-right:none;}
+.workflow-step:first-child{border-radius:6px 0 0 6px;}
+.workflow-step:last-child{border-radius:0 6px 6px 0;border-right:1px solid var(--border);}
+.workflow-step-num{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;}
+.workflow-step-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.workflow-step-detail{font-size:10px;color:var(--text3);}
+.workflow-arrow{display:flex;align-items:center;color:var(--text3);padding:0 2px;align-self:center;}
+.notif-panel{position:absolute;top:44px;right:0;width:320px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:300;overflow:hidden;}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;cursor:pointer;transition:background .12s;}
+.notif-item:hover{background:var(--bg3);}
+.notif-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.empty{text-align:center;padding:48px 20px;color:var(--text3);}
+.empty-icon{width:40px;height:40px;margin:0 auto 12px;opacity:.3;}
+.empty-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.empty-sub{font-size:12px;margin-bottom:16px;}
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border2);border-radius:7px;font-size:12px;font-weight:500;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastIn .2s ease;max-width:320px;}
+.toast.success{border-left:3px solid var(--green);}
+.toast.error{border-left:3px solid var(--red);}
+.toast.info{border-left:3px solid var(--blue);}
+@keyframes toastIn{from{transform:translateX(12px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.log-item{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;}
+.log-item:last-child{border-bottom:none;}
+.log-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap;margin-top:1px;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+body.unverified{visibility:hidden !important;}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+.rule-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;}
+.rule-operator{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:3px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;}
+.rule-connector{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);padding:2px 8px;background:var(--amber-bg);border:1px solid rgba(245,158,11,.2);border-radius:3px;margin:0 4px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* ASSIGNMENT PANEL */
+.admin-group-panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.admin-group-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .12s;}
+.admin-group-header:hover{background:var(--bg3);}
+.admin-group-header.collapsed{border-bottom:none;}
+.admin-group-body{padding:14px 16px;}
+.user-row-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;transition:border-color .12s;}
+.user-row-item:hover{border-color:var(--border2);}
+.user-row-item:last-child{margin-bottom:0;}
+.user-avatar{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.chevron-icon{transition:transform .2s;display:inline-flex;}
+.chevron-icon.open{transform:rotate(90deg);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>document.body.classList.add('unverified');</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const Ico = ({ d, size=14, stroke=1.6 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d}/>
+  </svg>
+);
+const I = {
+  shield:   "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  users:    "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
+  user:     "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z",
+  link:     "M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71",
+  plus:     "M12 5v14M5 12h14",
+  x:        "M18 6L6 18M6 6l12 12",
+  check:    "M20 6L9 17l-5-5",
+  trash:    "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6",
+  edit:     "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+  search:   "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  logout:   "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1",
+  bell:     "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0",
+  clock:    "M12 22a10 10 0 100-20 10 10 0 000 20zM12 6v6l4 2",
+  chart:    "M18 20V10M12 20V4M6 20v-6",
+  tag:      "M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01",
+  workflow: "M22 12h-4l-3 9L9 3l-3 9H2",
+  approval: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+  info:     "M12 22a10 10 0 100-20 10 10 0 000 20zM12 16v-4M12 8h.01",
+  grid:     "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z",
+  arrow:    "M5 12h14M12 5l7 7-7 7",
+  chevron:  "M9 18l6-6-6-6",
+  toggle:   "M12 22a10 10 0 100-20 10 10 0 000 20zM12 8v4M12 16h.01",
+  building: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10",
+  cart:     "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z",
+  package:  "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+};
+
+const OperixLogo = () => (
+  <svg width="28" height="28" viewBox="0 0 40 40">
+    <rect width="40" height="40" rx="7" fill="#1B2A8A"/>
+    <path d="M20 10C25 10 28 13 28 18C28 23 25 26 20 26C15 26 12 23 12 18C12 13 15 10 20 10ZM20 14C17 14 16 15.5 16 18C16 20.5 17 22 20 22C23 22 24 20.5 24 18C24 15.5 23 14 20 14Z" fill="white"/>
+    <rect x="18" y="26" width="4" height="4" fill="white"/>
+  </svg>
+);
+
+const SYSTEM_ROLES = [
+  { id:'viewer',          name:'Viewer',          color:'gray',   desc:'Read-only access. Cannot create, edit, or approve.',                                               permissions:['view_orders','view_inventory','view_reports'],                                                                       approvalLimit:0,      canApprove:false },
+  { id:'purchaser',       name:'Purchaser',        color:'blue',   desc:'Creates purchase orders and orders. Cannot approve above their set limit.',                        permissions:['view_orders','create_orders','view_inventory','view_reports'],                                                        approvalLimit:5000,   canApprove:true  },
+  { id:'supervisor',      name:'Supervisor',       color:'cyan',   desc:'Approves POs and invoices within their limit. Routes excess to Finance Manager.',                  permissions:['view_orders','create_orders','approve_orders','view_inventory','manage_inventory','view_reports'],                    approvalLimit:25000,  canApprove:true  },
+  { id:'finance_manager', name:'Finance Manager',  color:'purple', desc:'Full financial approval authority. Manages payment processing and budget controls.',               permissions:['view_orders','create_orders','approve_orders','view_inventory','manage_inventory','view_reports','manage_finance','approve_payments'], approvalLimit:100000, canApprove:true  },
+  { id:'admin_approver',  name:'System Admin',     color:'amber',  desc:'Full system access with unlimited approval authority.',                                            permissions:['*'],                                                                                                                  approvalLimit:-1,     canApprove:true  },
+];
+
+const PERM_LABELS = {
+  'view_orders':'View Orders','create_orders':'Create Orders','approve_orders':'Approve Orders',
+  'view_inventory':'View Inventory','manage_inventory':'Manage Inventory',
+  'view_reports':'View Reports','manage_finance':'Manage Finance','approve_payments':'Approve Payments',
+  '*':'All Permissions (Unrestricted)'
+};
+
+function Toasts({ toasts }) {
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast ${t.type}`}>
+          {t.type==='success' && <Ico d={I.check} size={13} stroke={2.5}/>}
+          {t.type==='error'   && <Ico d={I.x}     size={13} stroke={2.5}/>}
+          {t.type==='info'    && <Ico d={I.info}   size={13}/>}
+          <span>{t.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MasterApp() {
+  const [user,         setUser]         = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [activeNav,    setActiveNav]    = useState('overview');
+  const [toasts,       setToasts]       = useState([]);
+  const [showNotif,    setShowNotif]    = useState(false);
+  const notifRef = useRef(null);
+
+  /* ── data ── */
+  const [admins,         setAdmins]         = useState([]);
+  const [users,          setUsers]          = useState([]);
+  const [assignments,    setAssignments]    = useState([]);
+  const [logs,           setLogs]           = useState([]);
+  const [approvalGroups, setApprovalGroups] = useState([]);  const [savingFeature,    setSavingFeature]     = useState(null); // stores key being saved
+
+
+  /* ── ui state ── */
+  const [modal,          setModal]          = useState(null);
+  const [editingId,      setEditingId]      = useState(null);
+  const [searchQ,        setSearchQ]        = useState('');
+  const [expandedAdmins, setExpandedAdmins] = useState({});
+
+  /* ── forms ── */
+  const [adminForm, setAdminForm] = useState({ email:'', password:'', fullName:'', companyName:'', tinNumber:'', address:'', phoneNumber:'' });
+  const [userForm,  setUserForm]  = useState({ email:'', password:'', fullName:'', companyName:'', phoneNumber:'', tinNumber:'', address:'' });
+const [roleForm,  setRoleForm]  = useState({ adminId:'', roleId:'', approvalLimit:'', notes:'' });
+const [agForm,    setAgForm]    = useState({ name:'', description:'', docType:'PO', steps:[], minAmount:'', maxAmount:'', appliesTo:'both', companyName:'', bypassAllowed:false, requiresAmount:true });
+const [companyFeatures, setCompanyFeatures] = useState({});
+const [savingFeatures, setSavingFeatures] = useState(false);
+  /* ── assign modal state (separate from main modal) ── */
+  const [assignModal,   setAssignModal]   = useState(false);
+  const [assignAdminId, setAssignAdminId] = useState('');
+  const [assignUserIds, setAssignUserIds] = useState([]);
+  const [assignSearch,  setAssignSearch]  = useState('');
+
+  const toast = (msg, type='success') => {
+    const id = Date.now();
+    setToasts(p => [...p, { id, msg, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
+  };
+
+  /* ══ FIREBASE ══ */
+useEffect(() => {
+    const cfg = {
+      apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+      authDomain: "operix-c8a8c.firebaseapp.com",
+      projectId: "operix-c8a8c",
+      storageBucket: "operix-c8a8c.firebasestorage.app",
+      messagingSenderId: "794223223499",
+      appId: "1:794223223499:web:f059007b909cc15766f14e"
+    };
+
+    const initFirebase = setInterval(() => {
+      if (window.firebase) {
+        clearInterval(initFirebase);
+
+        if (!firebase.apps.length) firebase.initializeApp(cfg);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+auth.onAuthStateChanged(async (cu) => {
+          if (cu) {
+            const doc = await db.collection('users').doc(cu.uid).get();
+            if (doc.exists) {
+              const data = doc.data();
+              if (data.role === 'master' || data.isMaster === true) {
+                document.body.classList.remove('unverified');
+                setUser({ uid: cu.uid, email: cu.email, displayName: data.fullName || cu.email, ...data });
+                await loadData(db);
+                setLoading(false);
+              } else {
+                window.location.replace(data.role === 'admin' ? 'dashboard.html' : 'login.html');
+              }
+            } else {
+              window.location.replace('login.html');
+            }
+          } else {
+            window.location.replace('login.html');
+          }
+        });
+      }
+    }, 100);
+
+    return () => clearInterval(initFirebase);
+  }, []);
+
+const loadData = async (db) => {
+    try {
+      console.log('📦 loadData called');
+
+      // Same queries as working v1
+      const adminsSnapshot = await db.collection('users')
+        .where('role', '==', 'admin')
+        .where('isAdmin', '==', true)
+        .get();
+      console.log('👮 Admins found:', adminsSnapshot.size);
+
+      const usersSnapshot = await db.collection('users')
+        .where('role', '==', 'user')
+        .where('status', '==', 'approved')
+        .get();
+      console.log('👥 Users found:', usersSnapshot.size);
+
+      const assignmentsSnapshot = await db.collection('userAdminAssignments').get();
+      console.log('🔗 Assignments found:', assignmentsSnapshot.size);
+
+      const logsSnapshot = await db.collection('masterLogs')
+        .orderBy('timestamp', 'desc')
+        .limit(60)
+        .get();
+
+      let agSnap = { docs: [] };
+      try {
+        agSnap = await db.collection('approvalGroups').get();
+      } catch(e) {
+        console.warn('approvalGroups collection not found yet, skipping');
+      }
+
+      const adminsData = adminsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const usersData = usersSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const assignmentsData = assignmentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const logsData = logsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const agData = agSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      setAdmins(adminsData);
+      setUsers(usersData);
+      setAssignments(assignmentsData);
+      setLogs(logsData);
+      setApprovalGroups(agData);
+
+      // Load company feature flags
+      try {
+        const featSnap = await db.collection('systemSettings').doc('companyFeatures').get();
+        if (featSnap.exists) setCompanyFeatures(featSnap.data());
+      } catch(e) { console.warn('companyFeatures not found yet'); }
+
+      console.log('✅ State set — admins:', adminsData.length, 'users:', usersData.length);
+
+    } catch(e) {
+      console.error('❌ loadData error:', e);
+      toast('Error loading data: ' + e.message, 'error');
+    }
+  };
+
+
+const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
+    const key = `${companyName}::${featureKey}`;
+    setSavingFeature(key);
+    try {
+      const db = firebase.firestore();
+      await db.collection('systemSettings').doc('companyFeatures').set(
+        { [companyName]: { [featureKey]: !currentValue } },
+        { merge: true }
+      );
+      setCompanyFeatures(prev => ({
+        ...prev,
+        [companyName]: { ...(prev[companyName]||{}), [featureKey]: !currentValue }
+      }));
+      toast(`Feature ${!currentValue?'enabled':'disabled'} for ${companyName}`);
+    } catch(e) { toast(e.message,'error'); }
+    setSavingFeature(null);
+  };
+
+
+  const logAction = async (db, action, details) => {
+    try {
+      await db.collection('masterLogs').add({
+        masterId: user?.uid, masterName: user?.displayName,
+        action, details, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) { console.error('Log error', e); }
+  };
+
+  /* ══ ADMIN CRUD ══ */
+  const saveAdmin = async () => {
+    if (!adminForm.email || !adminForm.fullName) return toast('Fill required fields','error');
+    const db = firebase.firestore();
+    try {
+      if (editingId) {
+        const upd = { fullName:adminForm.fullName, companyName:adminForm.companyName||'', tinNumber:adminForm.tinNumber||'', address:adminForm.address||'', phoneNumber:adminForm.phoneNumber||'', updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+        if (adminForm.password) { upd.tempPassword=adminForm.password; upd.requiresPasswordReset=true; }
+        await db.collection('users').doc(editingId).update(upd);
+        await logAction(db,'Admin Updated',`Updated admin ${adminForm.fullName}`);
+        toast(`Admin "${adminForm.fullName}" updated`);
+      } else {
+        if (!adminForm.password) return toast('Password required','error');
+        const ex = await db.collection('users').where('email','==',adminForm.email).get();
+        if (!ex.empty) return toast('Email already exists','error');
+        const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ email:adminForm.email, password:adminForm.password, returnSecureToken:true })
+        });
+        const auth = await r.json();
+        if (auth.error) throw new Error(auth.error.message);
+        await db.collection('users').doc(auth.localId).set({
+          email:adminForm.email, fullName:adminForm.fullName, companyName:adminForm.companyName||'',
+          tinNumber:adminForm.tinNumber||'', address:adminForm.address||'', phoneNumber:adminForm.phoneNumber||'',
+          role:'admin', isAdmin:true, status:'approved', createdBy:user.uid,
+          assignedRole:null, approvalLimit:0, canApprove:false,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          tempPassword:adminForm.password, requiresPasswordSetup:true
+        });
+        await logAction(db,'Admin Created',`Created admin ${adminForm.fullName} (${adminForm.email})`);
+        toast(`Admin "${adminForm.fullName}" created`);
+      }
+      await loadData(db); closeModal();
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  const deleteAdmin = async (adminId) => {
+    if (!confirm('Delete this admin and remove all their user assignments?')) return;
+    const db = firebase.firestore();
+    const adm = admins.find(a => a.id===adminId);
+    const toRemove = assignments.filter(a => a.adminId===adminId);
+    const batch = db.batch();
+    toRemove.forEach(a => {
+      batch.delete(db.collection('userAdminAssignments').doc(a.id));
+      const remaining = assignments.filter(x => x.userId===a.userId && x.adminId!==adminId);
+      if (remaining.length===0) {
+        batch.update(db.collection('users').doc(a.userId),{
+          assignedAdminId:firebase.firestore.FieldValue.delete(),
+          assignedAdminName:firebase.firestore.FieldValue.delete()
+        });
+      }
+    });
+    batch.delete(db.collection('users').doc(adminId));
+    await batch.commit();
+    await logAction(db,'Admin Deleted',`Deleted admin ${adm.fullName}, removed ${toRemove.length} assignment(s)`);
+    toast('Admin deleted'); await loadData(db);
+  };
+
+  /* ══ USER CRUD ══ */
+  const saveUser = async () => {
+    if (!userForm.email || !userForm.fullName) return toast('Fill required fields','error');
+    const db = firebase.firestore();
+    try {
+      if (editingId) {
+        const upd = { fullName:userForm.fullName, companyName:userForm.companyName||'', phoneNumber:userForm.phoneNumber||'', tinNumber:userForm.tinNumber||'', address:userForm.address||'', updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+        if (userForm.password) { upd.tempPassword=userForm.password; upd.requiresPasswordReset=true; }
+        await db.collection('users').doc(editingId).update(upd);
+        await logAction(db,'User Updated',`Updated user ${userForm.fullName}`);
+        toast(`User "${userForm.fullName}" updated`);
+      } else {
+        if (!userForm.password) return toast('Password required','error');
+        const ex = await db.collection('users').where('email','==',userForm.email).get();
+        if (!ex.empty) return toast('Email already exists','error');
+        const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ email:userForm.email, password:userForm.password, returnSecureToken:true })
+        });
+        const auth = await r.json();
+        if (auth.error) throw new Error(auth.error.message);
+        await db.collection('users').doc(auth.localId).set({
+          email:userForm.email, fullName:userForm.fullName, companyName:userForm.companyName||'',
+          phoneNumber:userForm.phoneNumber||'', tinNumber:userForm.tinNumber||'', address:userForm.address||'',
+          role:'user', status:'approved',
+          createdBy:user.uid, createdByRole:'master',
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          tempPassword:userForm.password, requiresPasswordSetup:true
+        });
+        await logAction(db,'User Created',`Created user ${userForm.fullName} (${userForm.email})`);
+        toast(`User "${userForm.fullName}" created`);
+      }
+      await loadData(db); closeModal();
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  const deleteUser = async (uid) => {
+    if (!confirm('Delete this user and remove all their assignments?')) return;
+    const db = firebase.firestore();
+    const u = users.find(x => x.id===uid);
+    const toRemove = assignments.filter(a => a.userId===uid);
+    const batch = db.batch();
+    toRemove.forEach(a => batch.delete(db.collection('userAdminAssignments').doc(a.id)));
+    batch.delete(db.collection('users').doc(uid));
+    await batch.commit();
+    await logAction(db,'User Deleted',`Deleted user ${u.fullName}`);
+    toast('User deleted'); await loadData(db);
+  };
+
+  /* ══ ROLE ══ */
+  const saveRole = async () => {
+    if (!roleForm.adminId || !roleForm.roleId) return toast('Select admin and role','error');
+    const db = firebase.firestore();
+    const role = SYSTEM_ROLES.find(r => r.id===roleForm.roleId);
+    const limit = roleForm.approvalLimit !== '' ? parseFloat(roleForm.approvalLimit) : role.approvalLimit;
+    try {
+      await db.collection('users').doc(roleForm.adminId).update({
+        assignedRole:roleForm.roleId, assignedRoleName:role.name,
+        permissions:role.permissions, approvalLimit:limit,
+        canApprove:role.canApprove, roleNotes:roleForm.notes||'',
+        roleAssignedBy:user.uid, roleAssignedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await logAction(db,'Role Assigned',`Assigned role "${role.name}" — limit ${fmtCurrency(limit)}`);
+      toast(`Role "${role.name}" assigned`);
+      await loadData(db); closeModal();
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  /* ══ APPROVAL GROUPS ══ */
+  const saveApprovalGroup = async () => {
+    if (!agForm.name || agForm.steps.length===0) return toast('Name and at least one step required','error');
+    const db = firebase.firestore();
+    try {
+      const isOrderGroup = agForm.docType === 'Order';
+      const data = {
+        name:agForm.name, description:agForm.description, docType:agForm.docType,
+        steps:agForm.steps,
+        minAmount: isOrderGroup && !agForm.requiresAmount ? null : (parseFloat(agForm.minAmount)||0),
+        maxAmount: isOrderGroup && !agForm.requiresAmount ? null : (agForm.maxAmount ? parseFloat(agForm.maxAmount) : null),
+        requiresAmount: isOrderGroup ? !!agForm.requiresAmount : true,
+        appliesTo:agForm.appliesTo||'both',
+        companyName:agForm.companyName||'',
+        requiresApprovalGroup: agForm.bypassAllowed ? false : true,
+        bypassAllowed:agForm.bypassAllowed||false,
+        active:true, createdBy:user.uid,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (editingId) { await db.collection('approvalGroups').doc(editingId).update(data); toast('Approval group updated'); }
+      else           { await db.collection('approvalGroups').add(data); toast('Approval group created'); }
+      await logAction(db,'Approval Group Saved',`Configured group "${agForm.name}" for ${agForm.docType}`);
+      await loadData(db); closeModal();
+    } catch(e) { toast(e.message,'error'); }
+  };
+
+  const deleteApprovalGroup = async (id, name) => {
+    if (!confirm(`Delete approval group "${name}"?`)) return;
+    const db = firebase.firestore();
+    await db.collection('approvalGroups').doc(id).delete();
+    await logAction(db,'Approval Group Deleted',`Deleted approval group "${name}"`);
+    toast('Approval group deleted'); await loadData(db);
+  };
+
+  /* ══ ASSIGNMENT LOGIC ══
+     Key design: one user CAN be assigned to multiple admins
+     (e.g. a user who works across two companies/departments)
+     Each assignment is a separate document in userAdminAssignments.
+  ══════════════════════════════════════════════ */
+
+  /* All users assigned to a given admin */
+  const getUsersForAdmin = (adminId) => {
+    const ids = assignments.filter(a => a.adminId===adminId).map(a => a.userId);
+    return users.filter(u => ids.includes(u.id));
+  };
+
+  /* The specific assignment doc for admin+user pair */
+  const getAssignmentDoc = (adminId, userId) =>
+    assignments.find(a => a.adminId===adminId && a.userId===userId);
+
+  /* Users not yet assigned to the given admin (may or may not be in other admins) */
+  const getUsersNotInAdmin = (adminId) => {
+    const alreadyHere = assignments.filter(a => a.adminId===adminId).map(a => a.userId);
+    return users.filter(u => !alreadyHere.includes(u.id));
+  };
+
+  /* Users with zero assignments at all */
+  const getUnassignedUsers = () => {
+    const allAssigned = new Set(assignments.map(a => a.userId));
+    return users.filter(u => !allAssigned.has(u.id));
+  };
+
+  /* Open assign modal for a specific admin */
+  const openAssignModal = (adminId) => {
+    setAssignAdminId(adminId);
+    setAssignUserIds([]);
+    setAssignSearch('');
+    setAssignModal(true);
+  };
+
+  /* Save: add selectedUsers to selectedAdmin */
+  const saveAssignment = async () => {
+    if (!assignAdminId || assignUserIds.length===0) return toast('Select at least one user','error');
+    const db = firebase.firestore();
+    const admin = admins.find(a => a.id===assignAdminId);
+    const batch = db.batch();
+    assignUserIds.forEach(uid => {
+      const ref = db.collection('userAdminAssignments').doc();
+      batch.set(ref, {
+        userId:uid, adminId:assignAdminId,
+        adminName:admin.fullName, adminEmail:admin.email,
+        assignedBy:user.uid, assignedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      batch.update(db.collection('users').doc(uid), {
+        assignedAdminId:assignAdminId, assignedAdminName:admin.fullName
+      });
+    });
+    await batch.commit();
+    await logAction(db,'Users Assigned',`Assigned ${assignUserIds.length} user(s) to ${admin.fullName}`);
+    toast(`${assignUserIds.length} user(s) assigned to ${admin.fullName}`);
+    setAssignModal(false); setAssignAdminId(''); setAssignUserIds([]);
+    await loadData(db);
+  };
+
+  /* Remove ONE user from ONE admin's group */
+  const removeFromAdmin = async (adminId, userId) => {
+    const u   = users.find(x => x.id===userId);
+    const adm = admins.find(a => a.id===adminId);
+    if (!confirm(`Remove ${u?.fullName} from ${adm?.fullName}'s group?`)) return;
+    const db   = firebase.firestore();
+    const doc  = getAssignmentDoc(adminId, userId);
+    if (!doc) return;
+    await db.collection('userAdminAssignments').doc(doc.id).delete();
+    /* clear stamp only if user has no other assignments */
+    const remaining = assignments.filter(a => a.userId===userId && a.id!==doc.id);
+    if (remaining.length===0) {
+      await db.collection('users').doc(userId).update({
+        assignedAdminId:  firebase.firestore.FieldValue.delete(),
+        assignedAdminName:firebase.firestore.FieldValue.delete()
+      });
+    }
+    await logAction(db,'Assignment Removed',`Removed ${u?.fullName} from ${adm?.fullName}'s group`);
+    toast('User removed from group');
+    await loadData(db);
+  };
+
+  /* ══ HELPERS ══ */
+  const closeModal = () => {
+    setModal(null); setEditingId(null);
+    setAdminForm({ email:'', password:'', fullName:'', companyName:'' });
+    setUserForm({ email:'', password:'', fullName:'', companyName:'', phoneNumber:'' });
+    setRoleForm({ adminId:'', roleId:'', approvalLimit:'', notes:'' });
+    setAgForm({ name:'', description:'', docType:'PO', steps:[], minAmount:'', maxAmount:'', appliesTo:'both', companyName:'', bypassAllowed:false, requiresAmount:true });
+  };
+
+  const getRoleBadge = (roleId) =>
+    ({ viewer:'gray', purchaser:'blue', supervisor:'cyan', finance_manager:'purple', admin_approver:'amber' }[roleId]||'gray');
+
+  const fmtCurrency = (n) => n===-1 ? 'Unlimited' : n===0 ? 'None' : `₱${Number(n).toLocaleString()}`;
+
+  const addStep = () => setAgForm(p=>({...p,steps:[...p.steps,{approverRole:'',limit:0,escalateTo:''}]}));
+  const updStep = (i,f,v) => setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],[f]:v};return{...p,steps:s};});
+  const remStep = (i) => setAgForm(p=>({...p,steps:p.steps.filter((_,x)=>x!==i)}));
+
+  const toggleAdmin = (id) => setExpandedAdmins(p=>({...p,[id]:p[id]===false})); // default=open; false=closed
+
+  const stats = {
+    admins:     admins.length,
+    users:      users.length,
+    assignments:assignments.length,
+    unassigned: getUnassignedUsers().length
+  };
+
+  if (loading) return (
+    <div style={{minHeight:'100vh',background:'#0A0C10',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16}}>
+      <OperixLogo/><div className="spinner"/>
+      <p style={{color:'#525D6E',fontSize:12,fontFamily:'IBM Plex Sans,sans-serif'}}>Loading System Administration...</p>
+    </div>
+  );
+
+ const companies = [...new Set([...admins.map(a=>a.companyName),...users.map(u=>u.companyName)].filter(Boolean))];
+
+  const orderApprovalGroups = approvalGroups.filter(g => g.docType === 'Order');
+  const poApprovalGroups    = approvalGroups.filter(g => g.docType !== 'Order');
+
+  const navItems = [
+    { id:'overview',        label:'Overview',             icon:I.grid,     count:null },
+    { id:'admins',          label:'Administrators',        icon:I.shield,   count:stats.admins },
+    { id:'roles',           label:'Role Designations',     icon:I.tag,      count:admins.filter(a=>a.assignedRole).length },
+    { id:'approval',        label:'PO Approval Groups',    icon:I.approval, count:poApprovalGroups.length },
+    { id:'order-approval',  label:'Order Approval Groups', icon:I.cart,     count:orderApprovalGroups.length },
+    { id:'features',        label:'Company Features',      icon:I.approval, count:companies.length },
+    { id:'users',           label:'Users',                 icon:I.users,    count:stats.users },
+    { id:'assignments',     label:'Assignments',           icon:I.link,     count:stats.assignments },
+  ];
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)'}}>
+
+      {/* ═══════════ TOPBAR ═══════════ */}
+      <div className="topbar">
+        <div className="topbar-brand">
+          <OperixLogo/>
+          <span className="topbar-brand-name">Operix</span>
+          <span className="topbar-brand-env">System Administration</span>
+        </div>
+        <div className="topbar-right">
+          <div style={{position:'relative'}} ref={notifRef}>
+            <div className="icon-btn" onClick={()=>setShowNotif(p=>!p)}>
+              <Ico d={I.bell} size={14}/>
+              {logs.length>0&&<span className="badge">{Math.min(logs.length,9)}</span>}
+            </div>
+            {showNotif&&(
+              <div className="notif-panel">
+                <div style={{padding:'10px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>Recent Activity</span>
+                  <span style={{fontSize:10,color:'var(--text3)',cursor:'pointer'}} onClick={()=>{setModal('logs');setShowNotif(false);}}>View all</span>
+                </div>
+                {logs.slice(0,6).map(l=>(
+                  <div key={l.id} className="notif-item">
+                    <div className="notif-dot" style={{background:l.action?.includes('Deleted')?'var(--red)':l.action?.includes('Created')?'var(--green)':'var(--blue)'}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <p style={{fontSize:11,fontWeight:600,color:'var(--text)',marginBottom:2}}>{l.action}</p>
+                      <p style={{fontSize:10,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.details}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="icon-btn" onClick={()=>setModal('logs')} title="Audit Logs"><Ico d={I.clock} size={14}/></div>
+          <div className="topbar-user">
+            <div className="topbar-avatar">{user?.displayName?.[0]||'M'}</div>
+            <span className="topbar-username">{user?.displayName}</span>
+            <span className="topbar-role-badge">Master</span>
+          </div>
+          <div className="icon-btn" style={{color:'var(--red)'}} onClick={async()=>{await firebase.auth().signOut();window.location.href='login.html';}} title="Logout">
+            <Ico d={I.logout} size={14}/>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════ LAYOUT ═══════════ */}
+      <div className="layout">
+
+        {/* SIDEBAR */}
+        <div className="sidebar">
+          <div className="sidebar-section">
+            <div className="sidebar-section-label">Navigation</div>
+            {navItems.map(n=>(
+              <div key={n.id} className={`nav-item ${activeNav===n.id?'active':''}`} onClick={()=>setActiveNav(n.id)}>
+                <Ico d={n.icon} size={13}/><span>{n.label}</span>
+                {n.count!==null&&<span className="nav-count">{n.count}</span>}
+              </div>
+            ))}
+          </div>
+          <div className="sidebar-section" style={{marginTop:'auto'}}>
+            <div className="sidebar-section-label">System</div>
+            <div className="nav-item" onClick={()=>setModal('logs')}><Ico d={I.clock} size={13}/><span>Audit Logs</span><span className="nav-count">{logs.length}</span></div>
+            <div className="nav-item" style={{color:'var(--red)'}} onClick={async()=>{await firebase.auth().signOut();window.location.href='login.html';}}>
+              <Ico d={I.logout} size={13}/><span>Sign Out</span>
+            </div>
+          </div>
+        </div>
+
+        {/* MAIN */}
+        <div className="main">
+
+          {/* ══════════════ OVERVIEW ══════════════ */}
+          {activeNav==='overview'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title"><div className="page-title-icon" style={{background:'var(--blue-bg)',color:'var(--blue-lt)'}}><Ico d={I.grid} size={15}/></div>System Overview</div>
+                  <div className="page-subtitle">Full system status and quick actions</div>
+                </div>
+              </div>
+              <div className="stats-grid">
+                <div className="stat-card blue"><div className="stat-label">Administrators</div><div className="stat-value">{stats.admins}</div><div className="stat-sub">{admins.filter(a=>a.assignedRole).length} with roles</div><div className="stat-icon"><Ico d={I.shield} size={48}/></div></div>
+                <div className="stat-card green"><div className="stat-label">Active Users</div><div className="stat-value">{stats.users}</div><div className="stat-sub">{stats.unassigned} unassigned</div><div className="stat-icon"><Ico d={I.users} size={48}/></div></div>
+                <div className="stat-card purple"><div className="stat-label">PO Approval Groups</div><div className="stat-value">{poApprovalGroups.length}</div><div className="stat-sub">{poApprovalGroups.filter(g=>g.active).length} active</div><div className="stat-icon"><Ico d={I.approval} size={48}/></div></div>
+                <div className="stat-card amber"><div className="stat-label">Order Approval Groups</div><div className="stat-value">{orderApprovalGroups.length}</div><div className="stat-sub">{orderApprovalGroups.filter(g=>g.active).length} active · {orderApprovalGroups.filter(g=>g.bypassAllowed).length} with bypass</div><div className="stat-icon"><Ico d={I.cart} size={48}/></div></div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                <div className="table-card">
+                  <div className="table-header"><div><div className="table-header-title">Quick Actions</div></div></div>
+                  <div style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
+                    {[
+                      {label:'Create Administrator',     icon:I.shield,   action:()=>setModal('create-admin'),    color:'var(--blue-lt)'},
+                      {label:'Add User Account',         icon:I.user,     action:()=>setModal('create-user'),     color:'var(--green)'},
+                      {label:'Assign Role to Admin',     icon:I.tag,      action:()=>setModal('roles'),           color:'var(--purple)'},
+                      {label:'Configure Approval Group', icon:I.approval, action:()=>setModal('approval-group'),  color:'var(--amber)'},
+                      {label:'Manage Assignments',       icon:I.link,     action:()=>setActiveNav('assignments'), color:'var(--cyan)'},
+                    ].map(a=>(
+                      <button key={a.label} className="btn btn-secondary" onClick={a.action} style={{width:'100%',justifyContent:'flex-start',gap:10}}>
+                        <span style={{color:a.color}}><Ico d={a.icon} size={13}/></span>{a.label}
+                        <span style={{marginLeft:'auto',color:'var(--text3)'}}><Ico d={I.arrow} size={11}/></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="table-card">
+                  <div className="table-header"><div><div className="table-header-title">System Status</div></div></div>
+                  <div style={{padding:14}}>
+                    {[
+                      {label:'Admins without roles',      value:admins.filter(a=>!a.assignedRole).length, warn:true},
+                      {label:'Unassigned users',           value:getUnassignedUsers().length,              warn:true},
+                      {label:'Active approval workflows',  value:approvalGroups.filter(g=>g.active).length,warn:false},
+                      {label:'PO approval groups',         value:approvalGroups.filter(g=>g.docType==='PO').length,    warn:false},
+                      {label:'Invoice approval groups',    value:approvalGroups.filter(g=>g.docType==='Invoice').length,warn:false},
+                    ].map(s=>(
+                      <div key={s.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                        <span style={{fontSize:12,color:'var(--text2)'}}>{s.label}</span>
+                        <span className={`badge ${s.warn&&s.value>0?'badge-amber':'badge-gray'}`}>{s.value}</span>
+                      </div>
+                    ))}
+                    <div style={{marginTop:12,display:'flex',alignItems:'center',gap:6}}>
+                      <div style={{width:6,height:6,borderRadius:'50%',background:'var(--green)'}}/>
+                      <span style={{fontSize:11,color:'var(--text3)'}}>All core services operational</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="table-card" style={{marginTop:12}}>
+                <div className="table-header"><div><div className="table-header-title">Recent Audit Events</div></div><button className="btn btn-secondary btn-sm" onClick={()=>setModal('logs')}>View All</button></div>
+                {logs.slice(0,5).map(l=>(
+                  <div key={l.id} className="log-item">
+                    <span className={`badge ${l.action?.includes('Deleted')?'badge-red':l.action?.includes('Created')?'badge-green':l.action?.includes('Assigned')?'badge-blue':'badge-purple'}`} style={{flexShrink:0}}>{l.action}</span>
+                    <span style={{fontSize:12,color:'var(--text2)',flex:1}}>{l.details}</span>
+                    <span className="log-time">{l.timestamp?.toDate?new Date(l.timestamp.toDate()).toLocaleDateString():'—'}</span>
+                  </div>
+                ))}
+                {logs.length===0&&<div className="empty"><div className="empty-title">No audit events yet</div></div>}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════ ADMINS ══════════════ */}
+          {activeNav==='admins'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--blue-bg)',color:'var(--blue-lt)'}}><Ico d={I.shield} size={15}/></div>Administrators</div><div className="page-subtitle">Manage admin accounts, credentials and role designations</div></div>
+                <button className="btn btn-primary" onClick={()=>setModal('create-admin')}><Ico d={I.plus} size={13}/>New Administrator</button>
+              </div>
+              <div className="table-card">
+                <table className="data-table">
+                  <thead><tr><th>Administrator</th><th>Email</th><th>Company</th><th>Role</th><th>Approval Limit</th><th>Users</th><th>Created</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {admins.map(a=>(
+                      <tr key={a.id}>
+                        <td><div style={{display:'flex',alignItems:'center',gap:8}}><div className="user-avatar" style={{background:'linear-gradient(135deg,var(--blue),var(--purple))'}}>{a.fullName?.[0]||'A'}</div><span style={{fontWeight:600,color:'var(--text)'}}>{a.fullName}</span></div></td>
+                        <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11}}>{a.email}</td>
+                        <td>{a.companyName||<span style={{color:'var(--text3)'}}>—</span>}</td>
+                        <td>{a.assignedRole?<span className={`badge badge-${getRoleBadge(a.assignedRole)}`}><Ico d={I.tag} size={9}/>{a.assignedRoleName}</span>:<span className="badge badge-gray">Undesignated</span>}</td>
+                        <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11,color:a.approvalLimit>0?'var(--text)':'var(--text3)'}}>{a.assignedRole?fmtCurrency(a.approvalLimit):'—'}</td>
+                        <td>
+                          <button className="badge badge-gray" style={{cursor:'pointer',background:'var(--bg3)',border:'1px solid var(--border)'}} onClick={()=>{setActiveNav('assignments');setTimeout(()=>setExpandedAdmins(p=>({...p,[a.id]:undefined})),80);}}>
+                            {getUsersForAdmin(a.id).length} users
+                          </button>
+                        </td>
+                        <td>{a.createdAt?.toDate?new Date(a.createdAt.toDate()).toLocaleDateString():'—'}</td>
+                        <td>
+                          <div style={{display:'flex',gap:4}}>
+                            <button className="btn btn-icon btn-secondary" title="Assign Users"  onClick={()=>openAssignModal(a.id)}><Ico d={I.link} size={12}/></button>
+                            <button className="btn btn-icon btn-secondary" title="Assign Role"   onClick={()=>{setRoleForm({adminId:a.id,roleId:a.assignedRole||'',approvalLimit:a.approvalLimit||'',notes:a.roleNotes||''});setModal('roles');}}><Ico d={I.tag} size={12}/></button>
+                            <button className="btn btn-icon btn-secondary" title="Edit"          onClick={()=>{setAdminForm({email:a.email,fullName:a.fullName,companyName:a.companyName||'',tinNumber:a.tinNumber||'',address:a.address||'',phoneNumber:a.phoneNumber||'',password:''});setEditingId(a.id);setModal('create-admin');}}><Ico d={I.edit} size={12}/></button>
+                            <button className="btn btn-icon btn-danger"    title="Delete"        onClick={()=>deleteAdmin(a.id)}><Ico d={I.trash} size={12}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {admins.length===0&&<div className="empty"><div className="empty-icon"><Ico d={I.shield} size={40}/></div><div className="empty-title">No administrators</div><div className="empty-sub">Create the first admin account</div><button className="btn btn-primary" onClick={()=>setModal('create-admin')}><Ico d={I.plus} size={13}/>Create Admin</button></div>}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════ ROLES ══════════════ */}
+          {activeNav==='roles'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--purple-bg)',color:'var(--purple)'}}><Ico d={I.tag} size={15}/></div>Role Designations</div><div className="page-subtitle">Assign functional roles and approval limits to administrators</div></div>
+                <button className="btn btn-primary" onClick={()=>setModal('roles')}><Ico d={I.plus} size={13}/>Assign Role</button>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:20}}>
+                {SYSTEM_ROLES.map(r=>(
+                  <div key={r.id} style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,padding:12,borderTop:`2px solid var(--${r.color==='gray'?'text3':r.color})`}}>
+                    <div style={{marginBottom:6}}><span className={`badge badge-${getRoleBadge(r.id)}`}>{r.name}</span></div>
+                    <div style={{fontSize:11,color:'var(--text3)',lineHeight:1.4,marginBottom:8}}>{r.desc}</div>
+                    <div style={{fontFamily:'IBM Plex Mono,monospace',fontSize:10,color:'var(--text2)'}}>Limit: {fmtCurrency(r.approvalLimit)}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="table-card">
+                <div className="table-header"><div><div className="table-header-title">Current Role Assignments</div><div className="table-header-sub">{admins.filter(a=>a.assignedRole).length} of {admins.length} admins have roles</div></div></div>
+                <table className="data-table">
+                  <thead><tr><th>Administrator</th><th>Designated Role</th><th>Approval Limit</th><th>Can Approve</th><th>Permissions</th><th>Notes</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {admins.map(a=>(
+                      <tr key={a.id}>
+                        <td><div style={{display:'flex',alignItems:'center',gap:8}}><div className="user-avatar" style={{background:'linear-gradient(135deg,var(--blue),var(--purple))',width:26,height:26,fontSize:10}}>{a.fullName?.[0]}</div><div><div style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>{a.fullName}</div><div style={{fontSize:10,color:'var(--text3)'}}>{a.email}</div></div></div></td>
+                        <td>{a.assignedRole?<span className={`badge badge-${getRoleBadge(a.assignedRole)}`}>{a.assignedRoleName}</span>:<span style={{fontSize:11,color:'var(--text3)',fontStyle:'italic'}}>Not assigned</span>}</td>
+                        <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11}}>{a.assignedRole?fmtCurrency(a.approvalLimit):'—'}</td>
+                        <td>{a.assignedRole?<span className={`badge ${a.canApprove?'badge-green':'badge-gray'}`}>{a.canApprove?'Yes':'No'}</span>:'—'}</td>
+                        <td>{a.permissions?(()=>{const p=Array.isArray(a.permissions)?a.permissions:(typeof a.permissions==='string'?[a.permissions]:[]);return <span style={{fontSize:10,color:'var(--text3)'}}>{p.includes('*')?'All permissions':`${p.length} permission${p.length!==1?'s':''}`}</span>;})():'—'}</td>
+                        <td style={{fontSize:11,color:'var(--text3)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.roleNotes||'—'}</td>
+                        <td><button className="btn btn-sm btn-secondary" onClick={()=>{setRoleForm({adminId:a.id,roleId:a.assignedRole||'',approvalLimit:a.approvalLimit||'',notes:a.roleNotes||''});setModal('roles');}}><Ico d={I.edit} size={11}/>{a.assignedRole?'Modify':'Assign'}</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════ ORDER APPROVAL GROUPS ══════════════ */}
+          {activeNav==='order-approval'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title">
+                    <div className="page-title-icon" style={{background:'var(--amber-bg)',color:'var(--amber)'}}><Ico d={I.cart} size={15}/></div>
+                    Order Approval Groups
+                  </div>
+                  <div className="page-subtitle">Configure approval workflows for customer shop orders — route orders to designated approvers before they enter the admin pipeline</div>
+                </div>
+                <button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'Order',requiresAmount:false}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>New Order Approval Group</button>
+              </div>
+
+              {/* How it works banner */}
+              <div style={{background:'var(--amber-bg)',border:'1px solid rgba(245,158,11,.25)',borderRadius:8,padding:'12px 14px',marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                <span style={{color:'var(--amber)',flexShrink:0,marginTop:1}}><Ico d={I.info} size={14}/></span>
+                <div style={{fontSize:11,color:'var(--text2)',lineHeight:1.6}}>
+                  <strong style={{color:'var(--amber)'}}>How Order Approval Works:</strong> When a customer places an order from the shop, the system checks if their company has an active Order Approval Group. If one exists, the order is held in <strong style={{color:'var(--text)'}}>Pending Approval</strong> status and routed to the designated approver's worklist. The order only enters the admin pipeline after it is approved. If no group is configured and Bypass is not enabled, orders from that company are <strong style={{color:'var(--red)'}}>blocked</strong> from being placed.
+                </div>
+              </div>
+
+              {/* Status summary cards */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:20}}>
+                {[
+                  { label:'Active Order Groups',    val:orderApprovalGroups.filter(g=>g.active).length,  color:'var(--green)',  cls:'green'  },
+                  { label:'Companies Covered',       val:[...new Set(orderApprovalGroups.map(g=>g.companyName).filter(Boolean))].length, color:'var(--blue-lt)', cls:'blue' },
+                  { label:'With Bypass Allowed',     val:orderApprovalGroups.filter(g=>g.bypassAllowed).length, color:'var(--amber)', cls:'amber' },
+                ].map(s=>(
+                  <div key={s.label} className={`stat-card ${s.cls}`} style={{padding:'14px 16px'}}>
+                    <div className="stat-label">{s.label}</div>
+                    <div className="stat-value" style={{fontSize:22,color:s.color}}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {orderApprovalGroups.length===0 ? (
+                <div className="table-card">
+                  <div className="empty">
+                    <div className="empty-icon"><Ico d={I.cart} size={40}/></div>
+                    <div className="empty-title">No order approval groups configured</div>
+                    <div className="empty-sub">Without a group, orders from the shop go directly to admins with no pre-approval step</div>
+                    <button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'Order',requiresAmount:false}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>Create First Group</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {orderApprovalGroups.map(g=>(
+                    <div key={g.id} className="table-card">
+                      <div style={{padding:'14px 16px',display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                        <div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{g.name}</span>
+                            <span className="badge badge-amber">Customer Order</span>
+                            <span className={`badge ${g.active?'badge-green':'badge-gray'}`}>{g.active?'Active':'Inactive'}</span>
+                            {g.bypassAllowed&&<span className="badge badge-purple">Bypass Allowed</span>}
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{g.description||'No description'}</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:11,color:'var(--text3)'}}>
+                            {g.companyName ? (
+                              <span>Company: <strong style={{color:'var(--text2)'}}>{g.companyName}</strong></span>
+                            ) : (
+                              <span>Scope: <strong style={{color:'var(--text2)'}}>All Companies</strong></span>
+                            )}
+                            <span>Applies to: <strong style={{color:'var(--text2)'}}>{g.appliesTo==='admin'?'Admins Only':g.appliesTo==='user'?'Regular Users Only':'Both'}</strong></span>
+                            {g.requiresAmount && (
+                              <span>Amount: <strong style={{color:'var(--text2)',fontFamily:'IBM Plex Mono,monospace'}}>{g.minAmount!=null?`₱${Number(g.minAmount).toLocaleString()}`:0} — {g.maxAmount?`₱${Number(g.maxAmount).toLocaleString()}`:'No limit'}</strong></span>
+                            )}
+                            <span>Steps: <strong style={{color:'var(--text2)'}}>{g.steps?.length||0}</strong></span>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6,flexShrink:0}}>
+                          <button className="btn btn-sm btn-secondary" onClick={()=>{
+                            setEditingId(g.id);
+                            setAgForm({name:g.name,description:g.description||'',docType:'Order',steps:g.steps||[],minAmount:g.minAmount||'',maxAmount:g.maxAmount||'',appliesTo:g.appliesTo||'both',companyName:g.companyName||'',bypassAllowed:g.bypassAllowed||false,requiresAmount:g.requiresAmount!==false});
+                            setModal('approval-group');
+                          }}><Ico d={I.edit} size={11}/>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={()=>deleteApprovalGroup(g.id,g.name)}><Ico d={I.trash} size={11}/></button>
+                        </div>
+                      </div>
+
+                      {/* Approval chain visual */}
+                      {g.steps?.length>0&&(
+                        <div style={{padding:'0 16px 14px',borderTop:'1px solid var(--border)',paddingTop:12}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:8}}>Approval Chain</div>
+                          <div className="workflow-chain">
+                            {g.steps.map((step,i)=>(
+                              <React.Fragment key={i}>
+                                {i>0&&<div className="workflow-arrow"><Ico d={I.arrow} size={12}/></div>}
+                                <div className="workflow-step">
+                                  <div className="workflow-step-num">Step {i+1}</div>
+                                  <div className="workflow-step-name">
+                                    {step.approverName || step.approverRole || 'Any Approver'}
+                                  </div>
+                                  <div className="workflow-step-detail">
+                                    {step.approverName
+                                      ? <span style={{color:'var(--text3)',fontSize:10}}>{step.approverRole||'Designated Approver'}</span>
+                                      : <span style={{color:'var(--text3)',fontSize:10}}>By role designation</span>
+                                    }
+                                  </div>
+                                  {step.escalateTo&&<div style={{fontSize:9,color:'var(--amber)',marginTop:2}}>↑ {step.escalateTo}</div>}
+                                </div>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════ COMPANY FEATURES ══════════════ */}
+          {activeNav==='features'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title">
+                    <div className="page-title-icon" style={{background:'var(--purple-bg)',color:'var(--purple)'}}><Ico d={I.approval} size={15}/></div>
+                    Company Features
+                  </div>
+                  <div className="page-subtitle">Enable or disable features per company — changes apply immediately to all users in that company</div>
+                </div>
+              </div>
+
+              {companies.length===0?(
+                <div className="table-card">
+                  <div className="empty">
+                    <div className="empty-icon"><Ico d={I.building} size={40}/></div>
+                    <div className="empty-title">No companies found</div>
+                    <div className="empty-sub">Assign company names to admins and users first</div>
+                  </div>
+                </div>
+              ):(
+                <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                  {companies.map(company=>{
+                    const feat = companyFeatures[company]||{};
+                    const companyAdmins = admins.filter(a=>a.companyName===company);
+                    const companyUsers  = users.filter(u=>u.companyName===company);
+                    return (
+                      <div key={company} className="table-card">
+                        {/* Company header */}
+                        <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
+                          <div style={{width:32,height:32,borderRadius:6,background:'var(--blue-bg)',border:'1px solid rgba(59,127,232,.2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--blue-lt)',flexShrink:0}}>
+                            <Ico d={I.building} size={15}/>
+                          </div>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{company}</div>
+                            <div style={{fontSize:10,color:'var(--text3)',marginTop:1}}>
+                              {companyAdmins.length} admin{companyAdmins.length!==1?'s':''} · {companyUsers.length} user{companyUsers.length!==1?'s':''}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Feature rows */}
+                        <div style={{padding:'10px 16px',display:'flex',flexDirection:'column',gap:8}}>
+
+                          {/* ── Reusable feature toggle renderer ── */}
+                          {[
+                            {
+                              key: 'userDirectory',
+                              icon: '👥',
+                              label: 'User Directory',
+                              desc: 'Shows company users & their departments in the Admin Dashboard sidebar',
+                              color: 'var(--green)',
+                            },
+                            {
+                              key: 'financialMonitoring',
+                              icon: '📊',
+                              label: 'Financial Monitoring',
+                              desc: 'Enables the Financial Monitoring sidebar module — budget utilization, expense trends, payables aging and PO spend analysis. Intended for Finance Manager role.',
+                              color: 'var(--green)',
+                            },
+                            {
+                              key: 'payables',
+                              icon: '💳',
+                              label: 'Payables',
+                              desc: 'Enables the Payables sidebar module — Finance Managers can review and approve supplier invoices received via the Receiving module, manage vendor payment schedules, and perform 3-way PO matching.',
+                              color: 'var(--amber)',
+                            },
+                            {
+                              key: 'financialReports',
+                              icon: '📋',
+                              label: 'Financial Reports (Request Center)',
+                              desc: 'Adds Financial Report types to the Request Center: PO Summary, Supplier Spend Analysis, Budget Report, Payment Register, and Invoice Aging Report.',
+                              color: 'var(--cyan)',
+                            },
+                          ].map(({key, icon, label, desc, color}) => {
+                            const enabled = !!feat[key];
+                            const saving  = savingFeature===`${company}::${key}`;
+                            return (
+                              <div key={key} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6}}>
+                                <div style={{flex:1}}>
+                                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                                    <span style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>{icon} {label}</span>
+                                    <span className={`badge ${enabled?'badge-green':'badge-gray'}`}>{enabled?'Enabled':'Disabled'}</span>
+                                  </div>
+                                  <div style={{fontSize:11,color:'var(--text3)'}}>{desc}</div>
+                                </div>
+                                <button
+                                  onClick={()=>saveCompanyFeature(company,key,enabled)}
+                                  disabled={!!saving}
+                                  title={`${enabled?'Disable':'Enable'} ${label} for ${company}`}
+                                  style={{
+                                    flexShrink:0,marginLeft:16,
+                                    width:44,height:24,borderRadius:12,border:'none',cursor:saving?'wait':'pointer',
+                                    background:enabled?color:'var(--border2)',
+                                    position:'relative',transition:'background .2s',opacity:saving?.6:1
+                                  }}
+                                >
+                                  <span style={{
+                                    position:'absolute',top:3,
+                                    left:enabled?22:3,
+                                    width:18,height:18,borderRadius:9,background:'#fff',
+                                    transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,.4)'
+                                  }}/>
+                                </button>
+                              </div>
+                            );
+                          })}
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {activeNav==='approval'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--green-bg)',color:'var(--green)'}}><Ico d={I.approval} size={15}/></div>PO Approval Groups</div><div className="page-subtitle">Configure multi-step approval workflows for Purchase Orders and Invoices</div></div>
+                <button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'PO'}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>New PO Approval Group</button>
+              </div>
+              <div style={{background:'var(--blue-bg)',border:'1px solid rgba(59,127,232,.2)',borderRadius:8,padding:'12px 14px',marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                <span style={{color:'var(--blue-lt)',flexShrink:0,marginTop:1}}><Ico d={I.info} size={14}/></span>
+                <div style={{fontSize:11,color:'var(--text2)',lineHeight:1.5}}><strong style={{color:'var(--blue-lt)'}}>How Approval Workflows Work:</strong> Once configured, the workflow engine automatically routes POs or Invoices matching the amount criteria to designated approvers in sequence. If an amount exceeds a step's limit, it escalates to the next step automatically.</div>
+              </div>
+              {poApprovalGroups.length===0?(
+                <div className="table-card"><div className="empty"><div className="empty-icon"><Ico d={I.workflow} size={40}/></div><div className="empty-title">No PO approval groups configured</div><div className="empty-sub">Create your first PO/Invoice workflow</div><button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'PO'}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>Create First Group</button></div></div>
+              ):(
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {poApprovalGroups.map(g=>(
+                    <div key={g.id} className="table-card">
+                      <div style={{padding:'14px 16px',display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                        <div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{g.name}</span>
+                            <span className={`badge ${g.docType==='PO'?'badge-blue':'badge-purple'}`}>{g.docType}</span>
+                            <span className={`badge ${g.active?'badge-green':'badge-gray'}`}>{g.active?'Active':'Inactive'}</span>
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{g.description||'No description'}</div>
+                          <div style={{display:'flex',gap:12,fontSize:11,color:'var(--text3)'}}>
+                            <span>Amount: <strong style={{color:'var(--text2)',fontFamily:'IBM Plex Mono,monospace'}}>{fmtCurrency(g.minAmount||0)} — {g.maxAmount?fmtCurrency(g.maxAmount):'No limit'}</strong></span>
+                            <span>Steps: <strong style={{color:'var(--text2)'}}>{g.steps?.length||0}</strong></span>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="btn btn-sm btn-secondary" onClick={()=>{setEditingId(g.id);setAgForm({name:g.name,description:g.description||'',docType:g.docType,steps:g.steps||[],minAmount:g.minAmount||'',maxAmount:g.maxAmount||'',appliesTo:g.appliesTo||'both',companyName:g.companyName||'',bypassAllowed:g.bypassAllowed||false,requiresAmount:g.requiresAmount!==false});setModal('approval-group');}}><Ico d={I.edit} size={11}/>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={()=>deleteApprovalGroup(g.id,g.name)}><Ico d={I.trash} size={11}/></button>
+                        </div>
+                      </div>
+                      {g.steps?.length>0&&(
+                        <div style={{padding:'0 16px 14px',borderTop:'1px solid var(--border)',paddingTop:12}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:8}}>Approval Chain</div>
+                          <div className="workflow-chain">
+                            {g.steps.map((step,i)=>(
+                              <React.Fragment key={i}>
+                                {i>0&&<div className="workflow-arrow"><Ico d={I.arrow} size={12}/></div>}
+                                <div className="workflow-step">
+                                  <div className="workflow-step-num">Step {i+1}</div>
+                                  <div className="workflow-step-name">
+                                    {step.approverName || step.approverRole || 'Any Approver'}
+                                  </div>
+                                  <div className="workflow-step-detail">
+                                    {step.approverName
+                                      ? <span style={{color:'var(--text3)',fontSize:10}}>{step.approverRole||'Designated Approver'}{step.limit?` · Up to ${fmtCurrency(step.limit)}`:''}</span>
+                                      : <span>Up to {fmtCurrency(step.limit||0)}</span>
+                                    }
+                                  </div>
+                                  {step.escalateTo&&<div style={{fontSize:9,color:'var(--amber)',marginTop:2}}>↑ {step.escalateTo}</div>}
+                                </div>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════ USERS ══════════════ */}
+          {activeNav==='users'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--green-bg)',color:'var(--green)'}}><Ico d={I.users} size={15}/></div>Users</div><div className="page-subtitle">Manage end-user accounts across all companies</div></div>
+                <div style={{display:'flex',gap:8}}>
+                  <div style={{position:'relative'}}>
+                    <input className="form-input" placeholder="Search users..." value={searchQ} onChange={e=>setSearchQ(e.target.value)} style={{paddingLeft:30,width:200,height:32,fontSize:12}}/>
+                    <span style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',color:'var(--text3)'}}><Ico d={I.search} size={12}/></span>
+                  </div>
+                  <button className="btn btn-success" onClick={()=>setModal('create-user')}><Ico d={I.plus} size={13}/>Add User</button>
+                </div>
+              </div>
+              <div className="table-card">
+                <table className="data-table">
+                  <thead><tr><th>User</th><th>Email</th><th>Company</th><th>Phone</th><th>Assigned Admin(s)</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {users.filter(u=>!searchQ||u.fullName?.toLowerCase().includes(searchQ.toLowerCase())||u.email?.toLowerCase().includes(searchQ.toLowerCase())).map(u=>{
+                      const userAssignments = assignments.filter(a=>a.userId===u.id);
+                      return (
+                        <tr key={u.id}>
+                          <td><div style={{display:'flex',alignItems:'center',gap:8}}><div className="user-avatar" style={{background:'linear-gradient(135deg,var(--green),var(--cyan))'}}>{u.fullName?.[0]||'U'}</div><span style={{fontWeight:600,color:'var(--text)'}}>{u.fullName}</span></div></td>
+                          <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11}}>{u.email}</td>
+                          <td>{u.companyName||<span style={{color:'var(--text3)'}}>—</span>}</td>
+                          <td style={{fontSize:11}}>{u.phoneNumber||'—'}</td>
+                          <td>
+                            {userAssignments.length===0
+                              ?<span className="badge badge-amber">Unassigned</span>
+                              :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                                {userAssignments.map(a=><span key={a.id} className="badge badge-green">{a.adminName}</span>)}
+                              </div>
+                            }
+                          </td>
+                          <td>{u.createdAt?.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():'—'}</td>
+                          <td><span className="badge badge-blue">Active</span></td>
+                          <td>
+                            <div style={{display:'flex',gap:4}}>
+                              <button className="btn btn-icon btn-secondary" onClick={()=>{setUserForm({email:u.email,fullName:u.fullName,companyName:u.companyName||'',phoneNumber:u.phoneNumber||'',tinNumber:u.tinNumber||'',address:u.address||'',password:''});setEditingId(u.id);setModal('create-user');}}><Ico d={I.edit} size={12}/></button>
+                              <button className="btn btn-icon btn-danger" onClick={()=>deleteUser(u.id)}><Ico d={I.trash} size={12}/></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {users.length===0&&<div className="empty"><div className="empty-title">No users found</div><button className="btn btn-success" style={{marginTop:8}} onClick={()=>setModal('create-user')}><Ico d={I.plus} size={13}/>Add First User</button></div>}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════ ASSIGNMENTS ══════════════ */}
+          {activeNav==='assignments'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title"><div className="page-title-icon" style={{background:'var(--cyan-bg)',color:'var(--cyan)'}}><Ico d={I.link} size={15}/></div>Assignments</div>
+                  <div className="page-subtitle">Manage which users belong to each administrator — across all companies and departments</div>
+                </div>
+              </div>
+
+              {/* UNASSIGNED ALERT */}
+              {getUnassignedUsers().length>0&&(
+                <div style={{background:'var(--amber-bg)',border:'1px solid rgba(245,158,11,.2)',borderRadius:8,padding:'10px 16px',marginBottom:16,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                    <span style={{color:'var(--amber)'}}><Ico d={I.info} size={14}/></span>
+                    <span style={{fontSize:12,color:'var(--amber)'}}><strong>{getUnassignedUsers().length}</strong> user(s) have no admin assignment yet</span>
+                  </div>
+                  <span style={{fontSize:11,color:'var(--text3)'}}>{getUnassignedUsers().map(u=>u.fullName).slice(0,3).join(', ')}{getUnassignedUsers().length>3?` +${getUnassignedUsers().length-3} more`:''}</span>
+                </div>
+              )}
+
+              {admins.length===0&&(
+                <div className="table-card"><div className="empty"><div className="empty-icon"><Ico d={I.shield} size={40}/></div><div className="empty-title">No administrators yet</div><div className="empty-sub">Create an admin first, then assign users to them</div><button className="btn btn-primary" onClick={()=>setModal('create-admin')}><Ico d={I.plus} size={13}/>Create Admin</button></div></div>
+              )}
+
+              {/* ── PER-ADMIN PANELS ── */}
+              {admins.map(admin=>{
+                const adminUsers = getUsersForAdmin(admin.id);
+                const collapsed  = expandedAdmins[admin.id]===false;
+                return (
+                  <div key={admin.id} className="admin-group-panel">
+
+                    {/* HEADER */}
+                    <div className={`admin-group-header ${collapsed?'collapsed':''}`} onClick={()=>toggleAdmin(admin.id)}>
+                      <div style={{display:'flex',alignItems:'center',gap:12}}>
+                        <div className="user-avatar" style={{background:'linear-gradient(135deg,var(--blue),var(--purple))',width:36,height:36,fontSize:13}}>{admin.fullName?.[0]}</div>
+                        <div>
+                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{admin.fullName}</span>
+                            {admin.assignedRole?<span className={`badge badge-${getRoleBadge(admin.assignedRole)}`}>{admin.assignedRoleName}</span>:<span className="badge badge-gray">No Role</span>}
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{admin.email}{admin.companyName?` · ${admin.companyName}`:''}</div>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        {admin.assignedRole&&<span style={{fontSize:11,color:'var(--text3)'}}>Limit: <span style={{fontFamily:'IBM Plex Mono,monospace',color:'var(--text2)'}}>{fmtCurrency(admin.approvalLimit)}</span></span>}
+                        <span className="badge badge-gray">{adminUsers.length} user{adminUsers.length!==1?'s':''}</span>
+                        <button className="btn btn-sm btn-primary" style={{zIndex:2}} onClick={e=>{e.stopPropagation();openAssignModal(admin.id);}}>
+                          <Ico d={I.plus} size={11}/>Add Users
+                        </button>
+                        <span className={`chevron-icon ${collapsed?'':'open'}`} style={{color:'var(--text3)'}}><Ico d={I.chevron} size={14}/></span>
+                      </div>
+                    </div>
+
+                    {/* BODY */}
+                    {!collapsed&&(
+                      <div className="admin-group-body">
+                        {adminUsers.length===0?(
+                          <div style={{textAlign:'center',padding:20,color:'var(--text3)',fontSize:12}}>
+                            No users assigned to this administrator yet.{' '}
+                            <span style={{color:'var(--blue-lt)',cursor:'pointer'}} onClick={()=>openAssignModal(admin.id)}>Add users →</span>
+                          </div>
+                        ):(
+                          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:8}}>
+                            {adminUsers.map(u=>{
+                              const allAdminAssignments = assignments.filter(a=>a.userId===u.id);
+                              return (
+                                <div key={u.id} className="user-row-item">
+                                  <div style={{display:'flex',alignItems:'center',gap:10}}>
+                                    <div className="user-avatar" style={{background:'linear-gradient(135deg,var(--green),var(--cyan))',width:28,height:28,fontSize:11}}>{u.fullName?.[0]||'?'}</div>
+                                    <div>
+                                      <div style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>{u.fullName}</div>
+                                      <div style={{fontSize:10,color:'var(--text3)'}}>{u.email}</div>
+                                      {u.companyName&&<div style={{fontSize:10,color:'var(--text3)',display:'flex',alignItems:'center',gap:3,marginTop:1}}><Ico d={I.building} size={9}/>{u.companyName}</div>}
+                                    </div>
+                                  </div>
+                                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                    {allAdminAssignments.length>1&&(
+                                      <span className="badge badge-purple" title={`Also in: ${allAdminAssignments.filter(a=>a.adminId!==admin.id).map(a=>a.adminName).join(', ')}`}>
+                                        +{allAdminAssignments.length-1} more
+                                      </span>
+                                    )}
+                                    <button className="btn btn-icon btn-danger" style={{width:26,height:26}} title="Remove from this group" onClick={()=>removeFromAdmin(admin.id,u.id)}>
+                                      <Ico d={I.x} size={11}/>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* UNASSIGNED USERS PANEL */}
+              {getUnassignedUsers().length>0&&(
+                <div className="admin-group-panel" style={{borderColor:'rgba(245,158,11,.25)'}}>
+                  <div className={`admin-group-header ${expandedAdmins['__unassigned']===false?'collapsed':''}`} onClick={()=>toggleAdmin('__unassigned')}>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <div style={{width:36,height:36,borderRadius:6,background:'var(--amber-bg)',border:'1px solid rgba(245,158,11,.2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--amber)'}}><Ico d={I.user} size={16}/></div>
+                      <div>
+                        <span style={{fontSize:13,fontWeight:700,color:'var(--amber)'}}>Unassigned Users</span>
+                        <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Not yet linked to any administrator</div>
+                      </div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <span className="badge badge-amber">{getUnassignedUsers().length} user{getUnassignedUsers().length!==1?'s':''}</span>
+                      <span className={`chevron-icon ${expandedAdmins['__unassigned']!==false?'open':''}`} style={{color:'var(--text3)'}}><Ico d={I.chevron} size={14}/></span>
+                    </div>
+                  </div>
+                  {expandedAdmins['__unassigned']!==false&&(
+                    <div className="admin-group-body">
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:8}}>
+                        {getUnassignedUsers().map(u=>(
+                          <div key={u.id} className="user-row-item" style={{borderColor:'rgba(245,158,11,.15)'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:10}}>
+                              <div className="user-avatar" style={{background:'linear-gradient(135deg,#78350F,var(--amber))',width:28,height:28,fontSize:11}}>{u.fullName?.[0]||'?'}</div>
+                              <div>
+                                <div style={{fontSize:12,fontWeight:600,color:'var(--text)'}}>{u.fullName}</div>
+                                <div style={{fontSize:10,color:'var(--text3)'}}>{u.email}</div>
+                                {u.companyName&&<div style={{fontSize:10,color:'var(--text3)'}}>{u.companyName}</div>}
+                              </div>
+                            </div>
+                            <button className="btn btn-sm btn-secondary" onClick={()=>{setAssignAdminId('');setAssignUserIds([u.id]);setAssignSearch('');setAssignModal(true);}}>
+                              <Ico d={I.link} size={11}/>Assign
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>{/* end main */}
+      </div>{/* end layout */}
+
+      {/* ═══════════════════════════════
+          MODALS
+      ═══════════════════════════════ */}
+
+      {/* ── Create / Edit Admin ── */}
+      {modal==='create-admin'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&closeModal()}>
+          <div className="modal" style={{maxWidth:480}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--blue-lt)'}}><Ico d={I.shield} size={16}/></span>{editingId?'Edit Administrator':'Create Administrator'}</div>
+              <button className="btn btn-icon btn-secondary" onClick={closeModal}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group"><label className="form-label">Full Name *</label><input className="form-input" value={adminForm.fullName} onChange={e=>setAdminForm(p=>({...p,fullName:e.target.value}))} placeholder="e.g. Maria Santos"/></div>
+              <div className="form-group"><label className="form-label">Email Address *</label><input className="form-input" type="email" value={adminForm.email} onChange={e=>setAdminForm(p=>({...p,email:e.target.value}))} placeholder="admin@company.com" disabled={!!editingId}/></div>
+              <div className="form-group"><label className="form-label">{editingId?'New Password (blank = keep)':'Temporary Password *'}</label><input className="form-input" type="text" value={adminForm.password} onChange={e=>setAdminForm(p=>({...p,password:e.target.value}))} placeholder={editingId?'Leave blank to keep current':'Min 8 characters'}/></div>
+              <div className="form-group"><label className="form-label">Company / Department</label><input className="form-input" value={adminForm.companyName} onChange={e=>setAdminForm(p=>({...p,companyName:e.target.value}))} placeholder="Optional"/></div>
+              <div className="form-grid2">
+                <div className="form-group"><label className="form-label">TIN Number</label><input className="form-input" value={adminForm.tinNumber} onChange={e=>setAdminForm(p=>({...p,tinNumber:e.target.value}))} placeholder="e.g. 123-456-789-000"/></div>
+                <div className="form-group"><label className="form-label">Phone Number</label><input className="form-input" value={adminForm.phoneNumber||''} onChange={e=>setAdminForm(p=>({...p,phoneNumber:e.target.value}))} placeholder="Optional"/></div>
+              </div>
+              <div className="form-group"><label className="form-label">Company Address</label><textarea className="form-input" rows={2} value={adminForm.address} onChange={e=>setAdminForm(p=>({...p,address:e.target.value}))} placeholder="Registered company address" style={{resize:'vertical',minHeight:60}}/></div>
+              {!editingId&&<div style={{background:'var(--blue-bg)',border:'1px solid rgba(59,127,232,.2)',borderRadius:6,padding:'8px 12px',fontSize:11,color:'var(--text3)'}}>After creation, assign a role from Role Designations to enable approval capabilities.</div>}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveAdmin}>{editingId?'Update':'Create Administrator'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create / Edit User ── */}
+      {modal==='create-user'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&closeModal()}>
+          <div className="modal" style={{maxWidth:480}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--green)'}}><Ico d={I.user} size={16}/></span>{editingId?'Edit User':'Add User Account'}</div>
+              <button className="btn btn-icon btn-secondary" onClick={closeModal}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid2">
+                <div className="form-group"><label className="form-label">Full Name *</label><input className="form-input" value={userForm.fullName} onChange={e=>setUserForm(p=>({...p,fullName:e.target.value}))} placeholder="Full name"/></div>
+                <div className="form-group"><label className="form-label">Email *</label><input className="form-input" type="email" value={userForm.email} onChange={e=>setUserForm(p=>({...p,email:e.target.value}))} placeholder="user@company.com" disabled={!!editingId}/></div>
+              </div>
+              <div className="form-group"><label className="form-label">{editingId?'New Password (blank = keep)':'Temporary Password *'}</label><input className="form-input" type="text" value={userForm.password} onChange={e=>setUserForm(p=>({...p,password:e.target.value}))} placeholder={editingId?'Leave blank to keep':'Temporary password'}/></div>
+              <div className="form-grid2">
+                <div className="form-group"><label className="form-label">Company</label><input className="form-input" value={userForm.companyName} onChange={e=>setUserForm(p=>({...p,companyName:e.target.value}))} placeholder="Optional"/></div>
+                <div className="form-group"><label className="form-label">Phone Number</label><input className="form-input" value={userForm.phoneNumber} onChange={e=>setUserForm(p=>({...p,phoneNumber:e.target.value}))} placeholder="Optional"/></div>
+              </div>
+              <div className="form-group"><label className="form-label">TIN Number</label><input className="form-input" value={userForm.tinNumber} onChange={e=>setUserForm(p=>({...p,tinNumber:e.target.value}))} placeholder="e.g. 123-456-789-000"/></div>
+              <div className="form-group"><label className="form-label">Company Address</label><textarea className="form-input" rows={2} value={userForm.address} onChange={e=>setUserForm(p=>({...p,address:e.target.value}))} placeholder="Registered company address" style={{resize:'vertical',minHeight:60}}/></div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-success" onClick={saveUser}>{editingId?'Update User':'Create User'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Assign Role ── */}
+      {modal==='roles'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&closeModal()}>
+          <div className="modal" style={{maxWidth:600}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--purple)'}}><Ico d={I.tag} size={16}/></span>Assign Role Designation</div>
+              <button className="btn btn-icon btn-secondary" onClick={closeModal}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Select Administrator *</label>
+                <select className="form-input form-select" value={roleForm.adminId} onChange={e=>setRoleForm(p=>({...p,adminId:e.target.value}))}>
+                  <option value="">-- Select Administrator --</option>
+                  {admins.map(a=><option key={a.id} value={a.id}>{a.fullName} ({a.email})</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Role Designation *</label>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:4}}>
+                  {SYSTEM_ROLES.map(r=>(
+                    <div key={r.id} className={`role-card ${roleForm.roleId===r.id?'selected':''}`} onClick={()=>setRoleForm(p=>({...p,roleId:r.id,approvalLimit:r.approvalLimit===-1?'':r.approvalLimit}))}>
+                      <div className="role-card-check">{roleForm.roleId===r.id&&<Ico d={I.check} size={10} stroke={3}/>}</div>
+                      <div style={{marginBottom:4}}><span className={`badge badge-${getRoleBadge(r.id)}`}>{r.name}</span></div>
+                      <div className="role-card-desc">{r.desc}</div>
+                      <div style={{fontSize:10,fontFamily:'IBM Plex Mono,monospace',color:'var(--text2)',marginTop:6}}>Default limit: {fmtCurrency(r.approvalLimit)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {roleForm.roleId&&(<>
+                <div className="form-group">
+                  <label className="form-label">Custom Approval Limit (₱) <span style={{color:'var(--text3)',textTransform:'none',fontWeight:400}}>— override default</span></label>
+                  <input className="form-input" type="number" value={roleForm.approvalLimit} onChange={e=>setRoleForm(p=>({...p,approvalLimit:e.target.value}))} placeholder={`Default: ${fmtCurrency(SYSTEM_ROLES.find(r=>r.id===roleForm.roleId)?.approvalLimit)}`}/>
+                  <div className="form-hint">Leave blank for default. 0 = no authority. -1 = unlimited.</div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Permissions Granted</label>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:6,padding:'10px 12px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6}}>
+                    {(SYSTEM_ROLES.find(r=>r.id===roleForm.roleId)?.permissions||[]).map(p=><span key={p} className="badge badge-blue">{PERM_LABELS[p]||p}</span>)}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Internal Notes</label>
+                  <input className="form-input" value={roleForm.notes} onChange={e=>setRoleForm(p=>({...p,notes:e.target.value}))} placeholder="Optional — reason for this assignment"/>
+                </div>
+              </>)}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveRole}><Ico d={I.check} size={13}/>Save Role Assignment</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal==='approval-group'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&closeModal()}>
+          <div className="modal" style={{maxWidth:660}}>
+            <div className="modal-header">
+              <div className="modal-title">
+                <span style={{color:agForm.docType==='Order'?'var(--amber)':'var(--green)'}}>
+                  <Ico d={agForm.docType==='Order'?I.cart:I.approval} size={16}/>
+                </span>
+                {editingId?'Edit Approval Group':'New Approval Group'}
+                {agForm.docType==='Order'&&<span className="badge badge-amber" style={{marginLeft:6}}>Customer Order</span>}
+              </div>
+              <button className="btn btn-icon btn-secondary" onClick={closeModal}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid2">
+                <div className="form-group"><label className="form-label">Group Name *</label><input className="form-input" value={agForm.name} onChange={e=>setAgForm(p=>({...p,name:e.target.value}))} placeholder={agForm.docType==='Order'?'e.g. Standard Order Approval':'e.g. Standard PO Approval'}/></div>
+                <div className="form-group"><label className="form-label">Document Type *</label>
+                  <select className="form-input form-select" value={agForm.docType} onChange={e=>setAgForm(p=>({...p,docType:e.target.value,requiresAmount:e.target.value!=='Order'}))}>
+                    <option value="PO">Purchase Order (PO)</option>
+                    <option value="Invoice">Invoice</option>
+                    <option value="Both">Both PO &amp; Invoice</option>
+                    <option value="Order">Customer Order (Shop)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group"><label className="form-label">Description</label><input className="form-input" value={agForm.description} onChange={e=>setAgForm(p=>({...p,description:e.target.value}))} placeholder="Optional — shown in approval notifications"/></div>
+              <div className="form-grid2">
+                <div className="form-group">
+                  <label className="form-label">Company / Department</label>
+                  <select className="form-input form-select" value={agForm.companyName} onChange={e=>setAgForm(p=>({...p,companyName:e.target.value}))}>
+                    <option value="">All Companies</option>
+                    {[...new Set([...admins.map(a=>a.companyName),...users.map(u=>u.companyName)].filter(Boolean))].map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Applies To</label>
+                  <select className="form-input form-select" value={agForm.appliesTo} onChange={e=>setAgForm(p=>({...p,appliesTo:e.target.value}))}>
+                    <option value="both">Both Admins &amp; Users</option>
+                    <option value="admin">Admins Only</option>
+                    <option value="user">Regular Users (Requisitioners) Only</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Order-specific: amount range is optional */}
+              {agForm.docType==='Order'&&(
+                <div className="form-group">
+                  <label style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer',marginBottom:8}}>
+                    <input type="checkbox" checked={!!agForm.requiresAmount} onChange={e=>setAgForm(p=>({...p,requiresAmount:e.target.checked}))} style={{width:16,height:16,accentColor:'var(--amber)'}}/>
+                    <span style={{fontSize:12,color:'var(--text2)'}}>Filter by order amount range <span style={{color:'var(--text3)'}}>(optional — leave unchecked to apply to all amounts)</span></span>
+                  </label>
+                </div>
+              )}
+
+              {/* Amount range — always shown for PO/Invoice, conditional for Order */}
+              {(agForm.docType!=='Order' || agForm.requiresAmount)&&(
+                <div className="form-grid2">
+                  <div className="form-group"><label className="form-label">Min Amount (₱)</label><input className="form-input" type="number" value={agForm.minAmount} onChange={e=>setAgForm(p=>({...p,minAmount:e.target.value}))} placeholder="0"/></div>
+                  <div className="form-group"><label className="form-label">Max Amount (₱) <span style={{color:'var(--text3)',textTransform:'none',fontWeight:400}}>blank = no limit</span></label><input className="form-input" type="number" value={agForm.maxAmount} onChange={e=>setAgForm(p=>({...p,maxAmount:e.target.value}))} placeholder="No limit"/></div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+                  <input type="checkbox" checked={agForm.bypassAllowed} onChange={e=>setAgForm(p=>({...p,bypassAllowed:e.target.checked}))} style={{width:16,height:16,accentColor:'var(--amber)'}}/>
+                  <span style={{fontSize:12,color:'var(--text2)'}}>
+                    <strong style={{color:'var(--amber)'}}>Master Override:</strong> Allow this company to submit {agForm.docType==='Order'?'orders':'documents'} even without a configured Approval Group
+                  </span>
+                </label>
+                <div className="form-hint" style={{marginLeft:26}}>Use this only for companies that are exempt from the approval workflow requirement.</div>
+              </div>
+
+              <div className="divider"/>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--text)'}}>Approval Chain Steps *</div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>
+                    {agForm.docType==='Order'
+                      ? 'Orders route through each step in order. Assign by role or a specific approver.'
+                      : 'Documents route through each step in order.'}
+                  </div>
+                </div>
+                <button className="btn btn-sm btn-secondary" onClick={()=>setAgForm(p=>({...p,steps:[...p.steps,{approverRole:'',approverAdminId:'',approverName:'',limit:0,escalateTo:''}]}))}>
+                  <Ico d={I.plus} size={11}/>Add Step
+                </button>
+              </div>
+              {agForm.steps.length===0&&<div style={{padding:20,background:'var(--bg3)',border:'1px dashed var(--border2)',borderRadius:6,textAlign:'center',color:'var(--text3)',fontSize:12}}>No steps yet — click "Add Step" to build the chain.</div>}
+              {agForm.steps.map((step,i)=>(
+                <div key={i} className="rule-row" style={{flexWrap:'wrap',gap:8,alignItems:'flex-start',padding:12}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6,width:'100%',marginBottom:4}}>
+                    <span className="rule-operator">Step {i+1}</span>
+                    {i>0&&<span className="rule-connector">After Step {i}</span>}
+                    <button className="btn btn-icon btn-danger btn-sm" style={{marginLeft:'auto',width:24,height:24}} onClick={()=>setAgForm(p=>({...p,steps:p.steps.filter((_,x)=>x!==i)}))}>
+                      <Ico d={I.x} size={10}/>
+                    </button>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,width:'100%'}}>
+                    {/* Approver Role — hidden for PO steps when a specific person is chosen */}
+                    {(agForm.docType==='Order' || !step.approverAdminId) && (
+                      <div>
+                        <div style={{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:'var(--text3)',marginBottom:4}}>Approver Role <span style={{color:'var(--text3)',textTransform:'none',fontWeight:400}}>— optional</span></div>
+                        <select className="form-input form-select" value={step.approverRole} onChange={e=>setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],approverRole:e.target.value};return{...p,steps:s};})}>
+                          <option value="">Any eligible approver</option>
+                          {SYSTEM_ROLES.filter(r=>r.canApprove).map(r=><option key={r.id} value={r.name}>{r.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div style={step.approverAdminId&&agForm.docType!=='Order'?{gridColumn:'1/3'}:{}}>
+                      <div style={{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:'var(--text3)',marginBottom:4}}>
+                        Specific Approver <span style={{color:'var(--text3)',textTransform:'none',fontWeight:400}}>— pick exact person</span>
+                      </div>
+                      <select className="form-input form-select" value={step.approverAdminId||''} onChange={e=>{
+                        const admin = admins.find(a=>a.id===e.target.value);
+                        setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],approverAdminId:e.target.value,approverName:admin?.fullName||'',approverRole:admin?.assignedRoleName||s[i].approverRole||''};return{...p,steps:s};});
+                      }}>
+                        <option value="">— Match by role above —</option>
+                        {(() => {
+                          // Filter admins by role if a role is selected
+                          const roleFilter = step.approverRole;
+                          const list = roleFilter
+                            ? admins.filter(a => a.assignedRoleName === roleFilter || a.assignedRole === roleFilter.toLowerCase().replace(' ','_'))
+                            : admins;
+                          return list.map(a=>(
+                            <option key={a.id} value={a.id}>
+                              {a.fullName} {a.assignedRoleName?`(${a.assignedRoleName})`:''} {a.companyName?`· ${a.companyName}`:''}
+                            </option>
+                          ));
+                        })()}
+                      </select>
+                      {step.approverRole && admins.filter(a=>a.assignedRoleName===step.approverRole||a.assignedRole===step.approverRole.toLowerCase().replace(' ','_')).length===0 && (
+                        <div style={{fontSize:10,color:'var(--amber)',marginTop:3}}>⚠ No admins have the "{step.approverRole}" role yet</div>
+                      )}
+                    </div>
+                    {agForm.docType==='Order' ? (
+                      <div>
+                        <div style={{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:'var(--text3)',marginBottom:4}}>Escalate To <span style={{color:'var(--text3)',textTransform:'none'}}>— optional</span></div>
+                        <input className="form-input" value={step.escalateTo||''} onChange={e=>setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],escalateTo:e.target.value};return{...p,steps:s};})} placeholder="e.g. Finance Manager"/>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:'var(--text3)',marginBottom:4}}>Approval Limit (₱)</div>
+                        <input className="form-input" type="number" value={step.limit||''} onChange={e=>setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],limit:parseFloat(e.target.value)||0};return{...p,steps:s};})} placeholder="Max this approver can approve"/>
+                      </div>
+                    )}
+                  </div>
+                  {agForm.docType!=='Order'&&(
+                    <div style={{width:'100%'}}>
+                      <div style={{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:'var(--text3)',marginBottom:4}}>Escalate To (role name)</div>
+                      <input className="form-input" value={step.escalateTo||''} onChange={e=>setAgForm(p=>{const s=[...p.steps];s[i]={...s[i],escalateTo:e.target.value};return{...p,steps:s};})} placeholder="e.g. Finance Manager — if limit exceeded"/>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveApprovalGroup}><Ico d={I.check} size={13}/>Save Approval Group</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ASSIGN USERS TO ADMIN MODAL ──
+          Core logic:
+          • Pre-fills which admin you're assigning to (from the group header button)
+          • Shows users already in that group (read-only summary)
+          • Lets you pick any users NOT yet in that group (including users already in other groups)
+          • Multi-select with search + select-all
+          • Saves new userAdminAssignments docs
+      */}
+      {assignModal&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setAssignModal(false),setAssignAdminId(''),setAssignUserIds([]))}>
+          <div className="modal" style={{maxWidth:560}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--cyan)'}}><Ico d={I.link} size={16}/></span>Assign Users to Administrator</div>
+              <button className="btn btn-icon btn-secondary" onClick={()=>{setAssignModal(false);setAssignAdminId('');setAssignUserIds([]);}}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+
+              {/* Admin selector */}
+              <div className="form-group">
+                <label className="form-label">Administrator *</label>
+                <select className="form-input form-select" value={assignAdminId} onChange={e=>{setAssignAdminId(e.target.value);setAssignUserIds([]);}}>
+                  <option value="">-- Select Administrator --</option>
+                  {admins.map(a=>(
+                    <option key={a.id} value={a.id}>
+                      {a.fullName}{a.assignedRoleName?` · ${a.assignedRoleName}`:''}{a.companyName?` (${a.companyName})`:''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {assignAdminId&&(()=>{
+                const alreadyHere = getUsersForAdmin(assignAdminId);
+                const available   = getUsersNotInAdmin(assignAdminId).filter(u=>
+                  !assignSearch||u.fullName?.toLowerCase().includes(assignSearch.toLowerCase())||
+                  u.email?.toLowerCase().includes(assignSearch.toLowerCase())||
+                  u.companyName?.toLowerCase().includes(assignSearch.toLowerCase())
+                );
+                const allAvailIds = getUsersNotInAdmin(assignAdminId).map(u=>u.id);
+                const allSelected = allAvailIds.length>0 && allAvailIds.every(id=>assignUserIds.includes(id));
+                const toggleAll   = () => setAssignUserIds(allSelected?assignUserIds.filter(id=>!allAvailIds.includes(id)):[...new Set([...assignUserIds,...allAvailIds])]);
+
+                return (
+                  <>
+                    {/* Already in group */}
+                    {alreadyHere.length>0&&(
+                      <div style={{marginBottom:12,padding:'8px 12px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6}}>
+                        <div style={{fontSize:10,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6}}>Already in this group ({alreadyHere.length})</div>
+                        <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                          {alreadyHere.map(u=><span key={u.id} className="badge badge-green">{u.fullName}</span>)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label className="form-label">Add Users <span style={{color:'var(--text3)',textTransform:'none',fontWeight:400}}>— {assignUserIds.length} selected</span></label>
+                      {/* Search */}
+                      <div style={{position:'relative',marginBottom:8}}>
+                        <input className="form-input" placeholder="Search by name, email or company..." value={assignSearch} onChange={e=>setAssignSearch(e.target.value)} style={{paddingLeft:30,fontSize:12}}/>
+                        <span style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',color:'var(--text3)'}}><Ico d={I.search} size={12}/></span>
+                      </div>
+
+                      {allAvailIds.length===0?(
+                        <div style={{padding:16,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,fontSize:12,color:'var(--text3)',textAlign:'center'}}>All users are already in this group.</div>
+                      ):available.length===0?(
+                                             <div style={{padding:16,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,fontSize:12,color:'var(--text3)',textAlign:'center'}}>No users match your search.</div>
+                      ):(
+                        <>
+                          {/* Select All row */}
+                          <div
+                            style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 12px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'6px 6px 0 0',borderBottom:'none',cursor:'pointer',userSelect:'none'}}
+                            onClick={toggleAll}
+                          >
+                            <span style={{fontSize:11,fontWeight:600,color:'var(--text2)'}}>
+                              {allSelected?'Deselect All':'Select All'} ({allAvailIds.length} available)
+                            </span>
+                            <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${allSelected?'var(--blue)':'var(--border2)'}`,background:allSelected?'var(--blue)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}}>
+                              {allSelected&&<Ico d={I.check} size={10} stroke={3}/>}
+                            </div>
+                          </div>
+
+                          {/* Scrollable user list */}
+                          <div style={{maxHeight:240,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'0 0 6px 6px',background:'var(--bg3)'}}>
+                            {available.map(u=>{
+                              const sel = assignUserIds.includes(u.id);
+                              const isInOtherGroups = assignments.filter(a=>a.userId===u.id).length>0;
+                              return (
+                                <div
+                                  key={u.id}
+                                  onClick={()=>setAssignUserIds(p=>sel?p.filter(id=>id!==u.id):[...p,u.id])}
+                                  style={{
+                                    display:'flex',alignItems:'center',gap:10,padding:'9px 12px',
+                                    borderBottom:'1px solid var(--border)',cursor:'pointer',
+                                    background:sel?'rgba(59,127,232,.08)':'transparent',
+                                    transition:'background .12s',userSelect:'none'
+                                  }}
+                                >
+                                  {/* Checkbox */}
+                                  <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${sel?'var(--blue)':'var(--border2)'}`,background:sel?'var(--blue)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .12s'}}>
+                                    {sel&&<Ico d={I.check} size={10} stroke={3}/>}
+                                  </div>
+                                  {/* Avatar */}
+                                  <div style={{width:28,height:28,borderRadius:6,background:'linear-gradient(135deg,var(--green),var(--cyan))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:'#fff',flexShrink:0}}>
+                                    {u.fullName?.[0]||'?'}
+                                  </div>
+                                  {/* Info */}
+                                  <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontSize:12,fontWeight:600,color:sel?'var(--text)':'var(--text2)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{u.fullName}</div>
+                                    <div style={{fontSize:10,color:'var(--text3)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{u.email}{u.companyName?` · ${u.companyName}`:''}</div>
+                                  </div>
+                                  {/* "In other groups" indicator */}
+                                  {isInOtherGroups&&(
+                                    <span style={{fontSize:9,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:'var(--purple)',background:'var(--purple-bg)',border:'1px solid rgba(168,85,247,.2)',padding:'1px 6px',borderRadius:3,flexShrink:0}}>
+                                      Multi
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>{setAssignModal(false);setAssignAdminId('');setAssignUserIds([]);}}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={saveAssignment}
+                disabled={!assignAdminId||assignUserIds.length===0}
+                style={{opacity:(!assignAdminId||assignUserIds.length===0)?'.5':'1'}}
+              >
+                <Ico d={I.check} size={13}/>
+                {assignUserIds.length>0?`Assign ${assignUserIds.length} User${assignUserIds.length!==1?'s':''}`:'Assign Users'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AUDIT LOGS MODAL ── */}
+      {modal==='logs'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setModal(null)}>
+          <div className="modal" style={{maxWidth:700}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--blue-lt)'}}><Ico d={I.clock} size={16}/></span>Audit Log — System Events</div>
+              <button className="btn btn-icon btn-secondary" onClick={()=>setModal(null)}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body" style={{padding:0}}>
+              {logs.length===0?(
+                <div className="empty">
+                  <div className="empty-icon"><Ico d={I.clock} size={40}/></div>
+                  <div className="empty-title">No audit events yet</div>
+                  <div className="empty-sub">Actions taken in this panel will appear here</div>
+                </div>
+              ):(
+                logs.map(l=>(
+                  <div key={l.id} className="log-item">
+                    <span
+                      className={`badge ${
+                        l.action?.includes('Deleted') ? 'badge-red'    :
+                        l.action?.includes('Created') ? 'badge-green'  :
+                        l.action?.includes('Assigned')? 'badge-blue'   :
+                        l.action?.includes('Updated') ? 'badge-cyan'   :
+                        'badge-purple'
+                      }`}
+                      style={{flexShrink:0,minWidth:130,justifyContent:'center'}}
+                    >
+                      {l.action}
+                    </span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,color:'var(--text2)',marginBottom:2}}>{l.details}</div>
+                      {l.masterName&&<div style={{fontSize:10,color:'var(--text3)'}}>by {l.masterName}</div>}
+                    </div>
+                    <span className="log-time">
+                      {l.timestamp?.toDate
+                        ? new Date(l.timestamp.toDate()).toLocaleString()
+                        : '—'
+                      }
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="modal-footer">
+              <span style={{fontSize:11,color:'var(--text3)',marginRight:'auto'}}>{logs.length} total event{logs.length!==1?'s':''}</span>
+              <button className="btn btn-secondary" onClick={()=>setModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST STACK ── */}
+      <Toasts toasts={toasts}/>
+
+    </div>
+  );
+}
+
+ReactDOM.render(<MasterApp/>, document.getElementById('root'));
+</script>
+</body>
+</html>

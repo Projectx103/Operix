@@ -147,7 +147,13 @@ function SupplierSetup() {
     taxId: '',
     vatNumber: '',
     taxExempt: false,
-    taxExemptionReason: '',
+taxExemptionReason: '',
+taxRate: '12',
+customTaxRate: '',
+taxClassification: '',
+exemptionCertNumber: '',
+exemptionExpiry: '',
+taxExemptionReasonOther: '',
     
     // Financial Information
     bankName: '',
@@ -157,12 +163,15 @@ function SupplierSetup() {
     iban: '',
     routingNumber: '',
     
+    
     // Additional Details
     paymentTerms: '',
     currency: '',
     modeOfShipment: '',
     creditLimit: '',
     discountRate: '',
+    paymentMethod: '', // ADD THIS
+    termsDateBasis: '', // ADD THIS
     notes: ''
   });
 
@@ -219,42 +228,94 @@ function SupplierSetup() {
   }, []);
 
 const loadSupplierData = async (db, supplierId) => {
-    try {
-      const supplierDoc = await db.collection('suppliers').doc(supplierId).get();
+  try {
+    const supplierDoc = await db.collection('suppliers').doc(supplierId).get();
+    
+    if (supplierDoc.exists) {
+      const data = supplierDoc.data();
       
-      if (supplierDoc.exists) {
-        const data = supplierDoc.data();
-        
-        // Decrypt sensitive fields
-        const decryptedData = {
-          ...data,
-          // Financial fields
-          bankName: data.bankName ? decryptData(data.bankName) : '',
-          accountHolderName: data.accountHolderName ? decryptData(data.accountHolderName) : '',
-          accountNumber: data.accountNumber ? decryptData(data.accountNumber) : '',
-          swiftCode: data.swiftCode ? decryptData(data.swiftCode) : '',
-          iban: data.iban ? decryptData(data.iban) : '',
-          routingNumber: data.routingNumber ? decryptData(data.routingNumber) : '',
-          // Tax fields
-          taxId: data.taxId ? decryptData(data.taxId) : '',
-          vatNumber: data.vatNumber ? decryptData(data.vatNumber) : '',
-          registrationNumber: data.registrationNumber ? decryptData(data.registrationNumber) : ''
-        };
-        
-        setSupplier({ id: supplierId, ...data });
-        setSupplierData(prevData => ({
-          ...prevData,
-          ...decryptedData
-        }));
-      } else {
-        alert('Supplier not found');
-        window.location.href = 'dashboard.html';
-      }
-    } catch (error) {
-      console.error('Error loading supplier:', error);
-      alert('Error loading supplier data');
+      // Decrypt sensitive fields
+// Safe decrypt helper
+const safeDecrypt = (encryptedValue) => {
+  if (!encryptedValue || encryptedValue.trim() === '') return '';
+  try {
+    return decryptData(encryptedValue);
+  } catch (error) {
+    console.warn('Decryption failed, returning original value:', error);
+    return encryptedValue; // Return as-is if decryption fails
+  }
+};
+
+const decryptedData = {
+  ...data,
+  // Financial fields
+  bankName: safeDecrypt(data.bankName || ''),
+  accountHolderName: safeDecrypt(data.accountHolderName || ''),
+  accountNumber: safeDecrypt(data.accountNumber || ''),
+  swiftCode: safeDecrypt(data.swiftCode || ''),
+  iban: safeDecrypt(data.iban || ''),
+  routingNumber: safeDecrypt(data.routingNumber || ''),
+  // Tax fields
+  taxId: safeDecrypt(data.taxId || ''),
+  vatNumber: safeDecrypt(data.vatNumber || ''),
+  registrationNumber: safeDecrypt(data.registrationNumber || '')
+};
+      
+      setSupplier({ id: supplierId, ...decryptedData });
+      setSupplierData(prevData => ({
+        ...prevData,
+        ...decryptedData,
+        // Ensure all fields are populated with fallbacks
+        supplierCode: decryptedData.supplierCode || '',
+        name: decryptedData.name || '',
+        email: decryptedData.email || '',
+        contactPerson: decryptedData.contactPerson || '',
+        address: decryptedData.address || '',
+        phoneNumber: decryptedData.phoneNumber || '',
+        paymentMethod: decryptedData.paymentMethod || '',
+        paymentTerms: decryptedData.paymentTerms || '30 Days',
+        termsDateBasis: decryptedData.termsDateBasis || '',
+        currency: decryptedData.currency || 'PHP',
+        modeOfShipment: decryptedData.modeOfShipment || 'Air Freight',
+        creditLimit: decryptedData.creditLimit || '',
+        discountRate: decryptedData.discountRate || '',
+        registrationNumber: decryptedData.registrationNumber || '',
+        dateEstablished: decryptedData.dateEstablished || '',
+        businessType: decryptedData.businessType || '',
+        industry: decryptedData.industry || '',
+        website: decryptedData.website || '',
+        faxNumber: decryptedData.faxNumber || '',
+        taxId: decryptedData.taxId || '',
+        vatNumber: decryptedData.vatNumber || '',
+        taxExempt: decryptedData.taxExempt || false,
+taxExemptionReason: decryptedData.taxExemptionReason || '',
+taxRate: decryptedData.taxRate || '12',
+customTaxRate: decryptedData.customTaxRate || '',
+taxClassification: decryptedData.taxClassification || '',
+exemptionCertNumber: decryptedData.exemptionCertNumber || '',
+exemptionExpiry: decryptedData.exemptionExpiry || '',
+taxExemptionReasonOther: decryptedData.taxExemptionReasonOther || '',
+
+
+
+
+        bankName: decryptedData.bankName || '',
+        accountHolderName: decryptedData.accountHolderName || '',
+        accountNumber: decryptedData.accountNumber || '',
+        swiftCode: decryptedData.swiftCode || '',
+        iban: decryptedData.iban || '',
+        routingNumber: decryptedData.routingNumber || '',
+        notes: decryptedData.notes || ''
+      }));
+    } else {
+      alert('Supplier not found');
+      window.location.href = 'dashboard.html';
     }
-  };
+  } catch (error) {
+    console.error('Error loading supplier:', error);
+    alert('Error loading supplier data');
+  }
+};
 
 const saveSupplierData = async () => {
     try {
@@ -540,73 +601,266 @@ const calculateCompletion = () => {
             </div>
           )}
 
-          {/* Step 2: Tax Information */}
-          {activeStep === 2 && (
-            <div className="space-y-6">
-              <div className="border-b border-gray-200 pb-4">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <CreditCard />
-                  Tax Information
-                </h2>
-                <p className="text-gray-600 mt-1">Tax identification and compliance details</p>
-              </div>
+{/* Step 2: Tax Information - Oracle EBS Style */}
+{activeStep === 2 && (
+  <div className="space-y-6">
+    <div className="border-b border-gray-200 pb-4">
+      <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <CreditCard />
+        Tax Information
+      </h2>
+      <p className="text-gray-600 mt-1">Tax identification, classification, and compliance details</p>
+    </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax ID / EIN / TIN*</label>
-                  <input
-                    type="text"
-                    value={supplierData.taxId}
-                    onChange={(e) => setSupplierData({...supplierData, taxId: e.target.value})}
-                    placeholder="XX-XXXXXXX"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  />
-                </div>
+    {/* Section A: Tax Registration */}
+    <div>
+      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">A</span>
+        Tax Registration
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tax ID / EIN / TIN
+            <span className="ml-1 text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={supplierData.taxId}
+            onChange={(e) => setSupplierData({...supplierData, taxId: e.target.value})}
+            placeholder="XX-XXXXXXX"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">Taxpayer Identification Number issued by BIR/IRS</p>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">VAT Number</label>
-                  <input
-                    type="text"
-                    value={supplierData.vatNumber}
-                    onChange={(e) => setSupplierData({...supplierData, vatNumber: e.target.value})}
-                    placeholder="VAT registration number"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  />
-                </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">VAT Registration Number</label>
+          <input
+            type="text"
+            value={supplierData.vatNumber}
+            onChange={(e) => setSupplierData({...supplierData, vatNumber: e.target.value})}
+            placeholder="e.g. 123-456-789-000"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">Leave blank if not VAT-registered</p>
+        </div>
+      </div>
+    </div>
 
-                <div className="md:col-span-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={supplierData.taxExempt}
-                      onChange={(e) => setSupplierData({...supplierData, taxExempt: e.target.checked})}
-                      className="w-4 h-4 text-purple-600 rounded"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Tax Exempt</span>
-                  </label>
-                </div>
+    {/* Section B: Tax Classification (Oracle EBS style) */}
+    <div className="border-t border-gray-100 pt-6">
+      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">B</span>
+        Tax Classification
+      </h3>
 
-                {supplierData.taxExempt && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tax Exemption Reason</label>
-                    <textarea
-                      value={supplierData.taxExemptionReason}
-                      onChange={(e) => setSupplierData({...supplierData, taxExemptionReason: e.target.value})}
-                      placeholder="Explain why this supplier is tax exempt"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                      rows="3"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> Please ensure all tax information is accurate and up to date. This information will be used for financial reporting and compliance.
-                </p>
-              </div>
+      {/* Tax Exempt Toggle — Oracle EBS style */}
+      <div className={`rounded-xl border-2 p-5 mb-5 transition-all ${
+        supplierData.taxExempt 
+          ? 'border-green-400 bg-green-50' 
+          : 'border-gray-200 bg-gray-50'
+      }`}>
+        <label className="flex items-start gap-4 cursor-pointer">
+          <div className="relative mt-0.5">
+            <input
+              type="checkbox"
+              checked={supplierData.taxExempt}
+              onChange={(e) => setSupplierData({
+                ...supplierData, 
+                taxExempt: e.target.checked,
+                // Clear tax rate when exempt, restore default when not
+                taxRate: e.target.checked ? '0' : (supplierData.taxRate || '12')
+              })}
+              className="sr-only"
+            />
+            <div className={`w-12 h-6 rounded-full transition-all duration-300 ${
+              supplierData.taxExempt ? 'bg-green-500' : 'bg-gray-300'
+            }`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 mt-0.5 ${
+                supplierData.taxExempt ? 'translate-x-6' : 'translate-x-0.5'
+              }`}></div>
             </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-800">Tax Exempt Supplier</span>
+              {supplierData.taxExempt && (
+                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  EXEMPT
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {supplierData.taxExempt 
+                ? 'This supplier is declared tax exempt. Tax rate is set to 0%.' 
+                : 'Toggle ON if this supplier holds a valid tax exemption certificate.'}
+            </p>
+          </div>
+        </label>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Tax Rate — always visible, disabled when exempt */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Applicable Tax Rate (%)
+            <span className="ml-1 text-red-500">*</span>
+          </label>
+          {supplierData.taxExempt ? (
+            <div className="w-full px-4 py-2 border border-green-300 rounded-lg bg-green-50 text-green-700 font-bold flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              0% — Tax Exempt
+            </div>
+          ) : (
+            <select
+              value={supplierData.taxRate || '12'}
+              onChange={(e) => setSupplierData({...supplierData, taxRate: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            >
+              <option value="">Select tax rate</option>
+              <option value="0">0% — Zero-Rated</option>
+              <option value="5">5%</option>
+              <option value="10">10%</option>
+              <option value="12">12% — Standard VAT</option>
+              <option value="15">15%</option>
+              <option value="20">20%</option>
+              <option value="custom">Custom Rate</option>
+            </select>
           )}
+          <p className="text-xs text-gray-400 mt-1">
+            {supplierData.taxExempt 
+              ? 'Rate locked to 0% due to tax exemption' 
+              : 'Select the VAT/tax rate applicable to this supplier'}
+          </p>
+        </div>
+
+        {/* Custom rate input — only shows if "custom" selected */}
+        {!supplierData.taxExempt && supplierData.taxRate === 'custom' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Custom Tax Rate (%)
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={supplierData.customTaxRate || ''}
+              onChange={(e) => setSupplierData({...supplierData, customTaxRate: e.target.value})}
+              placeholder="e.g. 7.5"
+              className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+            />
+            <p className="text-xs text-gray-400 mt-1">Enter your exact applicable rate</p>
+          </div>
+        )}
+
+        {/* Tax Classification Code (Oracle EBS field) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Tax Classification Code</label>
+          <select
+            value={supplierData.taxClassification || ''}
+            onChange={(e) => setSupplierData({...supplierData, taxClassification: e.target.value})}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          >
+            <option value="">Select classification</option>
+            <option value="VAT">VAT — Value Added Tax</option>
+            <option value="NON-VAT">NON-VAT — Non-VAT Registered</option>
+            <option value="EXEMPT">EXEMPT — Tax Exempt</option>
+            <option value="ZERO-RATED">ZERO-RATED — Zero-Rated Export</option>
+            <option value="GOVERNMENT">GOVERNMENT — Government Entity</option>
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Used for BIR tax classification reporting</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Section C: Exemption Certificate — only shown when exempt */}
+    {supplierData.taxExempt && (
+      <div className="border-t border-gray-100 pt-6">
+        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">C</span>
+          Exemption Details
+          <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-normal normal-case tracking-normal">Required when exempt</span>
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Exemption Certificate Number
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={supplierData.exemptionCertNumber || ''}
+              onChange={(e) => setSupplierData({...supplierData, exemptionCertNumber: e.target.value})}
+              placeholder="e.g. CERT-2024-00123"
+              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Certificate Expiry Date</label>
+            <input
+              type="date"
+              value={supplierData.exemptionExpiry || ''}
+              onChange={(e) => setSupplierData({...supplierData, exemptionExpiry: e.target.value})}
+              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Reason for Tax Exemption
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+            <select
+              value={supplierData.taxExemptionReason || ''}
+              onChange={(e) => setSupplierData({...supplierData, taxExemptionReason: e.target.value})}
+              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none mb-3 bg-white"
+            >
+              <option value="">Select exemption reason</option>
+              <option value="Government Entity">Government Entity (RA 9184)</option>
+              <option value="Non-Profit Organization">Non-Profit / Charitable Organization</option>
+              <option value="Export Sales">Export Sales — Zero-Rated (NIRC Sec. 106)</option>
+              <option value="PEZA Registered">PEZA / Ecozones Registered Entity</option>
+              <option value="BOI Registered">BOI Registered Enterprise</option>
+              <option value="Diplomatic">Diplomatic / Embassy</option>
+              <option value="Other">Other (specify below)</option>
+            </select>
+
+            {supplierData.taxExemptionReason === 'Other' && (
+              <textarea
+                value={supplierData.taxExemptionReasonOther || ''}
+                onChange={(e) => setSupplierData({...supplierData, taxExemptionReasonOther: e.target.value})}
+                placeholder="Describe the specific reason for tax exemption..."
+                className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
+                rows="3"
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+          </svg>
+          <p className="text-sm text-amber-800">
+            <strong>Compliance Notice:</strong> Tax exemption claims require a valid BIR-issued certificate. Ensure the certificate number and expiry date are current. Expired certificates will not be accepted for tax-exempt transactions.
+          </p>
+        </div>
+      </div>
+    )}
+
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <p className="text-sm text-yellow-800">
+        <strong>Note:</strong> Tax information is used for purchase order generation, withholding tax computation, and BIR compliance reporting. Ensure all fields are accurate.
+      </p>
+    </div>
+  </div>
+)}
 
           {/* Step 3: Financial Details */}
           {activeStep === 3 && (
@@ -728,6 +982,45 @@ const calculateCompletion = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">Set in basic supplier info</p>
                 </div>
+
+
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method *</label>
+  <select
+    value={supplierData.paymentMethod}
+    onChange={(e) => setSupplierData({...supplierData, paymentMethod: e.target.value})}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+  >
+    <option value="">Select payment method</option>
+    <option value="Check">Check</option>
+    <option value="Wired">Wired</option>
+    <option value="Cash">Cash</option>
+    <option value="Bank Transfer">Bank Transfer</option>
+  </select>
+</div>
+
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Terms Date Basis *</label>
+  <select
+    value={supplierData.termsDateBasis}
+    onChange={(e) => setSupplierData({...supplierData, termsDateBasis: e.target.value})}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+  >
+    <option value="">Select date basis</option>
+    <option value="Invoice Date">Invoice Date</option>
+    <option value="Goods Received">Goods Received</option>
+    <option value="Invoice Received">Invoice Received</option>
+  </select>
+</div>
+
+
+
+
+
+
+
+
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Credit Limit</label>

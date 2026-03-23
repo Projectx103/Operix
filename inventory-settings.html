@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Settings - Operix</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { 
+    font-family: 'Inter', sans-serif; 
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+@keyframes slideIn {
+from {
+opacity: 0;
+transform: translateX(20px);
+}
+to {
+opacity: 1;
+transform: translateX(0);
+}
+}
+@keyframes fadeIn {
+from {
+opacity: 0;
+}
+to {
+opacity: 1;
+}
+}
+.animate-slideIn {
+animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.animate-fadeIn {
+animation: fadeIn 0.3s ease-out;
+}
+.sidebar-item {
+position: relative;
+transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-item:hover {
+background: rgba(102, 126, 234, 0.05);
+transform: translateX(4px);
+}
+.sidebar-item.active {
+background: linear-gradient(to right, rgba(102, 126, 234, 0.1), transparent);
+color: #667eea;
+font-weight: 600;
+}
+.sidebar-item.active::before {
+content: '';
+position: absolute;
+left: 0;
+top: 0;
+bottom: 0;
+width: 4px;
+background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+border-radius: 0 4px 4px 0;
+}
+.content-section {
+animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.input-field {
+transition: all 0.2s ease;
+}
+.input-field:focus {
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+.btn-primary {
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+transition: all 0.3s ease;
+}
+.btn-primary:hover {
+transform: translateY(-2px);
+box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+.btn-primary:active {
+transform: translateY(0);
+}
+.settings-card {
+background: white;
+border-radius: 16px;
+box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+transition: all 0.2s ease;
+}
+.settings-card:hover {
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.option-item {
+transition: all 0.2s ease;
+}
+.option-item:hover {
+background: #f9fafb;
+transform: translateX(4px);
+}
+.delete-btn {
+opacity: 0;
+transition: all 0.2s ease;
+}
+.option-item:hover .delete-btn {
+opacity: 1;
+}
+</style>
+</head>
+<body class="bg-gray-50">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Icons
+const ArrowLeft = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+const Settings = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const Code = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+  </svg>
+);
+
+const Upload = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+  </svg>
+);
+
+const Download = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+  </svg>
+);
+
+const Package = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+);
+
+const AlertTriangle = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+const BarChart = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  </svg>
+);
+
+const Plus = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const Trash = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
+const Save = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+  </svg>
+);
+
+const Clock = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ChevronDown = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
+const RefreshIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+);
+
+const OperixLogo = ({ size = 'default' }) => {
+  const dimensions = size === 'small' ? { w: 32, h: 32 } : { w: 40, h: 40 };
+  
+  return (
+    <svg width={dimensions.w} height={dimensions.h} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="8" fill="#667eea"/>
+      <path d="M20 10 C25 10 28 13 28 18 C28 23 25 26 20 26 C15 26 12 23 12 18 C12 13 15 10 20 10 Z M20 14 C17 14 16 15.5 16 18 C16 20.5 17 22 20 22 C23 22 24 20.5 24 18 C24 15.5 23 14 20 14 Z" fill="white"/>
+      <rect x="18" y="26" width="4" height="4" fill="white"/>
+    </svg>
+  );
+};
+
+function InventorySettings() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [activeSection, setActiveSection] = useState('code');
+  
+  const [inventorySettings, setInventorySettings] = useState({
+    codePrefix: 'PRD',
+    startingNumber: 1,
+    categoryOptions: ['Electronics', 'Clothing', 'Food', 'Furniture', 'Tools'],
+    unitOptions: ['pieces', 'kg', 'liters', 'boxes', 'packs', 'meters'],
+    defaultThreshold: 10
+  });
+
+  // ── Lead Time Control state ──
+  const [suppliers, setSuppliers]               = useState([]);
+  const [ltRules, setLtRules]                   = useState([]);   // existing adjust rules from Firestore
+  const [ltcSupplier, setLtcSupplier]           = useState('');   // selected supplier for Burst Set
+  const [ltcDays, setLtcDays]                   = useState('');   // days for Burst Set
+  const [ltcRunning, setLtcRunning]             = useState(false);
+  const [ltcResult, setLtcResult]               = useState(null); // { set, skipped } counts
+  const [ltaSupplier, setLtaSupplier]           = useState('');   // selected supplier for Adjust
+  const [ltaDays, setLtaDays]                   = useState('');   // adjust days
+  const [ltaDayType, setLtaDayType]             = useState('Calendar Days');
+  const [ltaSaving, setLtaSaving]               = useState(false);
+  const [ltaDeleteId, setLtaDeleteId]           = useState(null); // rule id being deleted
+
+  useEffect(() => {
+    const initFirebase = () => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+        authDomain: "operix-c8a8c.firebaseapp.com",
+        projectId: "operix-c8a8c",
+        storageBucket: "operix-c8a8c.firebasestorage.app",
+        messagingSenderId: "794223223499",
+        appId: "1:794223223499:web:f059007b909cc15766f14e",
+        measurementId: "G-6E4BD657K1"
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+
+      const auth = firebase.auth();
+      auth.onAuthStateChanged(async (currentUser) => {
+        if (currentUser) {
+          const db = firebase.firestore();
+          const userDoc = await db.collection('users').doc(currentUser.uid).get();
+          
+          if (userDoc.exists && userDoc.data().role === 'admin') {
+            setUser({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              ...userDoc.data()
+            });
+            
+            await loadInventorySettings(db, currentUser.uid);
+            await loadSuppliersAndRules(db, currentUser.uid);
+          } else {
+            window.location.href = 'login.html';
+          }
+        } else {
+          window.location.href = 'login.html';
+        }
+        setLoading(false);
+      });
+    };
+
+    initFirebase();
+  }, []);
+
+  const loadInventorySettings = async (db, userId) => {
+    try {
+      const settingsDoc = await db.collection('inventorySettings').doc(userId).get();
+      if (settingsDoc.exists) {
+        const data = settingsDoc.data();
+        setInventorySettings({
+          codePrefix: data.codePrefix || 'PRD',
+          startingNumber: data.startingNumber || 1,
+          categoryOptions: data.categoryOptions || ['Electronics', 'Clothing', 'Food', 'Furniture', 'Tools'],
+          unitOptions: data.unitOptions || ['pieces', 'kg', 'liters', 'boxes', 'packs', 'meters'],
+          defaultThreshold: data.defaultThreshold || 10
+        });
+      }
+    } catch (error) {
+      console.error('Error loading inventory settings:', error);
+    }
+  };
+
+  // ── Load suppliers & existing lead time adjust rules ──
+  const loadSuppliersAndRules = async (db, userId) => {
+    try {
+      const supSnap = await db.collection('suppliers').where('createdBy','==',userId).get();
+      setSuppliers(supSnap.docs.map(d => ({ id: d.id, name: d.data().name })).sort((a,b)=>a.name.localeCompare(b.name)));
+      const ruleSnap = await db.collection('leadTimeAdjust').where('adminId','==',userId).get();
+      setLtRules(ruleSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch(e) { console.error('loadSuppliersAndRules:', e); }
+  };
+
+  // ── BURST SET: set leadTime on all items of a supplier that have NO leadtime ──
+  const runBurstSet = async () => {
+    if (!ltcSupplier) { alert('Please select a supplier.'); return; }
+    const days = parseInt(ltcDays);
+    if (!days || days < 1) { alert('Please enter a valid number of days.'); return; }
+    setLtcRunning(true);
+    setLtcResult(null);
+    try {
+      const db = firebase.firestore();
+      const snap = await db.collection('products')
+        .where('createdBy','==',user.uid)
+        .where('supplier','==',ltcSupplier)
+        .get();
+      const batch = db.batch();
+      let setCount = 0, skippedCount = 0;
+      snap.docs.forEach(doc => {
+        const existing = (doc.data().leadTime || '').toString().trim();
+        if (existing && existing !== '0') {
+          skippedCount++;
+        } else {
+          batch.update(doc.ref, { leadTime: String(days), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          setCount++;
+        }
+      });
+      if (setCount > 0) await batch.commit();
+      setLtcResult({ set: setCount, skipped: skippedCount });
+      setLtcDays('');
+    } catch(e) { console.error('runBurstSet:', e); alert('Error: ' + e.message); }
+    setLtcRunning(false);
+  };
+
+  // ── ADJUST: save/update a leadTimeAdjust rule per supplier ──
+  const saveAdjustRule = async () => {
+    if (!ltaSupplier) { alert('Please select a supplier.'); return; }
+    const days = parseInt(ltaDays);
+    if (!days || days < 0) { alert('Please enter a valid number of days (0 or more).'); return; }
+    setLtaSaving(true);
+    try {
+      const db = firebase.firestore();
+      const existing = ltRules.find(r => r.supplierName === ltaSupplier);
+      const ruleData = {
+        adminId: user.uid,
+        supplierName: ltaSupplier,
+        adjustDays: days,
+        dayType: ltaDayType,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (existing) {
+        await db.collection('leadTimeAdjust').doc(existing.id).update(ruleData);
+        setLtRules(prev => prev.map(r => r.id === existing.id ? { ...r, ...ruleData } : r));
+      } else {
+        const ref = await db.collection('leadTimeAdjust').add({ ...ruleData, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        setLtRules(prev => [...prev, { id: ref.id, ...ruleData }]);
+      }
+      showToast('Lead time adjust rule saved!', 'green');
+      setLtaSupplier(''); setLtcSupplier(''); setLtcDays(''); setLtaDays(''); setLtaDayType('Calendar Days');
+    } catch(e) { console.error('saveAdjustRule:', e); alert('Error: ' + e.message); }
+    setLtaSaving(false);
+  };
+
+  // ── DELETE adjust rule ──
+  const deleteAdjustRule = async (ruleId) => {
+    try {
+      const db = firebase.firestore();
+      await db.collection('leadTimeAdjust').doc(ruleId).delete();
+      setLtRules(prev => prev.filter(r => r.id !== ruleId));
+      setLtaDeleteId(null);
+      showToast('Rule deleted.', 'red');
+    } catch(e) { alert('Error: ' + e.message); }
+  };
+
+  // ── Toast helper ──
+  const showToast = (msg, color='green') => {
+    const t = document.createElement('div');
+    t.className = `fixed top-4 right-4 bg-${color}-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-fadeIn`;
+    t.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${color==='green'?'M5 13l4 4L19 7':'M6 18L18 6M6 6l12 12'}"></path></svg><span class="font-semibold">${msg}</span>`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  };
+
+  const saveInventorySettings = async () => {
+    try {
+      setSaving(true);
+      const db = firebase.firestore();
+      await db.collection('inventorySettings').doc(user.uid).set({
+        ...inventorySettings,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      // Success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-fadeIn';
+      notification.innerHTML = `
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-semibold">Settings saved successfully!</span>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+      
+    } catch (error) {
+      console.error('Error saving inventory settings:', error);
+      alert('Error saving settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+const handleFileUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const fileType = file.name.split('.').pop().toLowerCase();
+  if (fileType !== 'csv' && fileType !== 'xlsx') {
+    alert('Please upload a CSV or Excel file');
+    return;
+  }
+
+  setUploading(true);
+
+  try {
+    const reader = new FileReader();
+    
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      
+      // Parse CSV properly handling quoted fields with newlines
+      const rows = [];
+      let currentRow = [];
+      let currentField = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+        
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            currentField += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          currentRow.push(currentField.trim());
+          currentField = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+          if (currentField || currentRow.length > 0) {
+            currentRow.push(currentField.trim());
+            rows.push(currentRow);
+            currentRow = [];
+            currentField = '';
+          }
+        } else {
+          currentField += char;
+        }
+      }
+      
+      if (currentField || currentRow.length > 0) {
+        currentRow.push(currentField.trim());
+        rows.push(currentRow);
+      }
+      
+      const headers = rows[0].map(h => h.toLowerCase().replace(/\s+/g, ''));
+      const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim()));
+      
+      console.log('CSV Headers:', headers);
+      console.log('Total data rows:', dataRows.length);
+      
+      const db = firebase.firestore();
+      
+      // Pre-load all suppliers for this admin to match supplier names
+      const suppliersSnapshot = await db.collection('suppliers')
+        .where('createdBy', '==', user.uid)
+        .get();
+
+      const supplierMap = {};
+      suppliersSnapshot.docs.forEach(doc => {
+        const s = doc.data();
+        if (s.name) {
+          const normalizedKey = s.name.toLowerCase().trim();
+          supplierMap[normalizedKey] = {
+            currency: s.currency || 'PHP',
+            name: s.name,
+            id: doc.id
+          };
+        }
+      });
+
+      console.log('📋 Loaded suppliers for matching:', Object.keys(supplierMap));
+
+const batch = db.batch();
+let successCount = 0;
+let updatedCount = 0;
+let skippedCount = 0;
+let errorCount = 0;
+const errors = [];
+const rejectedProducts = [];
+const skippedProducts = [];
+const updatedProducts = [];
+
+// Pre-load ALL existing products for this admin to check duplicates
+const existingProductsSnapshot = await db.collection('products')
+  .where('createdBy', '==', user.uid)
+  .get();
+
+const existingProductsMap = {};
+existingProductsSnapshot.docs.forEach(doc => {
+  const p = doc.data();
+const key = `${(p.name || '').toLowerCase().replace(/\s+/g, ' ').trim()}|${(p.sku || '').toLowerCase().replace(/\s+/g, ' ').trim()}`;
+  existingProductsMap[key] = {
+    id: doc.id,
+    price: p.price,
+    supplier: (p.supplier || '').toLowerCase().trim(),
+    category: (p.category || '').toLowerCase().trim()
+  };
+});
+
+console.log(`📋 Loaded ${Object.keys(existingProductsMap).length} existing products for duplicate check`);
+
+      for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
+        const row = dataRows[rowIndex];
+        
+        try {
+          const productData = {};
+          headers.forEach((header, index) => {
+            productData[header] = row[index] ? row[index].trim() : '';
+          });
+          
+          // Validate required fields
+          if (!productData.name || !productData.sku) {
+            errors.push(`Row ${rowIndex + 2}: Missing required fields (Name: "${productData.name}", SKU: "${productData.sku}")`);
+            errorCount++;
+            rejectedProducts.push({
+              row: rowIndex + 2,
+              name: productData.name || 'N/A',
+              sku: productData.sku || 'N/A',
+              supplier: productData.supplier || 'N/A',
+              reason: 'Missing Name or SKU'
+            });
+            continue;
+          }
+
+          // STRICT SUPPLIER MATCHING
+          const supplierNameRaw = productData.supplier || '';
+          const supplierNameKey = supplierNameRaw.toLowerCase().trim();
+
+          if (!supplierNameRaw) {
+            errors.push(`Row ${rowIndex + 2}: No supplier specified for product "${productData.name}"`);
+            errorCount++;
+            rejectedProducts.push({
+              row: rowIndex + 2,
+              name: productData.name,
+              sku: productData.sku,
+              supplier: 'N/A',
+              reason: 'No supplier specified'
+            });
+            continue;
+          }
+
+          if (!supplierMap[supplierNameKey]) {
+            errors.push(`Row ${rowIndex + 2}: Supplier "${supplierNameRaw}" not found in system for product "${productData.name}"`);
+            errorCount++;
+            rejectedProducts.push({
+              row: rowIndex + 2,
+              name: productData.name,
+              sku: productData.sku,
+              supplier: supplierNameRaw,
+              reason: 'Supplier not found in system'
+            });
+            continue;
+          }
+
+          // Supplier matched! Get currency
+          const matchedSupplier = supplierMap[supplierNameKey];
+          const detectedCurrency = matchedSupplier.currency;
+
+          console.log(`✅ Row ${rowIndex + 2}: Matched supplier "${supplierNameRaw}" → Currency: ${detectedCurrency}`);
+
+const incomingPrice = parseFloat(productData.price) || 0;
+          const duplicateKey = `${productData.name.toLowerCase().replace(/\s+/g, ' ').trim()}|${productData.sku.toLowerCase().replace(/\s+/g, ' ').trim()}`;
+  console.log(`🔍 Row ${rowIndex + 2} key: "${duplicateKey}" | Exists: ${!!existingProductsMap[duplicateKey]}`);        
+const existingProduct = existingProductsMap[duplicateKey];
+
+          if (existingProduct) {
+            // Product already exists — check if price differs
+            const existingPrice = parseFloat(existingProduct.price) || 0;
+            const priceIsDifferent = Math.abs(incomingPrice - existingPrice) > 0.001;
+
+            if (priceIsDifferent) {
+              // Same Name + SKU + Supplier + Category, but different price → UPDATE price only
+              const productRef = db.collection('products').doc(existingProduct.id);
+              batch.update(productRef, {
+                price: incomingPrice,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              updatedCount++;
+              updatedProducts.push({
+                row: rowIndex + 2,
+                name: productData.name,
+                sku: productData.sku,
+                oldPrice: existingPrice,
+                newPrice: incomingPrice
+              });
+              console.log(`🔄 Row ${rowIndex + 2}: Price updated for "${productData.name}" — ${existingPrice} → ${incomingPrice}`);
+            } else {
+              // Exact match, no change needed → SKIP
+              skippedCount++;
+              skippedProducts.push({
+                row: rowIndex + 2,
+                name: productData.name,
+                sku: productData.sku
+              });
+              console.log(`⏭️ Row ${rowIndex + 2}: Skipped (already exists, no change) — "${productData.name}"`);
+            }
+          } else {
+            // New product → INSERT
+            const productRef = db.collection('products').doc();
+            const completeProductData = {
+              name: productData.name,
+              sku: productData.sku,
+              category: productData.category || '',
+              price: incomingPrice,
+              stock: parseInt(productData.stock) || 0,
+              threshold: parseInt(productData.threshold) || inventorySettings.defaultThreshold,
+              unit: productData.unit || 'pieces',
+              description: productData.description || '',
+              imageUrl: productData.imageurl || '',
+              supplier: matchedSupplier.name,
+              supplierId: matchedSupplier.id,
+              moq: productData.moq || '',
+              leadTime: productData.leadtime || '',
+              currency: detectedCurrency,
+              createdBy: user.uid,
+              importedFrom: 'bulk_upload',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            batch.set(productRef, completeProductData);
+            successCount++;
+            console.log(`✅ Row ${rowIndex + 2}: New product added — "${productData.name}"`);
+          }
+          
+        } catch (rowError) {
+          console.error(`Error processing row ${rowIndex + 2}:`, rowError);
+          errors.push(`Row ${rowIndex + 2}: ${rowError.message}`);
+          errorCount++;
+          rejectedProducts.push({
+            row: rowIndex + 2,
+            name: productData?.name || 'N/A',
+            sku: productData?.sku || 'N/A',
+            supplier: productData?.supplier || 'N/A',
+            reason: rowError.message
+          });
+        }
+      }
+      
+      // Commit batch
+      if (successCount > 0) {
+        await batch.commit();
+      }
+      
+      setUploading(false);
+      
+      // Generate detailed report
+let reportMessage = `
+═══════════════════════════════════════
+📊 PRODUCT IMPORT SUMMARY REPORT
+═══════════════════════════════════════
+
+✅ NEWLY UPLOADED: ${successCount} product(s)
+🔄 PRICE UPDATED: ${updatedCount} product(s)
+⏭️ SKIPPED (no change): ${skippedCount} product(s)
+❌ REJECTED: ${errorCount} product(s)
+
+`;
+
+      if (updatedProducts.length > 0) {
+        reportMessage += `
+═══════════════════════════════════════
+🔄 PRICE UPDATED PRODUCTS:
+═══════════════════════════════════════
+
+`;
+        updatedProducts.forEach((item, idx) => {
+          reportMessage += `
+${idx + 1}. Row ${item.row}
+   📦 Product: ${item.name}
+   🔖 SKU: ${item.sku}
+   💰 Price: ${item.oldPrice} → ${item.newPrice}
+`;
+        });
+      }
+
+      if (skippedProducts.length > 0) {
+        reportMessage += `
+═══════════════════════════════════════
+⏭️ SKIPPED (already exists, no change):
+═══════════════════════════════════════
+
+`;
+        skippedProducts.forEach((item, idx) => {
+          reportMessage += `
+${idx + 1}. Row ${item.row}
+   📦 Product: ${item.name}
+   🔖 SKU: ${item.sku}
+`;
+        });
+      }
+
+      if (rejectedProducts.length > 0) {
+        reportMessage += `
+═══════════════════════════════════════
+❌ REJECTED PRODUCTS DETAILS:
+═══════════════════════════════════════
+
+`;
+        rejectedProducts.forEach((item, idx) => {
+          reportMessage += `
+${idx + 1}. Row ${item.row}
+   📦 Product: ${item.name}
+   🔖 SKU: ${item.sku}
+   🏭 Supplier: ${item.supplier}
+   ⚠️ Reason: ${item.reason}
+`;
+        });
+      }
+
+      if (successCount > 0) {
+        reportMessage += `
+═══════════════════════════════════════
+✅ NEW PRODUCTS IMPORTED
+═══════════════════════════════════════
+${successCount} new product(s) added with supplier currency applied.
+`;
+      }
+
+      reportMessage += `
+═══════════════════════════════════════
+💡 TIP: Rejected products were not uploaded.
+Make sure supplier names match exactly with
+your Supplier Management list.
+═══════════════════════════════════════
+`;
+      
+      alert(reportMessage);
+      
+      e.target.value = '';
+    };
+    
+    reader.readAsText(file);
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    alert('Error importing products: ' + error.message);
+    setUploading(false);
+  }
+};
+
+const downloadTemplate = () => {
+  const headers = [
+    'Name', 'SKU', 'Category', 'Price', 'Stock', 'Threshold', 'Unit', 
+    'Description', 'ImageURL', 'Supplier', 'MOQ', 'LeadTime'
+  ];
+  
+  const exampleRow = [
+    '(INDEX) PALLET LOWER 072Q-00-108 SKD11 (QUOTATION NO. JH20250121-003)', 
+    'FB141748', 
+    'FABRICATION.COIL FAB', 
+    '56.03', 
+    '4', 
+    '0', 
+    'PC', 
+    '', 
+    '', 
+    'JH PRECISION PHILIPPINES INC. - USD', 
+    '', 
+    ''
+  ];
+  
+  const csvContent = headers.join(',') + '\n' + exampleRow.join(',') + '\n';
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'product_import_template.csv';
+  a.click();
+  window.URL.revokeObjectURL(url);
+};
+
+  const handleLogout = async () => {
+    try {
+      await firebase.auth().signOut();
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const menuItems = [
+    { id: 'code', label: 'Product Code', icon: Code },
+    { id: 'import', label: 'Import & Export', icon: Upload },
+    { id: 'categories', label: 'Categories', icon: BarChart },
+    { id: 'units', label: 'Units of Measurement', icon: Package },
+    { id: 'threshold', label: 'Default Threshold', icon: AlertTriangle },
+    { id: 'leadtime', label: 'Lead Time Control', icon: Clock }
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading Settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => window.location.href = 'dashboard.html'}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                <ArrowLeft />
+                <span className="font-medium">Back to Dashboard</span>
+              </button>
+              <div className="h-8 w-px bg-gray-200"></div>
+              <div className="flex items-center gap-3">
+                <OperixLogo size="small" />
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Inventory Settings</h1>
+                  <p className="text-xs text-gray-500">Configure inventory management</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveInventorySettings}
+                disabled={saving}
+                className="btn-primary px-6 py-2.5 text-white rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save />
+                    Save Settings
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg font-medium transition-all"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Sidebar */}
+        <aside className="w-72 bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="p-6">
+            <div className="mb-6">
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Settings Menu</h2>
+            </div>
+            <nav className="space-y-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all ${
+                      isActive ? 'active' : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            {/* Product Code Settings */}
+            {activeSection === 'code' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Code Settings</h2>
+                  <p className="text-gray-600">Configure automatic product code generation format</p>
+                </div>
+
+                <div className="settings-card p-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Code Prefix</label>
+                      <input
+                        type="text"
+                        value={inventorySettings.codePrefix}
+                        onChange={(e) => setInventorySettings({...inventorySettings, codePrefix: e.target.value.toUpperCase()})}
+                        placeholder="PRD"
+                        className="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-lg"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">Examples: PRD, PROD, ITM</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Starting Number</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={inventorySettings.startingNumber}
+                        onChange={(e) => setInventorySettings({...inventorySettings, startingNumber: parseInt(e.target.value) || 1})}
+                        className="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-lg"
+                      />
+                      <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p className="text-xs font-semibold text-purple-700 mb-1">Preview:</p>
+                        <p className="text-lg font-bold text-purple-600 font-mono">
+                          {inventorySettings.codePrefix}-{String(inventorySettings.startingNumber).padStart(4, '0')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Import & Export */}
+            {activeSection === 'import' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Import & Export</h2>
+                  <p className="text-gray-600">Bulk import products from CSV or Excel files</p>
+                </div>
+
+                <div className="settings-card p-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+<p className="font-semibold text-blue-900 mb-2">⚠️ Product Import with Strict Supplier Matching</p>
+<p className="text-sm text-blue-800 mb-3">Products are only uploaded if the supplier name matches exactly:</p>
+<div className="space-y-2 text-xs text-blue-700">
+  <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">📋 Required Fields:</p>
+    <p>• Name, SKU, Supplier (must match existing supplier in system)</p>
+  </div>
+  <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">🏭 Supplier Matching Rules:</p>
+    <p>• Supplier name must match EXACTLY (case-insensitive)</p>
+    <p>• Example: "MARIVELES TRADING AND HARDWARE CORP." or "JH PRECISION PHILIPPINES INC. - USD"</p>
+    <p>• If no match found → Product is REJECTED</p>
+  </div>
+  <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">💱 Currency Auto-Detection:</p>
+    <p>• System looks up supplier's currency from Supplier Management</p>
+    <p>• Applies it to the product automatically (PHP, USD, EUR, etc.)</p>
+  </div>
+  <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">📊 Import Report:</p>
+    <p>• Shows how many products uploaded successfully</p>
+    <p>• Lists rejected products with reasons</p>
+  </div>
+</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={downloadTemplate}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
+                    >
+                      <Download />
+                      Download Template
+                    </button>
+                    
+                    <label className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium cursor-pointer transition-all ${
+                      uploading 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-green-500 hover:bg-green-600'
+                    } text-white`}>
+                      {uploading ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload />
+                          Upload File
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept=".csv,.xlsx"
+                        onChange={handleFileUpload}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      <strong>💡 Tips:</strong>
+                    </p>
+                    <ul className="text-xs text-yellow-700 mt-2 space-y-1 list-disc list-inside">
+                      <li>Only <strong>Name</strong>, <strong>SKU</strong>, and <strong>Price</strong> are required</li>
+                      <li>All other fields are optional - leave blank if not available</li>
+                      <li>Stock defaults to 0 if not specified</li>
+                      <li>Threshold uses default value if not specified</li>
+                      <li>Unit defaults to 'pieces' if not specified</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Categories */}
+            {activeSection === 'categories' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Categories</h2>
+                    <p className="text-gray-600">Manage available category options</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setInventorySettings({
+                        ...inventorySettings,
+                        categoryOptions: [...inventorySettings.categoryOptions, 'New Category']
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-all"
+                  >
+                    <Plus />
+                    Add Category
+                  </button>
+                </div>
+
+                <div className="settings-card p-6">
+                  <div className="space-y-3">
+                    {inventorySettings.categoryOptions.map((category, idx) => (
+                      <div key={idx} className="option-item flex items-center gap-3 p-3 rounded-lg border border-gray-200">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={category}
+                            onChange={(e) => {
+                              const newCategories = [...inventorySettings.categoryOptions];
+                              newCategories[idx] = e.target.value;
+                              setInventorySettings({...inventorySettings, categoryOptions: newCategories});
+                            }}
+                            className="w-full px-3 py-2 border-0 focus:ring-0 outline-none font-medium"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const newCategories = inventorySettings.categoryOptions.filter((_, i) => i !== idx);
+                            setInventorySettings({...inventorySettings, categoryOptions: newCategories});
+                          }}
+                          className="delete-btn p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Units */}
+            {activeSection === 'units' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Units of Measurement</h2>
+                    <p className="text-gray-600">Configure available unit options</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setInventorySettings({
+                        ...inventorySettings,
+                        unitOptions: [...inventorySettings.unitOptions, 'new unit']
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-all"
+                  >
+                    <Plus />
+                    Add Unit
+                  </button>
+                </div>
+
+                <div className="settings-card p-6">
+                  <div className="grid grid-cols-3 gap-4">
+                    {inventorySettings.unitOptions.map((unit, idx) => (
+                      <div key={idx} className="option-item relative group p-4 rounded-lg border border-gray-200">
+                        <input
+                          type="text"
+                          value={unit}
+                          onChange={(e) => {
+                            const newUnits = [...inventorySettings.unitOptions];
+                            newUnits[idx] = e.target.value;
+                            setInventorySettings({...inventorySettings, unitOptions: newUnits});
+                          }}
+                          className="w-full text-center border-0 focus:ring-0 outline-none font-bold text-sm"
+                        />
+                        <button
+                          onClick={() => {
+                            const newUnits = inventorySettings.unitOptions.filter((_, i) => i !== idx);
+                            setInventorySettings({...inventorySettings, unitOptions: newUnits});
+                          }}
+                          className="delete-btn absolute top-2 right-2 p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Lead Time Control */}
+            {activeSection === 'leadtime' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Time Control</h2>
+                  <p className="text-gray-600">Bulk-set lead times per supplier and configure automatic Need-By Date computation for the shop</p>
+                </div>
+
+                {/* ── COMBINED SUPPLIER SELECTOR + BURST SET + ADJUST ── */}
+                <div className="settings-card p-6 mb-6">
+
+                  {/* Single supplier selector */}
+                  <div className="mb-6">
+                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Supplier</label>
+                    <div className="relative max-w-md">
+                      <select value={ltaSupplier} onChange={e=>{
+                          const v = e.target.value;
+                          setLtaSupplier(v);
+                          setLtcSupplier(v);
+                          setLtcResult(null);
+                          // Pre-fill fields if an existing rule is found for this supplier
+                          const existing = ltRules.find(r => r.supplierName === v);
+                          if (existing) {
+                            setLtaDays(String(existing.adjustDays));
+                            setLtaDayType(existing.dayType || 'Calendar Days');
+                            setLtcDays(''); // Burst days are independent — never pre-fill from adjust rule
+                          } else {
+                            setLtaDays('');
+                            setLtaDayType('Calendar Days');
+                            setLtcDays('');
+                          }
+                        }}
+                        className="w-full pl-4 pr-10 py-3 border-2 border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white font-semibold text-gray-800">
+                        <option value="">— Select a supplier to configure —</option>
+                        {suppliers.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><ChevronDown/></div>
+                    </div>
+                    {ltaSupplier && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full animate-fadeIn">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                        Configuring: {ltaSupplier}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-6 grid grid-cols-2 gap-6">
+
+                    {/* ── Left: Burst Set ── */}
+                    <div className={`rounded-xl border-2 p-5 transition-all ${ltaSupplier ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200 bg-gray-50 opacity-50 pointer-events-none'}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">Burst Lead Time Set</p>
+                          <p className="text-xs text-gray-500">Set lead time on all items with no lead time</p>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Lead Time (days)</label>
+                        <input type="number" min="1" value={ltcDays} onChange={e=>setLtcDays(e.target.value)}
+                          placeholder="e.g. 14"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-semibold bg-white"/>
+                      </div>
+                      <button onClick={runBurstSet} disabled={ltcRunning || !ltcSupplier || !ltcDays}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition-all">
+                        {ltcRunning
+                          ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Running…</>
+                          : <><RefreshIcon/>Apply Burst Set</>}
+                      </button>
+                      {ltcResult && (
+                        <div className="flex gap-2 mt-3 animate-fadeIn">
+                          <span className="flex-1 text-center px-2 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">✓ {ltcResult.set} updated</span>
+                          <span className="flex-1 text-center px-2 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold">⏭ {ltcResult.skipped} skipped</span>
+                        </div>
+                      )}
+                      <p className="mt-3 text-xs text-gray-400">Items with an existing lead time are skipped and not overwritten.</p>
+                    </div>
+
+                    {/* ── Right: Adjust ── */}
+                    <div className={`rounded-xl border-2 p-5 transition-all ${ltaSupplier ? 'border-purple-200 bg-purple-50/30' : 'border-gray-200 bg-gray-50 opacity-50 pointer-events-none'}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">Lead Time Adjust</p>
+                          <p className="text-xs text-gray-500">Auto-compute Need-By Date in the shop</p>
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Adjust Days</label>
+                        <input type="number" min="0" value={ltaDays} onChange={e=>setLtaDays(e.target.value)}
+                          placeholder="e.g. 3"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none font-semibold bg-white"/>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Day Type</label>
+                        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                          {['Calendar Days','Working Days'].map(opt => (
+                            <button key={opt} onClick={()=>setLtaDayType(opt)}
+                              className={`flex-1 py-2 text-xs font-semibold transition-all ${ltaDayType===opt?'bg-purple-600 text-white':'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                              {opt==='Working Days'?'🗓 Working':'📅 Calendar'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {ltaSupplier && ltaDays !== '' && (
+                        <div className="mb-3 p-2.5 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800 animate-fadeIn">
+                          Lead Time + <strong>{ltaDays} {ltaDayType}</strong> → Need-By Date
+                        </div>
+                      )}
+                      <button onClick={saveAdjustRule} disabled={ltaSaving || !ltaSupplier || ltaDays===''}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold transition-all">
+                        {ltaSaving
+                          ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Saving…</>
+                          : <><Save/>{ltRules.find(r=>r.supplierName===ltaSupplier) ? 'Update Adjust Rule' : 'Save Adjust Rule'}</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── ACTIVE RULES TABLE ── */}
+                <div className="settings-card p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold text-gray-900">Active Lead Time Adjust Rules</h3>
+                    <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{ltRules.length} rule{ltRules.length!==1?'s':''}</span>
+                  </div>
+                  {ltRules.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400">
+                      <svg className="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <p className="text-sm font-medium">No adjust rules configured yet</p>
+                      <p className="text-xs mt-1">Add a rule above to auto-compute Need-By Date in the shop</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Supplier</th>
+                            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Adjust Days</th>
+                            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Day Type</th>
+                            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">How It Works</th>
+                            <th className="py-2 px-3"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {ltRules.map(rule => (
+                            <tr key={rule.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="py-3 px-3 font-medium text-gray-900">{rule.supplierName}</td>
+                              <td className="py-3 px-3 text-center">
+                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 text-indigo-800 font-bold text-sm">
+                                  +{rule.adjustDays}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-center">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${rule.dayType==='Working Days'?'bg-green-100 text-green-800':'bg-blue-100 text-blue-800'}`}>
+                                  {rule.dayType==='Working Days'?'🗓 Working':'📅 Calendar'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-center text-xs text-gray-500">
+                                Lead Time + {rule.adjustDays} {rule.dayType}
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                {ltaDeleteId === rule.id ? (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <span className="text-xs text-red-600 font-medium">Delete?</span>
+                                    <button onClick={()=>deleteAdjustRule(rule.id)} className="px-2 py-1 bg-red-500 text-white text-xs rounded font-semibold hover:bg-red-600">Yes</button>
+                                    <button onClick={()=>setLtaDeleteId(null)} className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded font-semibold hover:bg-gray-300">No</button>
+                                  </div>
+                                ) : (
+                                  <button onClick={()=>setLtaDeleteId(rule.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                    <Trash/>
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                    <strong>ℹ️ How it works in the Shop:</strong> When a purchaser adds an item to cart, the Need-By Date is auto-filled as: <em>Today + Item Lead Time + Adjust Days</em> (skipping weekends if Working Days is selected). Purchasers do not need to enter it manually.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Default Threshold */}
+            {activeSection === 'threshold' && (
+              <div className="content-section max-w-4xl">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Default Low Stock Threshold</h2>
+                  <p className="text-gray-600">Set default threshold for low stock alerts</p>
+                </div>
+
+                <div className="settings-card p-6">
+                  <div className="max-w-md">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Default Threshold Value</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={inventorySettings.defaultThreshold}
+                      onChange={(e) => setInventorySettings({...inventorySettings, defaultThreshold: parseInt(e.target.value) || 10})}
+                      className="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-lg font-semibold"
+                    />
+                    <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <p className="text-sm text-orange-800 mb-2">
+                        <strong>ℹ️ About Threshold:</strong>
+                      </p>
+                      <p className="text-xs text-orange-700">
+                        When product stock falls to or below this value, it will be marked as "Low Stock" and trigger alerts. 
+                        This is used as the default value when adding new products or importing without specifying threshold.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<InventorySettings />, document.getElementById('root'));
+
+</script>
+</body>
+</html>

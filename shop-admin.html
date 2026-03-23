@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operix — Shop Editor</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0C1220;--ink2:#1E2D45;--slate:#64748B;
+  --line:#E4EAF2;--surf:#F4F7FB;--white:#fff;
+  --blue:#0057FF;--blue-d:#003FBB;--blue-bg:#EEF4FF;
+  --green:#059669;--green-bg:#ECFDF5;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#DC2626;--red-bg:#FFF1F2;--gold:#F59E0B;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
+
+/* TOPBAR */
+.tb{position:sticky;top:0;z-index:200;background:var(--ink);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid rgba(255,255,255,.05)}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-brand b{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.4px}
+.tb-brand small{font-size:9px;color:#F59E0B;font-weight:700;letter-spacing:.14em;text-transform:uppercase;display:block;margin-top:-2px}
+.tb-r{display:flex;align-items:center;gap:10px}
+.tb-link{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:7px;padding:6px 12px;cursor:pointer;text-decoration:none;transition:all .18s;white-space:nowrap}
+.tb-link:hover{color:#fff;background:rgba(255,255,255,.1)}
+.save-btn{display:flex;align-items:center;gap:7px;background:var(--green);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:\'DM Sans\',sans-serif}
+.save-btn:hover{background:#047857;transform:translateY(-1px);box-shadow:0 4px 14px rgba(5,150,105,.4)}
+.save-btn:disabled{background:#CBD5E1;cursor:not-allowed;transform:none}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 58px)}
+.side-nav{background:var(--white);border-right:1px solid var(--line);padding:20px 12px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto}
+.side-nav-section{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate);padding:0 10px;margin-bottom:6px;margin-top:18px}
+.side-nav-section:first-child{margin-top:0}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--slate);transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--surf);color:var(--ink)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue)}
+.nav-item-icon{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.main-area{padding:28px 36px;overflow-y:auto}
+.page-hd{margin-bottom:28px}
+.page-hd h2{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px}
+.page-hd p{font-size:13px;color:var(--slate)}
+
+/* SECTION CARD */
+.sec-card{background:var(--white);border:1.5px solid var(--line);border-radius:16px;margin-bottom:20px;overflow:hidden}
+.sec-card-hd{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.sec-card-hd-left{display:flex;align-items:center;gap:10px}
+.sec-card-title{font-size:13px;font-weight:800;color:var(--ink)}
+.sec-card-sub{font-size:11px;color:var(--slate);margin-top:1px}
+.sec-card-body{padding:20px}
+
+/* FORM CONTROLS */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.fl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-bottom:6px}
+.fi{width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:\'DM Sans\',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border .18s}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.07)}
+.fi-hint{font-size:11px;color:var(--slate);margin-top:4px;line-height:1.5}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+textarea.fi{resize:vertical;min-height:80px}
+
+/* SLIDER PREVIEW */
+.slider-wrap{position:relative;overflow:hidden;border-radius:12px;background:var(--ink);aspect-ratio:16/5;margin-bottom:8px}
+.slide-inner{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);height:100%}
+.slide{flex-shrink:0;width:100%;height:100%;position:relative;display:flex;align-items:center;overflow:hidden}
+.slide img{width:100%;height:100%;object-fit:cover;opacity:.6}
+.slide-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(12,18,32,.8) 0%,rgba(12,18,32,.2) 100%);padding:32px 40px;display:flex;flex-direction:column;justify-content:center}
+.slide-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(0,87,255,.7);color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:4px 12px;border-radius:99px;margin-bottom:10px;width:fit-content}
+.slide-title{font-size:28px;font-weight:900;color:#fff;letter-spacing:-.6px;line-height:1.15;margin-bottom:8px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.slide-sub{font-size:13px;color:rgba(255,255,255,.75);max-width:420px;line-height:1.6}
+.slide-nav{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
+.slide-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);border:none;cursor:pointer;transition:all .2s;padding:0}
+.slide-dot.active{background:#fff;width:20px;border-radius:3px}
+.slide-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .18s;z-index:10}
+.slide-arrow:hover{background:rgba(255,255,255,.25)}
+.slide-arrow.prev{left:10px}
+.slide-arrow.next{right:10px}
+
+/* SLIDE EDITOR */
+.slide-editor-list{display:flex;flex-direction:column;gap:10px}
+.slide-editor-item{background:var(--surf);border:1.5px solid var(--line);border-radius:12px;padding:14px 16px}
+.slide-editor-item.dragging{opacity:.5;border-style:dashed;border-color:var(--blue)}
+.slide-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--blue);color:#fff;border-radius:6px;font-size:10px;font-weight:800;flex-shrink:0}
+.slide-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.slide-thumb{width:60px;height:36px;border-radius:6px;object-fit:cover;border:1.5px solid var(--line);flex-shrink:0}
+.slide-thumb-ph{width:60px;height:36px;border-radius:6px;background:var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* CATEGORY IMAGE GRID */
+.cat-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.cat-img-card{background:var(--surf);border:1.5px solid var(--line);border-radius:12px;overflow:hidden;transition:border .18s}
+.cat-img-card:hover{border-color:#BFCFEF}
+.cat-img-preview{width:100%;height:100px;object-fit:cover;display:block}
+.cat-img-ph{width:100%;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--line);opacity:.6}
+.cat-img-footer{padding:10px 12px;background:var(--white)}
+.cat-img-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* FOOTER EDITOR */
+.footer-link-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.footer-link-row input{flex:1;padding:8px 11px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;font-family:\'DM Sans\',sans-serif;outline:none;color:var(--ink)}
+.footer-link-row input:focus{border-color:var(--blue)}
+.rm-link-btn{width:28px;height:28px;background:var(--red-bg);border:1px solid #FECACA;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);flex-shrink:0}
+.add-link-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-bg);border:1.5px dashed #BFDBFE;border-radius:8px;padding:8px 14px;cursor:pointer;width:100%;justify-content:center;margin-top:4px;transition:all .18s;font-family:\'DM Sans\',sans-serif}
+.add-link-btn:hover{background:#DBEAFE}
+
+/* TABS */
+.tab-bar{display:flex;gap:2px;background:var(--surf);border:1.5px solid var(--line);border-radius:10px;padding:3px;margin-bottom:22px;width:fit-content}
+.tab{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;transition:all .15s;background:none;color:var(--slate)}
+.tab:hover{color:var(--ink)}
+.tab.active{background:var(--white);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.07);font-weight:700}
+
+/* LIVE PREVIEW BANNER */
+.preview-banner{background:linear-gradient(135deg,#0C1220 0%,#1E3050 100%);border:1.5px solid rgba(255,255,255,.08);border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.preview-banner p{font-size:13px;color:#94A3B8;line-height:1.55;max-width:480px}
+.preview-banner strong{color:#fff}
+
+/* COLOR SWATCHES */
+.color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.color-swatch{width:28px;height:28px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+.color-swatch.sel{border-color:var(--ink);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)}
+.color-swatch:hover{transform:scale(1.1)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fu .25s ease;border-left:3px solid var(--green)}
+.toast.err{border-left-color:var(--red)}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:14px}
+.loader-spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+.unsaved-dot{width:7px;height:7px;border-radius:50%;background:#F59E0B;display:inline-block;margin-left:4px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.side-nav{display:none}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useMemo,useRef} = React;
+
+const FB={
+  apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+  authDomain:"operix-c8a8c.firebaseapp.com",
+  projectId:"operix-c8a8c",
+  storageBucket:"operix-c8a8c.firebasestorage.app",
+  messagingSenderId:"794223223499",
+  appId:"1:794223223499:web:f059007b909cc15766f14e"
+};
+
+const Logo=()=>(
+  <svg width="28" height="28" viewBox="0 0 40 40">
+    <rect width="40" height="40" rx="9" fill="#0057FF"/>
+    <path d="M20 8C27.18 8 33 13.82 33 21S27.18 34 20 34 7 28.18 7 21 12.82 8 20 8zm0 4a9 9 0 100 18A9 9 0 0020 12zm0 4a5 5 0 110 10A5 5 0 0120 16z" fill="white" opacity=".9"/>
+    <circle cx="20" cy="21" r="2.5" fill="white"/>
+  </svg>
+);
+
+function Ic({d,s=15,c='currentColor'}){return(
+  <svg width={s} height={s} fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d={d}/></svg>
+);}
+const P={
+  x:'M6 18L18 6M6 6l12 12',plus:'M12 4v16m8-8H4',back:'M19 12H5M5 12l7 7M5 12l7-7',
+  check:'M5 13l4 4L19 7',eye:'M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+  img:'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+  layout:'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
+  type:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  footer:'M3 21h18M3 10h18M3 6l9-3 9 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3',
+  tag:'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z',
+  gear:'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+  drag:'M4 8h16M4 16h16',
+};
+
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,2800);return()=>clearTimeout(t);});
+  return <div className={`toast ${type==='err'?'err':''}`}>{type==='err'?'⚠ ':'✓ '}{msg}</div>;
+}
+
+/* Auto-advancing hero slider preview */
+function SliderPreview({slides}){
+  const [idx,setIdx]=useState(0);
+  const timerRef=useRef(null);
+  const s=slides||[];
+  const cur=s[idx]||{title:'Add your first slide',subtitle:'Upload a banner image and set a headline',badge:'New'};
+
+  useEffect(()=>{
+    if(s.length<=1)return;
+    timerRef.current=setInterval(()=>setIdx(i=>(i+1)%s.length),4200);
+    return()=>clearInterval(timerRef.current);
+  },[s.length]);
+
+  const goTo=i=>{setIdx(i);clearInterval(timerRef.current);timerRef.current=setInterval(()=>setIdx(j=>(j+1)%s.length),4200);};
+  const prev=()=>goTo((idx-1+s.length)%s.length);
+  const next=()=>goTo((idx+1)%s.length);
+
+  return(
+    <div className="slider-wrap">
+      <div className="slide-inner" style={{transform:`translateX(-${idx*100}%)`}}>
+        {(s.length>0?s:[{title:'Hero Slider Preview',subtitle:'Add slides below to see them here'}]).map((sl,i)=>(
+          <div key={i} className="slide">
+            {sl.imageUrl&&<img src={sl.imageUrl} alt={sl.title} onError={e=>e.target.style.display='none'}/>}
+            {!sl.imageUrl&&<div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0C1220 0%,#1E3050 100%)'}}/>}
+            <div className="slide-overlay">
+              {sl.badge&&<div className="slide-badge">{sl.badge}</div>}
+              <div className="slide-title">{sl.title||'Slide Title'}</div>
+              {sl.subtitle&&<div className="slide-sub">{sl.subtitle}</div>}
+              {sl.ctaLabel&&<div style={{marginTop:14,display:'inline-flex',alignItems:'center',gap:6,background:'#0057FF',color:'#fff',padding:'8px 18px',borderRadius:8,fontSize:12,fontWeight:700,width:'fit-content'}}>{sl.ctaLabel} →</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {s.length>1&&(
+        <>
+          <button className="slide-arrow prev" onClick={prev}>‹</button>
+          <button className="slide-arrow next" onClick={next}>›</button>
+          <div className="slide-nav">
+            {s.map((_,i)=><button key={i} className={`slide-dot ${i===idx?'active':''}`} onClick={()=>goTo(i)}/>)}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── MAIN APP ── */
+function App(){
+  const [user,setUser]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [activeSection,setActiveSection]=useState('hero');
+  const [toast,setToast]=useState(null);
+  const [unsaved,setUnsaved]=useState(false);
+  const [products,setProducts]=useState([]);
+
+  // ── CONFIG STATE ──
+  const [heroTitle,setHeroTitle]=useState('What are you looking for?');
+  const [heroSubtitle,setHeroSubtitle]=useState('Select a category to browse products and submit a requisition.');
+
+  // Slider slides
+  const [slides,setSlides]=useState([
+    {title:'Welcome to Our Shop',subtitle:'Browse thousands of products across all categories.',badge:'New',imageUrl:'',ctaLabel:'Shop Now',ctaUrl:''},
+  ]);
+
+  // Category images: { "IT EQUIPMENT": "https://...", ... }
+  const [categoryImages,setCategoryImages]=useState({});
+
+  // Footer
+  const [footerCompany,setFooterCompany]=useState('Operix Procurement');
+  const [footerTagline,setFooterTagline]=useState('Your trusted procurement partner. Quality products, efficient ordering.');
+  const [footerPhone,setFooterPhone]=useState('');
+  const [footerEmail,setFooterEmail]=useState('');
+  const [footerSupport,setFooterSupport]=useState('support@operix.com');
+  const [footerCopyright,setFooterCopyright]=useState('All rights reserved.');
+  const [footerLinks,setFooterLinks]=useState([{label:'About Us',url:'#'},{label:'Privacy Policy',url:'#'},{label:'Terms of Service',url:'#'}]);
+
+  // Promo banners (below hero)
+  const [banners,setBanners]=useState([
+    {text:'🚚 Free delivery on orders above ₱5,000',color:'#059669'},
+    {text:'⚡ Same-day processing for orders before 2PM',color:'#0057FF'},
+    {text:'🔒 Secure payment — Bank Transfer, GCash, Cash',color:'#7C3AED'},
+  ]);
+
+  const markUnsaved=()=>setUnsaved(true);
+
+  useEffect(()=>{
+    if(!window.firebase){setTimeout(()=>window.location.reload(),600);return;}
+    if(!firebase.apps.length) firebase.initializeApp(FB);
+    const db=firebase.firestore();
+    firebase.auth().onAuthStateChanged(async u=>{
+      if(!u){window.location.href='login.html';return;}
+      const doc=await db.collection('users').doc(u.uid).get();
+      if(!doc.exists||doc.data().role!=='admin'){window.location.href='shop.html';return;}
+      const ud=doc.data();
+      setUser({uid:u.uid,...ud});
+
+      const companyName=ud.companyName||'';
+
+      // ── Load ALL products from the same company for category list ──────────
+      let allProducts=[];
+      if(companyName){
+        try{
+          // Get all admin UIDs in this company
+          const admSnap=await db.collection('users')
+            .where('role','==','admin')
+            .where('companyName','==',companyName)
+            .get();
+          const adminUids=admSnap.docs.map(d=>d.id);
+          if(!adminUids.includes(u.uid)) adminUids.push(u.uid);
+          // Fetch products for all company admins (batch by 30)
+          for(let i=0;i<adminUids.length;i+=30){
+            const chunk=adminUids.slice(i,i+30);
+            const pSnap=await db.collection('products').where('createdBy','in',chunk).get();
+            pSnap.docs.forEach(d=>allProducts.push({id:d.id,...d.data()}));
+          }
+        }catch(e){
+          console.warn('Company products load failed, falling back to own:',e);
+          const pSnap=await db.collection('products').where('createdBy','==',u.uid).get();
+          allProducts=pSnap.docs.map(d=>({id:d.id,...d.data()}));
+        }
+      } else {
+        // No companyName — fall back to own products only
+        const pSnap=await db.collection('products').where('createdBy','==',u.uid).get();
+        allProducts=pSnap.docs.map(d=>({id:d.id,...d.data()}));
+      }
+      setProducts(allProducts);
+
+      // ── Load shopConfig — shared at company level ─────────────────────────
+      // Key: use companyName as the doc ID so all admins in the same company
+      // read and write the same config. Fall back to own UID for legacy data.
+      const configDocId=companyName||u.uid;
+      const sc=await db.collection('shopConfig').doc(configDocId).get();
+      if(sc.exists){
+        const d=sc.data();
+        if(d.heroTitle) setHeroTitle(d.heroTitle);
+        if(d.heroSubtitle) setHeroSubtitle(d.heroSubtitle);
+        if(d.slides&&d.slides.length) setSlides(d.slides);
+        if(d.categoryImages) setCategoryImages(d.categoryImages);
+        if(d.banners&&d.banners.length) setBanners(d.banners);
+        if(d.footer){
+          const f=d.footer;
+          if(f.companyName) setFooterCompany(f.companyName);
+          if(f.tagline) setFooterTagline(f.tagline);
+          if(f.phone!==undefined) setFooterPhone(f.phone);
+          if(f.email!==undefined) setFooterEmail(f.email);
+          if(f.supportEmail) setFooterSupport(f.supportEmail);
+          if(f.copyright) setFooterCopyright(f.copyright);
+          if(f.footerLinks) setFooterLinks(f.footerLinks);
+        }
+      } else if(companyName){
+        // Try legacy per-uid doc as fallback (migrate existing data)
+        const legacySc=await db.collection('shopConfig').doc(u.uid).get();
+        if(legacySc.exists){
+          const d=legacySc.data();
+          if(d.heroTitle) setHeroTitle(d.heroTitle);
+          if(d.heroSubtitle) setHeroSubtitle(d.heroSubtitle);
+          if(d.slides&&d.slides.length) setSlides(d.slides);
+          if(d.categoryImages) setCategoryImages(d.categoryImages);
+          if(d.banners&&d.banners.length) setBanners(d.banners);
+          if(d.footer){
+            const f=d.footer;
+            if(f.companyName) setFooterCompany(f.companyName);
+            if(f.tagline) setFooterTagline(f.tagline);
+            if(f.phone!==undefined) setFooterPhone(f.phone);
+            if(f.email!==undefined) setFooterEmail(f.email);
+            if(f.supportEmail) setFooterSupport(f.supportEmail);
+            if(f.copyright) setFooterCopyright(f.copyright);
+            if(f.footerLinks) setFooterLinks(f.footerLinks);
+          }
+        }
+      }
+      setLoading(false);
+    });
+  },[]);
+
+  // Derived: unique category names
+  const categories=useMemo(()=>{
+    const cats=new Set();
+    products.forEach(p=>{
+      if(p.category){const i=p.category.indexOf('.');cats.add(i===-1?p.category.trim():p.category.slice(0,i).trim());}
+    });
+    return Array.from(cats).sort();
+  },[products]);
+
+  const save=async()=>{
+    if(!user)return;
+    setSaving(true);
+    try{
+      const db=firebase.firestore();
+      const config={
+        heroTitle,heroSubtitle,
+        slides:slides.map(s=>({...s})),
+        categoryImages:{...categoryImages},
+        banners:banners.map(b=>({...b})),
+        footer:{companyName:footerCompany,tagline:footerTagline,phone:footerPhone,email:footerEmail,supportEmail:footerSupport,copyright:footerCopyright,footerLinks:[...footerLinks]},
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy:user.uid,
+        updatedByName:user.fullName||user.email||'',
+        companyName:user.companyName||'',
+      };
+      // Save to company-level doc so all admins in the same company share the config
+      const configDocId=user.companyName||user.uid;
+      await db.collection('shopConfig').doc(configDocId).set(config,{merge:true});
+      setToast({msg:'Shop config saved!',type:'ok'});
+      setUnsaved(false);
+    }catch(e){console.error(e);setToast({msg:'Save failed: '+e.message,type:'err'});}
+    setSaving(false);
+  };
+
+  /* ── SLIDE HELPERS ── */
+  const addSlide=()=>{setSlides(s=>[...s,{title:'',subtitle:'',badge:'',imageUrl:'',ctaLabel:'',ctaUrl:''}]);markUnsaved();};
+  const removeSlide=i=>{setSlides(s=>s.filter((_,j)=>j!==i));markUnsaved();};
+  const updateSlide=(i,k,v)=>{setSlides(s=>s.map((sl,j)=>j===i?{...sl,[k]:v}:sl));markUnsaved();};
+  const moveSlide=(from,to)=>{if(to<0||to>=slides.length)return;const arr=[...slides];const[el]=arr.splice(from,1);arr.splice(to,0,el);setSlides(arr);markUnsaved();};
+
+  /* ── BANNER HELPERS ── */
+  const addBanner=()=>{setBanners(b=>[...b,{text:'',color:'#0057FF'}]);markUnsaved();};
+  const removeBanner=i=>{setBanners(b=>b.filter((_,j)=>j!==i));markUnsaved();};
+  const updateBanner=(i,k,v)=>{setBanners(b=>b.map((bn,j)=>j===i?{...bn,[k]:v}:bn));markUnsaved();};
+
+  /* ── FOOTER LINK HELPERS ── */
+  const addLink=()=>{setFooterLinks(l=>[...l,{label:'',url:''}]);markUnsaved();};
+  const removeLink=i=>{setFooterLinks(l=>l.filter((_,j)=>j!==i));markUnsaved();};
+  const updateLink=(i,k,v)=>{setFooterLinks(l=>l.map((lk,j)=>j===i?{...lk,[k]:v}:lk));markUnsaved();};
+
+  const BANNER_COLORS=['#059669','#0057FF','#7C3AED','#D97706','#E11D48','#0284C7','#0D9488','#C2410C'];
+
+  if(loading)return(<div className="loader"><Logo/><div className="loader-spin"/><p style={{fontSize:13,color:'#64748B'}}>Loading Shop Editor…</p></div>);
+
+  const sections=[
+    {id:'hero',    label:'Hero & Headline',    icon:P.type},
+    {id:'slider',  label:'Hero Slider',         icon:P.img},
+    {id:'banners', label:'Promo Banners',       icon:P.tag},
+    {id:'categories',label:'Category Images',  icon:P.layout},
+    {id:'quotation',label:'Quotation Layout',  icon:P.type},
+    {id:'footer',  label:'Footer',              icon:P.footer},
+  ];
+
+  return(
+    <>
+      {/* TOPBAR */}
+      <header className="tb">
+        <div className="tb-brand">
+          <Logo/>
+          <div><b>Shop Editor</b><small>⚙ Admin Only</small></div>
+        </div>
+        <div className="tb-r">
+          <a href="shop.html" className="tb-link"><Ic d={P.eye} s={13}/> Preview Shop</a>
+          <a href="Dashboard.html" className="tb-link"><Ic d={P.back} s={13}/> Dashboard</a>
+          <button className="save-btn" onClick={save} disabled={saving}>
+            {saving
+              ? <><div style={{width:13,height:13,border:'2px solid rgba(255,255,255,.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .7s linear infinite'}}/>Saving…</>
+              : <><Ic d={P.check} s={14}/>Save Changes{unsaved&&<span className="unsaved-dot"/>}</>
+            }
+          </button>
+        </div>
+      </header>
+
+      <div className="layout">
+        {/* SIDE NAV */}
+        <nav className="side-nav">
+          <div className="side-nav-section">Shop Sections</div>
+          {sections.map(s=>(
+            <div key={s.id} className={`nav-item ${activeSection===s.id?'active':''}`} onClick={()=>setActiveSection(s.id)}>
+              <span className="nav-item-icon"><Ic d={s.icon} s={15} c={activeSection===s.id?'var(--blue)':'var(--slate)'}/></span>
+              {s.label}
+            </div>
+          ))}
+          <div className="side-nav-section" style={{marginTop:24}}>Quick Links</div>
+          <div className="nav-item" onClick={()=>window.open('shop.html','_blank')}>
+            <span className="nav-item-icon"><Ic d={P.eye} s={15} c="var(--slate)"/></span>
+            Open Live Shop
+          </div>
+          <div className="nav-item" onClick={()=>window.location.href='Dashboard.html'}>
+            <span className="nav-item-icon"><Ic d={P.back} s={15} c="var(--slate)"/></span>
+            Dashboard
+          </div>
+        </nav>
+
+        {/* MAIN CONTENT */}
+        <div className="main-area">
+
+          {/* Preview banner */}
+          <div className="preview-banner">
+            <div>
+              <strong style={{fontSize:13}}>Live Shop Editor</strong>
+              <p>Changes are saved to Firestore and immediately reflected on <strong>shop.html</strong> when users reload. Click <strong>Save Changes</strong> to publish.</p>
+            </div>
+            <a href="shop.html" target="_blank" style={{display:'flex',alignItems:'center',gap:7,background:'rgba(255,255,255,.08)',color:'#CBD5E1',border:'1px solid rgba(255,255,255,.15)',borderRadius:9,padding:'8px 16px',fontSize:12,fontWeight:700,textDecoration:'none',whiteSpace:'nowrap',transition:'all .18s'}}
+              onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,.14)'}}
+              onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)'}}>
+              <Ic d={P.eye} s={13}/>Preview Shop
+            </a>
+          </div>
+
+          {/* ══ HERO & HEADLINE ══ */}
+          {activeSection==='hero'&&(
+            <>
+              <div className="page-hd">
+                <h2>Hero & Headline</h2>
+                <p>Edit the main welcome text shown at the top of the landing page.</p>
+              </div>
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left">
+                    <Ic d={P.type} s={16} c="var(--blue)"/>
+                    <div><div className="sec-card-title">Landing Page Text</div></div>
+                  </div>
+                </div>
+                <div className="sec-card-body">
+                  <div className="field">
+                    <label className="fl">Main Headline</label>
+                    <input className="fi" value={heroTitle} onChange={e=>{setHeroTitle(e.target.value);markUnsaved();}} placeholder="What are you looking for?"/>
+                    <div className="fi-hint">The large title shown above the category grid.</div>
+                  </div>
+                  <div className="field">
+                    <label className="fl">Subtitle</label>
+                    <input className="fi" value={heroSubtitle} onChange={e=>{setHeroSubtitle(e.target.value);markUnsaved();}} placeholder="Select a category to browse products…"/>
+                    <div className="fi-hint">A short description shown below the headline.</div>
+                  </div>
+                  {/* Live preview of headline */}
+                  <div style={{marginTop:18,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:12,padding:'20px 24px'}}>
+                    <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.1em',color:'var(--slate)',marginBottom:12}}>Preview</div>
+                    <div style={{fontSize:22,fontWeight:800,color:'var(--ink)',letterSpacing:'-.4px',marginBottom:5}}>{heroTitle||'…'}</div>
+                    <div style={{fontSize:13,color:'var(--slate)'}}>{heroSubtitle||'…'}</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ HERO SLIDER ══ */}
+          {activeSection==='slider'&&(
+            <>
+              <div className="page-hd">
+                <h2>Hero Slider</h2>
+                <p>Add rotating banner slides with images, headlines, and call-to-action buttons. Slides auto-advance every 4 seconds.</p>
+              </div>
+
+              {/* Live preview */}
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.eye} s={16} c="var(--blue)"/><div><div className="sec-card-title">Live Preview</div></div></div>
+                </div>
+                <div className="sec-card-body">
+                  <SliderPreview slides={slides}/>
+                  <div className="fi-hint" style={{marginTop:6}}>This is how the slider looks on your shop. It auto-advances every 4 seconds.</div>
+                </div>
+              </div>
+
+              {/* Slide editor */}
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.img} s={16} c="var(--blue)"/><div><div className="sec-card-title">Manage Slides ({slides.length})</div></div></div>
+                </div>
+                <div className="sec-card-body">
+                  <div className="slide-editor-list">
+                    {slides.map((sl,i)=>(
+                      <div key={i} className="slide-editor-item">
+                        <div className="slide-row">
+                          <span className="slide-num">{i+1}</span>
+                          {sl.imageUrl
+                            ? <img src={sl.imageUrl} alt="" className="slide-thumb" onError={e=>e.target.style.display='none'}/>
+                            : <div className="slide-thumb-ph"><Ic d={P.img} s={16} c="var(--slate)"/></div>
+                          }
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sl.title||'(untitled slide)'}</div>
+                            <div style={{fontSize:11,color:'var(--slate)'}}>{sl.subtitle?sl.subtitle.slice(0,50)+'…':'No subtitle'}</div>
+                          </div>
+                          <div style={{display:'flex',gap:4,flexShrink:0}}>
+                            <button onClick={()=>moveSlide(i,i-1)} disabled={i===0} title="Move up" style={{width:26,height:26,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:6,cursor:i===0?'not-allowed':'pointer',opacity:i===0?.3:1,display:'flex',alignItems:'center',justifyContent:'center'}}>↑</button>
+                            <button onClick={()=>moveSlide(i,i+1)} disabled={i===slides.length-1} title="Move down" style={{width:26,height:26,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:6,cursor:i===slides.length-1?'not-allowed':'pointer',opacity:i===slides.length-1?.3:1,display:'flex',alignItems:'center',justifyContent:'center'}}>↓</button>
+                            <button onClick={()=>removeSlide(i)} title="Remove" style={{width:26,height:26,background:'var(--red-bg)',border:'1px solid #FECACA',borderRadius:6,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--red)'}}><Ic d={P.x} s={11}/></button>
+                          </div>
+                        </div>
+                        <div className="fg2">
+                          <div className="field">
+                            <label className="fl">Slide Title *</label>
+                            <input className="fi" value={sl.title} onChange={e=>updateSlide(i,'title',e.target.value)} placeholder="e.g. Office Supplies Sale"/>
+                          </div>
+                          <div className="field">
+                            <label className="fl">Badge Label</label>
+                            <input className="fi" value={sl.badge||''} onChange={e=>updateSlide(i,'badge',e.target.value)} placeholder="e.g. New · Sale · Featured"/>
+                          </div>
+                        </div>
+                        <div className="field">
+                          <label className="fl">Subtitle / Description</label>
+                          <input className="fi" value={sl.subtitle||''} onChange={e=>updateSlide(i,'subtitle',e.target.value)} placeholder="Short description under the title"/>
+                        </div>
+                        <div className="field">
+                          <label className="fl">Background Image URL</label>
+                          <input className="fi" value={sl.imageUrl||''} onChange={e=>updateSlide(i,'imageUrl',e.target.value)} placeholder="https://example.com/banner.jpg"/>
+                          <div className="fi-hint">Paste a direct link to an image (JPEG/PNG/WebP). Use any image hosting — Imgur, Cloudinary, Firebase Storage, etc.</div>
+                        </div>
+                        <div className="fg2">
+                          <div className="field" style={{marginBottom:0}}>
+                            <label className="fl">CTA Button Label</label>
+                            <input className="fi" value={sl.ctaLabel||''} onChange={e=>updateSlide(i,'ctaLabel',e.target.value)} placeholder="e.g. Shop Now"/>
+                          </div>
+                          <div className="field" style={{marginBottom:0}}>
+                            <label className="fl">CTA Button URL</label>
+                            <input className="fi" value={sl.ctaUrl||''} onChange={e=>updateSlide(i,'ctaUrl',e.target.value)} placeholder="shop.html or category link"/>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addSlide} className="add-link-btn" style={{marginTop:12}}>
+                    <Ic d={P.plus} s={13}/>Add New Slide
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ PROMO BANNERS ══ */}
+          {activeSection==='banners'&&(
+            <>
+              <div className="page-hd">
+                <h2>Promo Banners</h2>
+                <p>Short announcement strips shown between the slider and the category grid.</p>
+              </div>
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.tag} s={16} c="var(--blue)"/><div><div className="sec-card-title">Banners ({banners.length})</div></div></div>
+                </div>
+                <div className="sec-card-body">
+                  {/* Preview */}
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
+                    {banners.map((b,i)=>b.text&&(
+                      <div key={i} style={{display:'inline-flex',alignItems:'center',gap:6,background:b.color+'15',border:`1.5px solid ${b.color}40`,borderRadius:8,padding:'6px 14px',fontSize:12,fontWeight:600,color:b.color}}>
+                        {b.text}
+                      </div>
+                    ))}
+                  </div>
+                  {banners.map((b,i)=>(
+                    <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:10,padding:'12px 14px'}}>
+                      <div style={{flex:1}}>
+                        <div className="field" style={{marginBottom:8}}>
+                          <label className="fl">Banner Text</label>
+                          <input className="fi" value={b.text} onChange={e=>{updateBanner(i,'text',e.target.value);}} placeholder="e.g. 🚚 Free delivery on orders above ₱5,000"/>
+                        </div>
+                        <div>
+                          <label className="fl">Color</label>
+                          <div className="color-row">
+                            {BANNER_COLORS.map(c=>(
+                              <div key={c} className={`color-swatch ${b.color===c?'sel':''}`} style={{background:c}} onClick={()=>{updateBanner(i,'color',c);}}/>
+                            ))}
+                            <input type="color" value={b.color||'#0057FF'} onChange={e=>updateBanner(i,'color',e.target.value)} style={{width:28,height:28,border:'2px solid var(--line)',borderRadius:7,cursor:'pointer',padding:1}}/>
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={()=>removeBanner(i)} style={{width:30,height:30,background:'var(--red-bg)',border:'1px solid #FECACA',borderRadius:7,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--red)',flexShrink:0,marginTop:18}}>
+                        <Ic d={P.x} s={12}/>
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={addBanner} className="add-link-btn"><Ic d={P.plus} s={13}/>Add Banner</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ CATEGORY IMAGES ══ */}
+          {activeSection==='categories'&&(
+            <>
+              <div className="page-hd">
+                <h2>Category Images</h2>
+                <p>Assign a cover image to each category. These appear as banner photos on the category cards — just like RS Components.</p>
+              </div>
+              {categories.length===0&&(
+                <div style={{background:'var(--white)',border:'1.5px solid var(--line)',borderRadius:16,padding:'40px 32px',textAlign:'center'}}>
+                  <div style={{fontSize:13,color:'var(--slate)'}}>No product categories found. Add products in Dashboard first.</div>
+                </div>
+              )}
+              <div className="cat-img-grid">
+                {categories.map(cat=>{
+                  const imgUrl=categoryImages[cat]||'';
+                  return(
+                    <div key={cat} className="cat-img-card">
+                      {imgUrl
+                        ? <img src={imgUrl} alt={cat} className="cat-img-preview" onError={e=>e.target.style.display='none'}/>
+                        : <div className="cat-img-ph">
+                            <svg width="28" height="28" fill="none" stroke="#94A3B8" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={P.img}/></svg>
+                            <span style={{fontSize:10,color:'#94A3B8',fontWeight:600}}>No image</span>
+                          </div>
+                      }
+                      <div className="cat-img-footer">
+                        <div className="cat-img-name" title={cat}>{cat}</div>
+                        <input className="fi" style={{fontSize:11,padding:'6px 10px'}} value={imgUrl} placeholder="Paste image URL…"
+                          onChange={e=>{setCategoryImages(m=>({...m,[cat]:e.target.value}));markUnsaved();}}/>
+                        {imgUrl&&<div className="fi-hint" style={{marginTop:4}}>✓ Image URL set</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{background:'var(--blue-bg)',border:'1.5px solid #BFDBFE',borderRadius:12,padding:'14px 18px',marginTop:18,fontSize:12,color:'#1E40AF',lineHeight:1.6}}>
+                <strong>💡 Tip:</strong> Use images that are at least 600×300px for best results. You can use direct links from Cloudinary, Firebase Storage, Imgur, or any public image hosting.
+              </div>
+            </>
+          )}
+
+          {/* ══ QUOTATION LAYOUT ══ */}
+          {activeSection==='quotation'&&(
+            <>
+              <div className="page-hd">
+                <h2>Quotation Layout Setup</h2>
+                <p>Design the layout of your quote documents — position fields, upload a letterhead, and customize the look of quotes sent to customers.</p>
+              </div>
+              <div style={{background:'var(--white)',border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden'}}>
+                <div style={{background:'linear-gradient(135deg,#7C3AED,#5B21B6)',padding:'28px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div>
+                    <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.12em',color:'rgba(255,255,255,.6)',marginBottom:8}}>Document Designer</div>
+                    <div style={{fontSize:20,fontWeight:900,color:'#fff',letterSpacing:'-.4px',marginBottom:6}}>Quote Layout</div>
+                    <div style={{fontSize:13,color:'rgba(255,255,255,.75)',lineHeight:1.6,maxWidth:420}}>
+                      Set up the visual layout of quotation documents — including your company letterhead, quoted items table, pricing, validity period, and signature fields.
+                    </div>
+                  </div>
+                  <div style={{flexShrink:0,marginLeft:24}}>
+                    <div style={{width:72,height:90,background:'rgba(255,255,255,.12)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:8,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,position:'relative',overflow:'hidden'}}>
+                      <div style={{position:'absolute',top:0,left:0,right:0,height:16,background:'rgba(255,255,255,.15)'}}/>
+                      {[60,48,48,56].map((w,i)=>(
+                        <div key={i} style={{height:5,width:w,background:'rgba(255,255,255,.25)',borderRadius:2,marginTop:i===0?12:0}}/>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{padding:'24px 28px'}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:24}}>
+                    {[
+                      {icon:'🏢',label:'Company Header',desc:'Logo, name, address, TIN'},
+                      {icon:'📦',label:'Quoted Items',desc:'Item table with qty & pricing'},
+                      {icon:'💰',label:'Totals & VAT',desc:'Subtotal, tax, grand total'},
+                      {icon:'📅',label:'Validity Period',desc:'Quote valid-until date'},
+                      {icon:'✍️',label:'Signatures',desc:'Prepared by & authorized'},
+                      {icon:'📋',label:'Terms & Notes',desc:'Terms, notes, disclaimers'},
+                    ].map(f=>(
+                      <div key={f.icon} style={{background:'var(--surf)',border:'1px solid var(--line)',borderRadius:10,padding:'14px 16px',display:'flex',gap:10,alignItems:'flex-start'}}>
+                        <span style={{fontSize:20,flexShrink:0}}>{f.icon}</span>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,color:'var(--ink)',marginBottom:2}}>{f.label}</div>
+                          <div style={{fontSize:11,color:'var(--slate)'}}>{f.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',gap:12,alignItems:'center'}}>
+                    <a href="quote-layout-setup.html"
+                      style={{display:'inline-flex',alignItems:'center',gap:8,background:'#7C3AED',color:'#fff',padding:'11px 24px',borderRadius:10,fontSize:14,fontWeight:700,textDecoration:'none',transition:'all .18s'}}
+                      onMouseOver={e=>{e.currentTarget.style.background='#6D28D9';e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 4px 16px rgba(124,58,237,.4)'}}
+                      onMouseOut={e=>{e.currentTarget.style.background='#7C3AED';e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='none'}}>
+                      <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Open Quote Layout Designer
+                    </a>
+                    <div style={{fontSize:12,color:'var(--slate)'}}>Opens the full drag-and-drop layout editor in a new tab</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══ FOOTER ══ */}
+          {activeSection==='footer'&&(
+            <>
+              <div className="page-hd">
+                <h2>Footer</h2>
+                <p>Customize the footer that appears at the bottom of every shop page.</p>
+              </div>
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.gear} s={16} c="var(--blue)"/><div><div className="sec-card-title">Company Info</div></div></div>
+                </div>
+                <div className="sec-card-body">
+                  <div className="fg2">
+                    <div className="field">
+                      <label className="fl">Company Name</label>
+                      <input className="fi" value={footerCompany} onChange={e=>{setFooterCompany(e.target.value);markUnsaved();}} placeholder="Operix Procurement"/>
+                    </div>
+                    <div className="field">
+                      <label className="fl">Copyright Text</label>
+                      <input className="fi" value={footerCopyright} onChange={e=>{setFooterCopyright(e.target.value);markUnsaved();}} placeholder="All rights reserved."/>
+                    </div>
+                  </div>
+                  <div className="field">
+                    <label className="fl">Tagline</label>
+                    <input className="fi" value={footerTagline} onChange={e=>{setFooterTagline(e.target.value);markUnsaved();}} placeholder="Your trusted procurement partner…"/>
+                  </div>
+                  <div className="fg2">
+                    <div className="field">
+                      <label className="fl">Phone</label>
+                      <input className="fi" value={footerPhone} onChange={e=>{setFooterPhone(e.target.value);markUnsaved();}} placeholder="+63 000 000 0000"/>
+                    </div>
+                    <div className="field">
+                      <label className="fl">Contact Email</label>
+                      <input className="fi" value={footerEmail} onChange={e=>{setFooterEmail(e.target.value);markUnsaved();}} placeholder="info@yourcompany.com"/>
+                    </div>
+                  </div>
+                  <div className="field" style={{marginBottom:0}}>
+                    <label className="fl">Support Email</label>
+                    <input className="fi" value={footerSupport} onChange={e=>{setFooterSupport(e.target.value);markUnsaved();}} placeholder="support@operix.com"/>
+                  </div>
+                </div>
+              </div>
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.footer} s={16} c="var(--blue)"/><div><div className="sec-card-title">Footer Links</div><div className="sec-card-sub">Links in the Company column of the footer</div></div></div>
+                </div>
+                <div className="sec-card-body">
+                  {footerLinks.map((lk,i)=>(
+                    <div key={i} className="footer-link-row">
+                      <input value={lk.label} onChange={e=>{updateLink(i,'label',e.target.value);}} placeholder="Link label (e.g. About Us)" style={{flex:'1',padding:'8px 11px',border:'1.5px solid var(--line)',borderRadius:8,fontSize:12,fontFamily:'DM Sans,sans-serif',outline:'none',color:'var(--ink)'}} onFocus={e=>e.target.style.borderColor='#0057FF'} onBlur={e=>e.target.style.borderColor='var(--line)'}/>
+                      <input value={lk.url} onChange={e=>{updateLink(i,'url',e.target.value);}} placeholder="URL (e.g. https://…)" style={{flex:'2',padding:'8px 11px',border:'1.5px solid var(--line)',borderRadius:8,fontSize:12,fontFamily:'DM Sans,sans-serif',outline:'none',color:'var(--ink)'}} onFocus={e=>e.target.style.borderColor='#0057FF'} onBlur={e=>e.target.style.borderColor='var(--line)'}/>
+                      <button className="rm-link-btn" onClick={()=>removeLink(i)}><Ic d={P.x} s={12}/></button>
+                    </div>
+                  ))}
+                  <button className="add-link-btn" onClick={addLink}><Ic d={P.plus} s={13}/>Add Link</button>
+                </div>
+              </div>
+              {/* Live footer preview */}
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left"><Ic d={P.eye} s={16} c="var(--blue)"/><div><div className="sec-card-title">Footer Preview</div></div></div>
+                </div>
+                <div style={{background:'#0C1220',borderRadius:'0 0 14px 14px',padding:'28px 24px',color:'#94A3B8'}}>
+                  <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:24,marginBottom:24}}>
+                    <div>
+                      <b style={{color:'#fff',fontSize:14,display:'block',marginBottom:6}}>{footerCompany||'Operix'}</b>
+                      <p style={{fontSize:11,lineHeight:1.7,maxWidth:180}}>{footerTagline}</p>
+                      {footerPhone&&<p style={{fontSize:11,marginTop:8}}>{footerPhone}</p>}
+                      {footerEmail&&<p style={{fontSize:11}}>{footerEmail}</p>}
+                    </div>
+                    <div><h4 style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.1em',color:'#fff',marginBottom:10}}>Shop</h4><ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:6}}>{['Browse Products','My Orders','My Quotes'].map(l=><li key={l} style={{fontSize:11,color:'#475569'}}>{l}</li>)}</ul></div>
+                    <div><h4 style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.1em',color:'#fff',marginBottom:10}}>Support</h4><ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:6}}><li style={{fontSize:11,color:'#475569'}}>{footerSupport}</li></ul></div>
+                    <div><h4 style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.1em',color:'#fff',marginBottom:10}}>Company</h4><ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:6}}>{footerLinks.map((l,i)=>l.label&&<li key={i} style={{fontSize:11,color:'#475569'}}>{l.label}</li>)}</ul></div>
+                  </div>
+                  <div style={{borderTop:'1px solid rgba(255,255,255,.07)',paddingTop:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <p style={{fontSize:10}}>© {new Date().getFullYear()} {footerCompany||'Operix'}. {footerCopyright}</p>
+                    <div style={{display:'flex',gap:6}}>
+                      {['🔒 Secure','✓ Verified','⚡ Fast'].map(b=><span key={b} style={{background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:5,padding:'3px 8px',fontSize:9,fontWeight:600,color:'#64748B'}}>{b}</span>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+        </div>
+      </div>
+
+      {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+    </>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>

@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operix — Procurement Shop</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0C1220;--ink2:#1E2D45;--slate:#64748B;
+  --line:#E4EAF2;--surf:#F4F7FB;--white:#fff;
+  --blue:#0057FF;--blue-d:#003FBB;--blue-bg:#EEF4FF;
+  --green:#059669;--green-bg:#ECFDF5;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#DC2626;--red-bg:#FFF1F2;--gold:#F59E0B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
+.tb{position:sticky;top:0;z-index:200;background:var(--ink);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid rgba(255,255,255,.05)}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-brand b{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.4px}
+.tb-brand small{font-size:9px;color:#64748B;font-weight:600;letter-spacing:.12em;text-transform:uppercase;display:block;margin-top:-2px}
+.tb-r{display:flex;align-items:center;gap:10px}
+.tb-link{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:7px;padding:6px 12px;cursor:pointer;text-decoration:none;transition:all .18s;white-space:nowrap}
+.tb-link:hover{color:#fff;background:rgba(255,255,255,.1)}
+.tb-av{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.tb-name{font-size:13px;color:#CBD5E1;font-weight:500}
+.cart-btn{display:flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:\'DM Sans\',sans-serif}
+.cart-btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,87,255,.4)}
+.cart-cnt{background:#fff;color:var(--blue);font-size:10px;font-weight:900;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.bc{background:var(--white);border-bottom:1px solid var(--line);padding:0 32px;height:42px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--slate);position:sticky;top:58px;z-index:190}
+.bc-item{cursor:pointer;font-weight:600;transition:color .15s;white-space:nowrap}
+.bc-item:hover{color:var(--blue)}
+.bc-active{color:var(--ink)!important;cursor:default}
+.bc-sep{opacity:.35;font-size:10px}
+.layout{display:flex;min-height:calc(100vh - 100px)}
+.main{flex:1;padding:28px 32px;min-width:0}
+.sidebar{width:340px;flex-shrink:0;background:var(--white);border-left:1px solid var(--line);padding:20px;position:sticky;top:100px;max-height:calc(100vh - 100px);overflow-y:auto;display:flex;flex-direction:column}
+.hero h1{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.5px;margin-bottom:6px}
+.hero p{font-size:14px;color:var(--slate);margin-bottom:26px}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.cat-card{background:var(--white);border:1.5px solid var(--line);border-radius:16px;padding:0;cursor:pointer;transition:all .22s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.cat-card:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(0,0,0,.09)}
+.cat-card-img{width:100%;height:130px;object-fit:cover;display:block}
+.cat-card-img-ph{width:100%;height:130px;display:flex;align-items:center;justify-content:center}
+.cat-card-bg{position:absolute;inset:0;opacity:0;transition:opacity .22s}
+.cat-card:hover .cat-card-bg{opacity:.5}
+.cat-card-body{padding:16px 18px}
+.cat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;z-index:1}
+.cat-name{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-bottom:4px;position:relative;z-index:1}
+.cat-meta{font-size:12px;color:var(--slate);position:relative;z-index:1;display:flex;align-items:center;gap:8px}
+.sub-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;position:relative;z-index:1}
+.sub-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surf);color:var(--slate);border:1px solid var(--line)}
+.cat-arrow{position:absolute;top:14px;right:14px;z-index:1;opacity:0;transform:translateX(-6px);transition:all .22s}
+.cat-card:hover .cat-arrow{opacity:1;transform:translateX(0)}
+.subcat-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.subcat-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:all .18s;font-family:\'DM Sans\',sans-serif}
+.subcat-btn:hover{border-color:var(--blue);box-shadow:0 3px 12px rgba(0,87,255,.1)}
+.subcat-btn.sel{border-color:var(--blue);background:var(--blue-bg)}
+.subcat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.subcat-name{font-size:13px;font-weight:700;color:var(--ink)}
+.subcat-count{font-size:11px;color:var(--slate);margin-top:1px}
+.sec-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-lbl::after{content:\'\';flex:1;height:1px;background:var(--line)}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.prod-card{background:var(--white);border:1.5px solid var(--line);border-radius:14px;overflow:hidden;transition:all .22s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.prod-card:hover{border-color:#BFCFEF;box-shadow:0 8px 28px rgba(0,87,255,.09);transform:translateY(-2px)}
+.prod-img{width:100%;height:160px;background:var(--surf);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.prod-img img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;object-position:center;background:#fff;padding:4px}
+.badge-out{position:absolute;top:10px;right:10px;background:rgba(220,38,38,.88);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:5px;letter-spacing:.04em}
+.badge-low{position:absolute;top:10px;right:10px;background:rgba(217,119,6,.88);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:5px;letter-spacing:.04em}
+.prod-body{padding:13px}
+.prod-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:4px}
+.prod-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:2px}
+.prod-sku{font-size:10px;color:var(--slate);font-family:\'DM Mono\',monospace;margin-bottom:8px}
+.prod-price{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px}
+.prod-uom{font-size:11px;color:var(--slate);margin-top:1px}
+.prod-desc{font-size:12px;color:var(--slate);line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prod-specs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.spec-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--surf);color:var(--slate);border:1px solid var(--line);white-space:nowrap}
+.spec-tag b{color:var(--ink)}
+.prod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+.stk-ok{font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);padding:3px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:4px}
+.stk-low{font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:4px}
+.stk-out{font-size:11px;font-weight:600;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:4px}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.add-btn{display:flex;align-items:center;gap:5px;background:var(--ink);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;font-family:\'DM Sans\',sans-serif}
+.add-btn:hover{background:var(--blue);transform:scale(1.04)}
+.add-btn:disabled{background:#CBD5E1;cursor:not-allowed;transform:none}
+.in-cart{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--green);background:var(--green-bg);padding:5px 10px;border-radius:8px}
+.sbar{display:flex;align-items:center;gap:10px;background:var(--white);border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:22px;transition:border .18s}
+.sbar:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.08)}
+.sbar input{flex:1;border:none;outline:none;font-size:14px;font-family:\'DM Sans\',sans-serif;color:var(--ink);background:transparent}
+.sbar input::placeholder{color:#B0BEC5}
+.cart-hd{padding-bottom:14px;border-bottom:1.5px solid var(--line);margin-bottom:14px}
+.cart-title{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.cart-sub{font-size:12px;color:var(--slate);margin-top:2px}
+.cart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 12px;text-align:center;flex:1}
+.c-item{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.c-name{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;line-height:1.3}
+.c-meta{font-size:11px;color:var(--slate);margin-bottom:8px}
+.qty-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.qc{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.qb{width:28px;height:28px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate);font-size:15px;font-weight:800;transition:all .15s}
+.qb:hover{background:var(--surf);color:var(--ink)}
+.qi{width:40px;height:28px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;font-size:13px;font-weight:700;font-family:\'DM Sans\',sans-serif;outline:none;color:var(--ink);background:#fff}
+.c-uom{font-size:11px;color:var(--slate);margin-left:4px}
+.c-sub{font-size:13px;font-weight:800;color:var(--ink);margin-left:auto;white-space:nowrap}
+.need-row{display:flex;align-items:center;gap:6px}
+.need-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);white-space:nowrap}
+.need-input{flex:1;border:1.5px solid var(--line);border-radius:6px;padding:5px 8px;font-size:11px;font-family:\'DM Sans\',sans-serif;color:var(--ink);outline:none;transition:border .18s;background:#fff}
+.need-input:focus{border-color:var(--blue)}
+.rm-btn{width:24px;height:24px;border:none;background:none;cursor:pointer;color:#CBD5E1;display:flex;align-items:center;justify-content:center;border-radius:5px;transition:all .15s;flex-shrink:0}
+.rm-btn:hover{background:var(--red-bg);color:var(--red)}
+.divider{height:1px;background:var(--line);margin:14px 0}
+.ttl-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px}
+.ttl-lbl{color:var(--slate)}
+.ttl-val{font-weight:600;color:var(--ink)}
+.grand-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:8px;border-top:1.5px solid var(--ink)}
+.grand-lbl{font-size:14px;font-weight:700;color:var(--ink)}
+.grand-val{font-size:19px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
+.co-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:\'DM Sans\',sans-serif;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px}
+.co-btn:hover{background:var(--blue-d);box-shadow:0 4px 16px rgba(0,87,255,.35);transform:translateY(-1px)}
+.co-btn:disabled{background:#CBD5E1;cursor:not-allowed;transform:none;box-shadow:none}
+.clr-btn{font-size:11px;color:var(--red);background:var(--red-bg);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-weight:700;font-family:\'DM Sans\',sans-serif}
+.ov{position:fixed;inset:0;background:rgba(12,18,32,.65);backdrop-filter:blur(5px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.modal{background:#fff;border-radius:18px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,.25)}
+.m-hd{background:var(--ink);border-radius:18px 18px 0 0;padding:22px 28px;display:flex;justify-content:space-between;align-items:center}
+.m-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.m-sub{font-size:12px;color:#64748B;margin-top:2px}
+.m-close{background:rgba(255,255,255,.1);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;transition:background .18s}
+.m-close:hover{background:rgba(255,255,255,.2)}
+.m-body{padding:24px 28px}
+.f-sec{margin-bottom:20px}
+.f-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.fg{display:grid;gap:12px}
+.fg2{grid-template-columns:1fr 1fr}
+.fl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);margin-bottom:5px}
+.fi{width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;font-family:\'DM Sans\',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border .18s}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.08)}
+.fsel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748B\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.ord-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--surf);border-radius:8px;margin-bottom:6px;font-size:13px}
+.ord-name{font-weight:600;color:var(--ink)}
+.ord-meta{font-size:11px;color:var(--slate);margin-top:1px}
+.ord-total{font-weight:800;color:var(--ink);white-space:nowrap}
+.grand-box{display:flex;justify-content:space-between;padding:10px 12px;background:var(--ink);border-radius:8px;margin-top:8px}
+.grand-box span:first-child{font-size:14px;font-weight:700;color:var(--gold)}
+.grand-box span:last-child{font-size:16px;font-weight:900;color:var(--gold)}
+.succ{display:flex;flex-direction:column;align-items:center;padding:48px 28px;text-align:center}
+.succ-icon{width:72px;height:72px;background:var(--green-bg);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.succ-title{font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.5px;margin-bottom:7px}
+.succ-sub{font-size:14px;color:var(--slate);max-width:360px;line-height:1.65;margin-bottom:22px}
+.ord-badge{background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:10px 22px;border-radius:10px;font-family:\'DM Mono\',monospace;margin-bottom:22px}
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fu .25s ease;border-left:3px solid var(--green)}
+.nb-warn{background:#FFF7ED;border:1.5px solid #FB923C;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;animation:fu .2s ease}
+.nb-warn-icon{width:18px;height:18px;background:#FB923C;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.nb-warn-text{font-size:11px;color:#92400E;line-height:1.5;flex:1}
+.nb-warn-title{font-size:11px;font-weight:800;color:#92400E;margin-bottom:2px}
+.c-img{width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1.5px solid var(--line)}
+.c-img-ph{width:42px;height:42px;border-radius:8px;background:var(--surf);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tent-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.tent-badge{display:inline-flex;align-items:center;gap:4px;background:#EEF4FF;border:1.5px solid #BFDBFE;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--blue)}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-anim{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:14px}
+.loader-spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+
+/* ── QUICK QUOTE SLIDE PANEL ── */
+.qq-backdrop{position:fixed;inset:0;background:rgba(12,18,32,.5);backdrop-filter:blur(3px);z-index:800;animation:fu .2s ease}
+.qq-panel{position:fixed;top:0;right:0;height:100vh;width:480px;max-width:100vw;background:#fff;box-shadow:-12px 0 48px rgba(0,0,0,.18);z-index:801;display:flex;flex-direction:column;animation:qqSlide .25s cubic-bezier(.4,0,.2,1)}
+@keyframes qqSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.qq-hd{background:linear-gradient(135deg,#0C1220 0%,#1A3050 100%);padding:22px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.qq-body{flex:1;overflow-y:auto;padding:22px 24px}
+.qq-ft{padding:16px 24px;border-top:1px solid var(--line);background:#F8FAFC;flex-shrink:0}
+.qq-close{width:30px;height:30px;background:rgba(255,255,255,.1);border:none;border-radius:8px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;transition:background .15s;font-size:16px;font-family:inherit}
+.qq-close:hover{background:rgba(255,255,255,.2)}
+.qq-section{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.qq-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--slate);margin-bottom:10px}
+.qq-item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}
+.qq-item-row:last-child{border-bottom:none}
+.qq-item-name{font-size:13px;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qq-item-meta{font-size:11px;color:var(--slate);margin-top:1px}
+.qq-item-price{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;margin-left:12px}
+.qq-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--ink);border-radius:10px;margin-top:8px}
+.qq-fi{width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border .18s}
+.qq-fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.07)}
+.qq-fl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);margin-bottom:5px}
+.qq-send{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.qq-send:hover{background:var(--blue-d);box-shadow:0 4px 16px rgba(0,87,255,.35);transform:translateY(-1px)}
+.qq-send:disabled{background:#CBD5E1;cursor:not-allowed;transform:none;box-shadow:none}
+.qq-validity{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:9px;margin-bottom:16px;font-size:12px;color:#1E40AF;line-height:1.5}
+.p0{--cc:#0057FF;--cbg:#EEF4FF}.p1{--cc:#059669;--cbg:#ECFDF5}
+.p2{--cc:#D97706;--cbg:#FFFBEB}.p3{--cc:#E11D48;--cbg:#FFF1F2}
+.p4{--cc:#7C3AED;--cbg:#F5F3FF}.p5{--cc:#0284C7;--cbg:#F0F9FF}
+.p6{--cc:#A21CAF;--cbg:#FDF4FF}.p7{--cc:#C2410C;--cbg:#FFF7ED}
+.p8{--cc:#0D9488;--cbg:#F0FDFA}.p9{--cc:#4F46E5;--cbg:#EEF2FF}
+
+/* ── PRODUCT DETAIL MODAL ── */
+.pd-ov{position:fixed;inset:0;background:rgba(12,18,32,.7);backdrop-filter:blur(6px);z-index:800;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;animation:fadeInOv .2s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.pd-modal{background:#fff;border-radius:20px;width:100%;max-width:900px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.3);animation:slideUpM .25s cubic-bezier(.4,0,.2,1)}
+@keyframes slideUpM{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pd-hd{background:var(--ink);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.pd-hd-left{display:flex;align-items:center;gap:8px}
+.pd-hd-trail{font-size:11px;color:#94A3B8;font-weight:600}
+.pd-hd-sep{color:#475569;font-size:11px}
+.pd-close{width:32px;height:32px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94A3B8;transition:all .18s}
+.pd-close:hover{background:rgba(255,255,255,.15);color:#fff}
+.pd-body{display:grid;grid-template-columns:1fr 1fr;overflow-y:auto;flex:1}
+.pd-gallery{background:var(--surf);display:flex;align-items:center;justify-content:center;padding:32px;min-height:320px;position:relative}
+.pd-gallery img{max-width:100%;max-height:340px;object-fit:contain;border-radius:10px}
+.pd-gallery-ph{display:flex;flex-direction:column;align-items:center;gap:12px;opacity:.25}
+.pd-info{padding:28px 26px;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.pd-category-pill{display:inline-flex;align-items:center;gap:5px;background:var(--blue-bg);color:var(--blue);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border-radius:99px;margin-bottom:12px;width:fit-content}
+.pd-name{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-.5px;line-height:1.25;margin-bottom:6px}
+.pd-sku{font-size:11px;color:var(--slate);font-family:\'DM Mono\',monospace;margin-bottom:14px}
+.pd-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.pd-price{font-size:28px;font-weight:900;color:var(--ink);letter-spacing:-.7px}
+.pd-per{font-size:13px;color:var(--slate)}
+.pd-divider{height:1px;background:var(--line);margin:16px 0}
+.pd-spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.pd-spec{background:var(--surf);border-radius:9px;padding:10px 12px}
+.pd-spec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-bottom:3px}
+.pd-spec-val{font-size:13px;font-weight:700;color:var(--ink)}
+.pd-desc-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);margin-bottom:6px}
+.pd-desc-text{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:16px}
+.pd-action-row{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid var(--line)}
+.pd-add-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;transition:all .2s}
+.pd-add-btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,87,255,.35)}
+.pd-add-btn:disabled{background:#CBD5E1;cursor:not-allowed;transform:none}
+.pd-in-cart{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--green-bg);color:var(--green);border:1.5px solid #A7F3D0;border-radius:10px;padding:11px;font-size:13px;font-weight:700}
+.pd-stk-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px}
+.pd-suggested{border-top:1px solid var(--line);padding:18px 22px;background:var(--surf);flex-shrink:0}
+.pd-suggested-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--slate);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.pd-sug-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.pd-sug-scroll::-webkit-scrollbar{height:3px}
+.pd-sug-scroll::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
+.sug-card{flex-shrink:0;width:140px;background:var(--white);border:1.5px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .18s}
+.sug-card:hover{border-color:#BFCFEF;box-shadow:0 4px 14px rgba(0,87,255,.09);transform:translateY(-1px)}
+.sug-img{width:100%;height:80px;background:var(--surf);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.sug-img img{max-width:100%;max-height:80px;object-fit:contain}
+.sug-body{padding:8px 10px}
+.sug-name{font-size:11px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sug-price{font-size:12px;font-weight:800;color:var(--blue)}
+
+/* ── RECENTLY VIEWED BAR ── */
+.rv-bar{background:var(--white);border-top:1px solid var(--line);padding:14px 32px;display:flex;align-items:center;gap:14px;overflow-x:auto}
+.rv-bar::-webkit-scrollbar{height:3px}
+.rv-bar::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
+.rv-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate);white-space:nowrap;flex-shrink:0}
+.rv-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surf);border:1.5px solid var(--line);border-radius:9px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.rv-item:hover{border-color:var(--blue);background:var(--blue-bg)}
+.rv-item img{width:28px;height:28px;object-fit:contain;border-radius:5px}
+.rv-item-ph{width:28px;height:28px;background:var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rv-item-name{font-size:11px;font-weight:700;color:var(--ink);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-item-price{font-size:10px;color:var(--slate)}
+
+/* ── FOOTER ── */
+.shop-footer{background:var(--ink);color:#94A3B8;padding:48px 32px 28px;margin-top:0}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-brand b{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.4px;display:block;margin-bottom:6px}
+.footer-brand p{font-size:12px;line-height:1.7;max-width:220px}
+.footer-col h4{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#fff;margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-col li a{font-size:12px;color:#64748B;text-decoration:none;transition:color .15s;cursor:pointer}
+.footer-col li a:hover{color:#fff}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:11px}
+.footer-badges{display:flex;gap:8px}
+.footer-badge{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;color:#94A3B8;letter-spacing:.04em}
+@media(max-width:900px){
+  .footer-top{grid-template-columns:1fr 1fr}
+  .pd-body{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .footer-top{grid-template-columns:1fr}
+  .tb{padding:0 16px}
+  .main{padding:16px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+const FB = {
+  apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+  authDomain:"operix-c8a8c.firebaseapp.com",
+  projectId:"operix-c8a8c",
+  storageBucket:"operix-c8a8c.firebasestorage.app",
+  messagingSenderId:"794223223499",
+  appId:"1:794223223499:web:f059007b909cc15766f14e"
+};
+const RENDER = 'https://operix-inventory-webhooks.onrender.com';
+const SECRET = 'banana_pizza_unicorn_777_secret';
+
+const fmt = n => (n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parseCat = raw => {
+  if (!raw) return { main:'General', sub:'General' };
+  const i = raw.indexOf('.');
+  if (i===-1) return { main:raw.trim(), sub:raw.trim() };
+  return { main:raw.slice(0,i).trim(), sub:raw.slice(i+1).trim() };
+};
+const PALETTE=[
+  {cc:'#0057FF',cbg:'#EEF4FF'},{cc:'#059669',cbg:'#ECFDF5'},
+  {cc:'#D97706',cbg:'#FFFBEB'},{cc:'#E11D48',cbg:'#FFF1F2'},
+  {cc:'#7C3AED',cbg:'#F5F3FF'},{cc:'#0284C7',cbg:'#F0F9FF'},
+  {cc:'#A21CAF',cbg:'#FDF4FF'},{cc:'#C2410C',cbg:'#FFF7ED'},
+  {cc:'#0D9488',cbg:'#F0FDFA'},{cc:'#4F46E5',cbg:'#EEF2FF'},
+];
+const pal=i=>PALETTE[i%PALETTE.length];
+const getCurrencySymbol=(c)=>({'PHP':'₱','USD':'$','EUR':'€','JPY':'¥','GBP':'£','KRW':'₩','CNY':'¥','AUD':'A$','CAD':'C$','SGD':'S$','HKD':'HK$','THB':'฿','MYR':'RM','IDR':'Rp','VND':'₫'}[c]||(c?c+' ':'₱'));
+
+const Ic=({d,s=16,c='currentColor'})=>(
+  <svg width={s} height={s} fill="none" stroke={c} strokeWidth="1.8"
+    strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d={d}/></svg>
+);
+const P={
+  back:'M19 12H5M5 12l7 7M5 12l7-7',
+  cart:'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',
+  search:'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+  x:'M6 18L18 6M6 6l12 12',
+  plus:'M12 4v16m8-8H4',
+  check:'M5 13l4 4L19 7',
+  clock:'M12 22a10 10 0 100-20 10 10 0 000 20zM12 6v6l4 2',
+  box:'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+  tag:'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z',
+  grid:'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
+  cal:'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+  arrow:'M9 5l7 7-7 7',
+  orders:'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  info:'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  eye:'M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+  truck:'M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm11 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+};
+
+const Logo=()=>(
+  <svg width="30" height="30" viewBox="0 0 40 40">
+    <rect width="40" height="40" rx="9" fill="#0057FF"/>
+    <path d="M20 8C27.18 8 33 13.82 33 21S27.18 34 20 34 7 28.18 7 21 12.82 8 20 8zm0 4a9 9 0 100 18A9 9 0 0020 12zm0 4a5 5 0 110 10A5 5 0 0120 16z" fill="white" opacity=".9"/>
+    <circle cx="20" cy="21" r="2.5" fill="white"/>
+  </svg>
+);
+
+function Toast({msg,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,2600);return()=>clearTimeout(t);});
+  return <div className="toast">✓ {msg}</div>;
+}
+
+/* ── PRODUCT DETAIL MODAL ── */
+function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltAdjustMap}){
+  const isOut=product.stock===0;
+  const isLow=!isOut&&product.stock<=(product.threshold||10);
+  const inCart=cart.find(i=>i.id===product.id);
+  const {main,sub}=parseCat(product.category);
+  const cs=getCurrencySymbol(product.currency);
+
+  // Suggested: same sub-category, excluding this product
+  const suggested=useMemo(()=>
+    allProducts.filter(p=>p.id!==product.id&&p.category===product.category).slice(0,8)
+  ,[allProducts,product]);
+
+  return(
+    <div className="pd-ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="pd-modal">
+        {/* Header breadcrumb */}
+        <div className="pd-hd">
+          <div className="pd-hd-left">
+            <span className="pd-hd-trail">Shop</span>
+            <span className="pd-hd-sep">›</span>
+            <span className="pd-hd-trail">{main}</span>
+            <span className="pd-hd-sep">›</span>
+            <span className="pd-hd-trail" style={{color:'#CBD5E1'}}>{sub}</span>
+          </div>
+          <button className="pd-close" onClick={onClose}>
+            <Ic d={P.x} s={14}/>
+          </button>
+        </div>
+
+        {/* Main grid */}
+        <div className="pd-body">
+          {/* Gallery */}
+          <div className="pd-gallery">
+            {product.imageUrl
+              ? <img src={product.imageUrl} alt={product.name}
+                  onError={e=>e.target.style.display='none'}/>
+              : <div className="pd-gallery-ph">
+                  <Ic d={P.box} s={64} c="var(--slate)"/>
+                  <span style={{fontSize:11,color:'var(--slate)',fontWeight:600}}>No image available</span>
+                </div>
+            }
+            {isOut&&<div className="badge-out" style={{top:12,right:12}}>OUT OF STOCK</div>}
+            {!isOut&&isLow&&<div className="badge-low" style={{top:12,right:12}}>LOW STOCK</div>}
+          </div>
+
+          {/* Info panel */}
+          <div className="pd-info">
+            <div className="pd-category-pill">
+              <Ic d={P.tag} s={10} c="var(--blue)"/>{sub}
+            </div>
+            <div className="pd-name">{product.name}</div>
+            <div className="pd-sku">SKU: {product.sku||'—'}</div>
+            <div className="pd-price-row">
+              <span className="pd-price">{cs}{fmt(product.price)}</span>
+              <span className="pd-per">per {product.unit||'unit'}</span>
+            </div>
+
+            <div className="pd-divider"/>
+
+            {/* Specs grid */}
+            <div className="pd-spec-grid">
+              <div className="pd-spec">
+                <div className="pd-spec-lbl">Stock</div>
+                <div className="pd-spec-val" style={{color:isOut?'var(--red)':isLow?'var(--amber)':'var(--green)'}}>
+                  {product.stock} {product.unit||'unit'}{product.stock!==1?'s':''}
+                </div>
+              </div>
+              {product.moq&&<div className="pd-spec">
+                <div className="pd-spec-lbl">Min. Order</div>
+                <div className="pd-spec-val">{product.moq} {product.unit||'unit'}</div>
+              </div>}
+              {product.leadTime&&<div className="pd-spec">
+                <div className="pd-spec-lbl">Lead Time</div>
+                <div className="pd-spec-val">{product.leadTime} day{product.leadTime!=1?'s':''}</div>
+              </div>}
+              {product.supplier&&<div className="pd-spec">
+                <div className="pd-spec-lbl">Supplier</div>
+                <div className="pd-spec-val" style={{fontSize:12}}>{product.supplier}</div>
+              </div>}
+              {product.brand&&<div className="pd-spec">
+                <div className="pd-spec-lbl">Brand</div>
+                <div className="pd-spec-val">{product.brand}</div>
+              </div>}
+              {product.weight&&<div className="pd-spec">
+                <div className="pd-spec-lbl">Weight</div>
+                <div className="pd-spec-val">{product.weight}</div>
+              </div>}
+            </div>
+
+            {product.description&&<>
+              <div className="pd-desc-lbl">Description</div>
+              <div className="pd-desc-text">{product.description}</div>
+            </>}
+
+            {/* Action */}
+            <div className="pd-action-row">
+              <span className={`pd-stk-badge ${isOut?'stk-out':isLow?'stk-low':'stk-ok'}`}>
+                <span className="dot"/>
+                {isOut?'Out of stock':isLow?`Only ${product.stock} left`:`${product.stock} in stock`}
+              </span>
+              {inCart
+                ? <div className="pd-in-cart"><Ic d={P.check} s={14}/>{inCart.quantity} in cart</div>
+                : <button className="pd-add-btn" disabled={isOut} onClick={()=>{onAdd(product,ltAdjustMap);onClose();}}>
+                    <Ic d={P.plus} s={14}/>Add to Cart
+                  </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* Suggested products */}
+        {suggested.length>0&&(
+          <div className="pd-suggested">
+            <div className="pd-suggested-lbl">
+              <Ic d={P.grid} s={11} c="var(--slate)"/>You may also need
+            </div>
+            <div className="pd-sug-scroll">
+              {suggested.map(p=>{
+                const sInCart=cart.find(i=>i.id===p.id);
+                return(
+                  <div key={p.id} className="sug-card" onClick={()=>onOpenProduct(p)}>
+                    <div className="sug-img">
+                      {p.imageUrl
+                        ? <img src={p.imageUrl} alt={p.name} onError={e=>e.target.style.display='none'}/>
+                        : <Ic d={P.box} s={24} c="var(--slate)"/>
+                      }
+                    </div>
+                    <div className="sug-body">
+                      <div className="sug-name">{p.name}</div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
+                        <span className="sug-price">{getCurrencySymbol(p.currency)}{fmt(p.price)}</span>
+                        {sInCart&&<span style={{fontSize:9,fontWeight:800,color:'var(--green)'}}>✓</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── FOOTER ── */
+function ShopFooter({footerData}){
+  const fd=footerData||{};
+  return(
+    <footer className="shop-footer">
+      <div className="footer-top">
+        <div className="footer-brand">
+          <Logo/>
+          <b style={{display:'block',marginTop:10,marginBottom:6}}>{fd.companyName||'Operix Procurement'}</b>
+          <p>{fd.tagline||'Your trusted procurement partner. Quality products, efficient ordering, seamless delivery.'}</p>
+          {fd.phone&&<p style={{marginTop:10,fontSize:12}}>{fd.phone}</p>}
+          {fd.email&&<p style={{fontSize:12}}>{fd.email}</p>}
+        </div>
+        <div className="footer-col">
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="shop.html">Browse Products</a></li>
+            <li><a href="my-orders.html">My Orders</a></li>
+            <li><a href="my-orders.html">My Quotes</a></li>
+          </ul>
+        </div>
+        <div className="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href={fd.supportEmail?'mailto:'+fd.supportEmail:'#'}>{fd.supportEmail||'support@operix.com'}</a></li>
+            {fd.phone&&<li><a href={'tel:'+fd.phone}>{fd.phone}</a></li>}
+            <li><a href="Dashboard.html">Admin Dashboard</a></li>
+          </ul>
+        </div>
+        <div className="footer-col">
+          <h4>Company</h4>
+          <ul>
+            {(fd.footerLinks||[{label:'About Us',url:'#'},{label:'Privacy Policy',url:'#'},{label:'Terms of Service',url:'#'}]).map((l,i)=>(
+              <li key={i}><a href={l.url||'#'}>{l.label}</a></li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <p>© {new Date().getFullYear()} {fd.companyName||'Operix'}. {fd.copyright||'All rights reserved.'}</p>
+        <div className="footer-badges">
+          <span className="footer-badge">🔒 Secure</span>
+          <span className="footer-badge">✓ Verified</span>
+          <span className="footer-badge">⚡ Fast</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ── RECENTLY VIEWED BAR ── */
+function RecentlyViewed({items,onOpen}){
+  if(!items.length) return null;
+  return(
+    <div className="rv-bar">
+      <span className="rv-lbl">Recently Viewed</span>
+      {items.map(p=>(
+        <div key={p.id} className="rv-item" onClick={()=>onOpen(p)}>
+          {p.imageUrl
+            ? <img src={p.imageUrl} alt={p.name}/>
+            : <div className="rv-item-ph"><Ic d={P.box} s={12} c="var(--slate)"/></div>
+          }
+          <div>
+            <div className="rv-item-name">{p.name}</div>
+            <div className="rv-item-price">{getCurrencySymbol(p.currency)}{fmt(p.price)}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function computeNeedByDate(product,ltAdjMap){
+  const lt=parseInt(product.leadTime);
+  if(!lt||lt<1) return '';
+  const rule=ltAdjMap[product.supplier||'']||null;
+  let d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+lt);
+  if(rule&&rule.adjustDays>0){
+    if(rule.dayType==='Working Days'){
+      let added=0;
+      while(added<rule.adjustDays){d.setDate(d.getDate()+1);const dow=d.getDay();if(dow!==0&&dow!==6)added++;}
+    } else { d.setDate(d.getDate()+rule.adjustDays); }
+  }
+  return d.toISOString().split('T')[0];
+}
+
+function App(){
+  const [user,setUser]=useState(null);
+  const [userRole,setUserRole]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [products,setProducts]=useState([]);
+  const [invoiceSettings,setIS]=useState({});
+  const [shopConfig,setShopConfig]=useState({});
+
+  const [view,setView]=useState('landing');
+  const [selMain,setSelMain]=useState(null);
+  const [selSub,setSelSub]=useState(null);
+  const [searchQ,setSearchQ]=useState('');
+
+  const [cart,setCart]=useState(()=>{try{const s=localStorage.getItem('operix_cart');return s?JSON.parse(s):[]}catch{return[]}});
+  const [showCO,setShowCO]=useState(false);
+  const [success,setSuccess]=useState(null);
+  const [submitting,setSubmitting]=useState(false);
+  const [toast,setToast]=useState(null);
+  const [form,setForm]=useState({customerName:'',customerEmail:'',customerPhone:'',deliveryAddress:'',paymentMethod:'Cash',notes:''});
+  const [savedAddresses,setSavedAddresses]=useState([]);
+
+  const [approvalGroup,setApprovalGroup]=useState(null);
+  const [approvalBlocked,setApprovalBlocked]=useState(false);
+  const [approvalChecked,setApprovalChecked]=useState(false);
+  const [ltAdjustMap,setLtAdjustMap]=useState({});
+  const [needByWarning,setNeedByWarning]=useState(null);
+  const [showQuote,setShowQuote]=useState(false);
+  const [quoteForm,setQuoteForm]=useState({email:'',recipientName:'',reference:'',notes:''});
+  const [quoteSending,setQuoteSending]=useState(false);
+  const [quoteSuccess,setQuoteSuccess]=useState(false);
+
+  // Product detail modal
+  const [detailProduct,setDetailProduct]=useState(null);
+  // Recently viewed (up to 8, most recent first)
+  const [recentlyViewed,setRecentlyViewed]=useState(()=>{try{const s=localStorage.getItem('operix_rv');return s?JSON.parse(s):[]}catch{return[]}});
+
+  // Persist cart
+  useEffect(()=>{try{cart.length>0?localStorage.setItem('operix_cart',JSON.stringify(cart)):localStorage.removeItem('operix_cart');}catch{}},[cart]);
+
+  const openProduct=useCallback((product)=>{
+    setDetailProduct(product);
+    setRecentlyViewed(prev=>{
+      const filtered=prev.filter(p=>p.id!==product.id);
+      const next=[product,...filtered].slice(0,8);
+      try{localStorage.setItem('operix_rv',JSON.stringify(next));}catch{}
+      return next;
+    });
+  },[]);
+
+  useEffect(()=>{
+    if(!window.firebase){setTimeout(()=>window.location.reload(),600);return;}
+    if(!firebase.apps.length) firebase.initializeApp(FB);
+    const db=firebase.firestore();
+    firebase.auth().onAuthStateChanged(async u=>{
+      if(!u){window.location.href='login.html';return;}
+
+      const doc=await db.collection('users').doc(u.uid).get();
+      if(!doc.exists){window.location.href='login.html';return;}
+      const ud=doc.data();
+
+      // ── ACCESS CONTROL ─────────────────────────────────────────────────────
+      // ALLOWED:
+      //   1. Admin users (role === 'admin') — full shop access
+      //   2. Users (role === 'user') with:
+      //        • status === 'approved'
+      //        • assignedAdminId set (assigned to an admin by master)
+      //        • that admin has assignedRole with 'create_orders' permission
+      //           (purchaser, supervisor, finance_manager, admin_approver)
+      // BLOCKED: everyone else → redirect to shop-access-denied.html
+      // ───────────────────────────────────────────────────────────────────────
+
+      const isMaster = ud.role === 'master' || ud.isMaster === true;
+      const isAdmin  = ud.role === 'admin';
+      const isUser   = ud.role === 'user';
+
+      // Master gets full pass-through — load() will return early with empty products
+      if (isMaster) {
+        setUser({uid:u.uid,email:u.email,displayName:ud.fullName||u.email,...ud});
+        setUserRole('admin');
+        setForm(f=>({...f,customerName:ud.fullName||'',customerEmail:u.email||''}));
+        // Load saved addresses
+        try{const profSnap=await db.collection('userProfiles').doc(u.uid).get();if(profSnap.exists){const p=profSnap.data();if(Array.isArray(p.addresses)&&p.addresses.length>0){setSavedAddresses(p.addresses);const def=p.addresses.find(a=>a.isDefault)||p.addresses[0];if(def){const full=[def.street,def.city,def.province,def.zipCode,def.country].filter(Boolean).join(', ');setForm(f=>({...f,customerPhone:p.contacts?.primaryPhone||ud.phoneNumber||'',deliveryAddress:full}));}}else if(ud.address){setForm(f=>({...f,deliveryAddress:ud.address}));}if(p.contacts?.primaryPhone)setForm(f=>({...f,customerPhone:p.contacts.primaryPhone}));}}catch(e){console.warn('profile addresses:',e);}
+        await load(u.uid,'admin',null,db,ud);
+        setLoading(false);
+        return;
+      }
+
+      if (!isAdmin && !isUser) {
+        window.location.href = 'shop-access-denied.html'; return;
+      }
+
+      if (isUser) {
+        // Must be approved
+        if (ud.status !== 'approved') {
+          window.location.href = 'shop-access-denied.html'; return;
+        }
+        // Must be assigned to an admin
+        if (!ud.assignedAdminId) {
+          window.location.href = 'shop-access-denied.html'; return;
+        }
+        // Check that the assigned admin has a role that includes 'create_orders'
+        // Roles with create_orders: purchaser, supervisor, finance_manager, admin_approver (*)
+        // Also fallback: if admin has no permissions array yet, check assignedRole directly
+        try {
+          const adminDoc = await db.collection('users').doc(ud.assignedAdminId).get();
+          if (!adminDoc.exists) { window.location.href='shop-access-denied.html'; return; }
+          const adminData = adminDoc.data();
+          const adminPerms = Array.isArray(adminData.permissions) ? adminData.permissions : [];
+          const allowedRoles = ['purchaser','supervisor','finance_manager','admin_approver'];
+          const hasCreateOrders = adminPerms.includes('create_orders')
+            || adminPerms.includes('*')
+            || allowedRoles.includes(adminData.assignedRole)
+            || adminData.isAdmin === true; // any admin with no role assigned yet — allow by default
+          if (!hasCreateOrders) {
+            window.location.href = 'shop-access-denied.html'; return;
+          }
+        } catch(e) {
+          console.error('Access check failed:', e);
+          window.location.href = 'shop-access-denied.html'; return;
+        }
+      }
+
+      // ── ACCESS GRANTED ─────────────────────────────────────────────────────
+      const role = isAdmin ? 'admin' : 'user';
+      setUser({uid:u.uid,email:u.email,displayName:ud.fullName||u.email,...ud});
+      setUserRole(role);
+      setForm(f=>({...f,customerName:ud.fullName||'',customerEmail:u.email||''}));
+      // Load saved addresses from userProfiles
+      try{
+        const profSnap=await db.collection('userProfiles').doc(u.uid).get();
+        if(profSnap.exists){
+          const p=profSnap.data();
+          if(Array.isArray(p.addresses)&&p.addresses.length>0){
+            setSavedAddresses(p.addresses);
+            const def=p.addresses.find(a=>a.isDefault)||p.addresses[0];
+            if(def){
+              const full=[def.street,def.city,def.province,def.zipCode,def.country].filter(Boolean).join(', ');
+              setForm(f=>({...f,deliveryAddress:full,customerPhone:p.contacts?.primaryPhone||ud.phoneNumber||f.customerPhone}));
+            }
+          } else if(ud.address){
+            setForm(f=>({...f,deliveryAddress:ud.address}));
+          }
+          if(p.contacts?.primaryPhone) setForm(f=>({...f,customerPhone:p.contacts.primaryPhone}));
+        } else if(ud.address){
+          setForm(f=>({...f,deliveryAddress:ud.address,customerPhone:ud.phoneNumber||ud.phone||''}));
+        }
+      }catch(e){console.warn('profile addresses:',e);}
+      await load(u.uid,role,ud.assignedAdminId,db,ud);
+      setLoading(false);
+    });
+  },[]);
+
+  const load=async(uid,role,assignedAdminId,db,userData)=>{
+    try{
+      const companyName = userData?.companyName || '';
+      const isMasterRole = userData?.role === 'master' || userData?.isMaster === true;
+
+      // ── STEP 1: Collect all admin UIDs in the same company ────────────────
+      // We query by createdBy (reliable — always set on products) rather than
+      // companyName (unreliable — may be empty or mismatched on older products).
+      let adminUids = [];
+
+      if (isMasterRole) {
+        // Master sees nothing — not bound to any company
+        setProducts([]);
+        setApprovalChecked(true);
+        return;
+      } else if (role === 'admin') {
+        // Collect all admins in the same company
+        if (companyName) {
+          try {
+            const admSnap = await db.collection('users')
+              .where('role','==','admin')
+              .where('companyName','==',companyName)
+              .get();
+            adminUids = admSnap.docs.map(d => d.id);
+          } catch(e) { console.warn('company admin list:', e); }
+        }
+        // Always include self (covers case where companyName is empty)
+        if (!adminUids.includes(uid)) adminUids.push(uid);
+      } else {
+        // Regular user — load products from their assigned admin only
+        if (assignedAdminId) adminUids = [assignedAdminId];
+      }
+
+      // ── STEP 2: Fetch products for all admin UIDs ─────────────────────────
+      let allProducts = [];
+      if (adminUids.length > 0) {
+        // Batch into chunks of 30 (Firestore 'in' limit)
+        for (let i = 0; i < adminUids.length; i += 30) {
+          const chunk = adminUids.slice(i, i + 30);
+          try {
+            const snap = await db.collection('products')
+              .where('createdBy','in',chunk)
+              .get();
+            snap.docs.forEach(d => allProducts.push({id:d.id,...d.data()}));
+          } catch(e) { console.warn('products fetch failed for chunk:', e); }
+        }
+      }
+
+      setProducts(allProducts);
+
+      // ── Lead time adjustments ─────────────────────────────────────────────
+      const adminIdForLt = role==='admin' ? uid : assignedAdminId;
+      if(adminIdForLt){
+        try{
+          const ltSnap=await db.collection('leadTimeAdjust').where('adminId','==',adminIdForLt).get();
+          const ltmap={};
+          ltSnap.docs.forEach(d=>{const x=d.data();if(x.supplierName)ltmap[x.supplierName]={adjustDays:x.adjustDays||0,dayType:x.dayType||'Calendar Days'};});
+          setLtAdjustMap(ltmap);
+        }catch(e){console.warn('ltAdjust:',e);}
+      }
+
+      // ── Invoice settings + shop config ────────────────────────────────────
+      const adminId = role==='admin' ? uid : assignedAdminId;
+      if(adminId){
+        try{const is=await db.collection('invoiceSettings').doc(adminId).get();if(is.exists)setIS(is.data());}catch(e){console.warn('invoiceSettings:',e);}
+        // Load shopConfig — try company-level doc first, fall back to per-uid legacy doc
+        try{
+          const configDocId = companyName || adminId;
+          let sc = await db.collection('shopConfig').doc(configDocId).get();
+          if(!sc.exists && companyName) {
+            // Legacy fallback: try the admin's own UID doc
+            sc = await db.collection('shopConfig').doc(adminId).get();
+          }
+          if(sc.exists) setShopConfig(sc.data());
+        }catch(e){console.warn('shopConfig:',e);}
+      }
+
+      // ── Approval groups ───────────────────────────────────────────────────
+      try{
+        const agSnap=await db.collection('approvalGroups').where('active','==',true).get();
+        const groups=agSnap.docs.map(d=>({id:d.id,...d.data()}));
+        const match=groups.find(g=>{
+          const cm=!g.companyName||g.companyName===companyName;
+          const rm=!g.appliesTo||g.appliesTo==='both'||(role==='admin'&&g.appliesTo==='admin')||(role==='user'&&g.appliesTo==='user');
+          return cm&&rm;
+        });
+        if(match){setApprovalGroup(match);setApprovalBlocked(false);}
+        else{const bypass=groups.find(g=>g.bypassAllowed&&(!g.companyName||g.companyName===companyName));setApprovalGroup(null);setApprovalBlocked(!bypass);}
+      }catch(e){console.warn('approvalGroups:',e);}
+      setApprovalChecked(true);
+    }catch(e){console.error('load error:',e);setApprovalChecked(true);}
+  };
+
+  const catTree=useMemo(()=>{const t={};products.forEach(p=>{const{main,sub}=parseCat(p.category);if(!t[main])t[main]={};if(!t[main][sub])t[main][sub]=[];t[main][sub].push(p);});return t;},[products]);
+  const mainCats=useMemo(()=>Object.keys(catTree).sort(),[catTree]);
+  const subCats=useMemo(()=>{if(!selMain)return[];return Object.keys(catTree[selMain]||{}).sort();},[selMain,catTree]);
+  const visibleProds=useMemo(()=>{if(!selMain)return[];const subs=catTree[selMain]||{};let pool=selSub?(subs[selSub]||[]):Object.values(subs).flat();if(searchQ){const q=searchQ.toLowerCase();pool=pool.filter(p=>p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q));}return pool;},[selMain,selSub,catTree,searchQ]);
+
+  const cartCount=cart.reduce((s,i)=>s+i.quantity,0);
+  const cartTotal=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+
+  const addToCart=useCallback((prod,adjMap)=>{
+    if(prod.stock===0)return;
+    setCart(prev=>{const ex=prev.find(i=>i.id===prod.id);if(ex)return prev.map(i=>i.id===prod.id?{...i,quantity:Math.min(i.quantity+1,prod.stock)}:i);const autoDate=computeNeedByDate(prod,adjMap||{});return[...prev,{...prod,quantity:1,needByDate:autoDate,tentativeDelivery:autoDate,deliveryAutoComputed:!!autoDate}];});
+    setToast(`${prod.name} added`);
+  },[]);
+  const updateQty=useCallback((id,qty)=>{const p=products.find(x=>x.id===id);if(!p)return;if(qty<=0){setCart(prev=>prev.filter(i=>i.id!==id));return;}if(qty>p.stock){setToast(`Only ${p.stock} ${p.unit||'units'} available`);return;}setCart(prev=>prev.map(i=>i.id===id?{...i,quantity:qty}:i));},[products]);
+  const removeFromCart=useCallback(id=>setCart(prev=>prev.filter(i=>i.id!==id)),[]);
+  const updateNeedBy=useCallback((id,d)=>{setCart(prev=>prev.map(i=>{if(i.id!==id)return i;if(d&&i.tentativeDelivery&&d<i.tentativeDelivery)setNeedByWarning({itemId:id,itemName:i.name,needBy:d,tentative:i.tentativeDelivery});else setNeedByWarning(null);return{...i,needByDate:d};}));},[]);
+
+  const goLanding=()=>{setView('landing');setSelMain(null);setSelSub(null);setSearchQ('');};
+  const goCat=main=>{setView('category');setSelMain(main);setSelSub(null);setSearchQ('');};
+
+  const submitOrder=async()=>{
+    if(!form.customerName||!form.customerEmail||!form.deliveryAddress){alert('Please fill in Name, Email and Delivery Address.');return;}
+    if(!cart.length)return;
+    setSubmitting(true);
+    try{
+      const db=firebase.firestore();
+      const cr=db.collection('counters').doc('orderCounter');
+      let count=1;
+      try{const cd=await cr.get();if(cd.exists){count=cd.data().count+1;await cr.update({count:firebase.firestore.FieldValue.increment(1)});}else await cr.set({count:1});}catch{count=Date.now();}
+      const prefix=invoiceSettings.invoicePrefix||'ORD';
+      const orderNumber=`${prefix}-${String(count).padStart(4,'0')}`;
+
+      // ── Check for Order Approval Group ──────────────────────────────────────
+      // Look for an approval group with docType 'Order' that matches this user's company
+      let approvalGroup = null;
+      let requiresApproval = false;
+      let approvalStep = null;
+      try {
+        const agSnap = await db.collection('approvalGroups')
+          .where('docType','==','Order')
+          .where('active','==',true)
+          .get();
+        const userCompany = user.companyName || '';
+        // Find the most specific matching group: company-specific first, then all-companies
+        const groups = agSnap.docs.map(d=>({id:d.id,...d.data()}));
+        approvalGroup = groups.find(g=>g.companyName===userCompany) ||
+                        groups.find(g=>!g.companyName||g.companyName==='');
+        if (approvalGroup) {
+          // Check applies-to constraint
+          const appliesToMatch = approvalGroup.appliesTo==='both' ||
+            (approvalGroup.appliesTo==='admin' && userRole==='admin') ||
+            (approvalGroup.appliesTo==='user'  && userRole!=='admin');
+          // Check amount range if required
+          const amountMatch = !approvalGroup.requiresAmount ||
+            (cartTotal >= (approvalGroup.minAmount||0) &&
+             (!approvalGroup.maxAmount || cartTotal <= approvalGroup.maxAmount));
+          if (appliesToMatch && amountMatch) {
+            requiresApproval = true;
+            approvalStep = approvalGroup.steps?.[0] || null;
+          }
+        }
+      } catch(e) { console.warn('Could not load order approval groups:', e); }
+
+      // Determine initial status and approval fields
+      const initialStatus = requiresApproval ? 'pending_approval' : 'pending';
+      const approvalFields = requiresApproval ? {
+        orderApprovalGroupId:   approvalGroup.id,
+        orderApprovalGroupName: approvalGroup.name,
+        orderApprovalStepIndex: 0,
+        orderApprovalTotalSteps:approvalGroup.steps?.length||1,
+        assignedApproverId:     approvalStep?.approverAdminId||null,
+        assignedApproverRole:   approvalStep?.approverRole||null,
+        assignedApproverName:   approvalStep?.approverName||null,
+        orderApprovalStatus:    'pending_approval',
+        orderApprovalHistory:   [],
+      } : {};
+
+      const orderData={
+        orderNumber, customerId:user.uid, userId:user.uid,
+        customerName:form.customerName, customerEmail:form.customerEmail,
+        customerPhone:form.customerPhone, deliveryAddress:form.deliveryAddress,
+        paymentMethod:form.paymentMethod, notes:form.notes,
+        items:cart.map(item=>({
+          productId:item.id, name:item.name, sku:item.sku||'', imageUrl:item.imageUrl||'',
+          quantity:item.quantity, price:item.price, unit:item.unit||'',
+          currency:item.currency||'PHP', subtotal:item.price*item.quantity,
+          needByDate:item.needByDate||null, tentativeDelivery:item.tentativeDelivery||null,
+          deliveryAutoComputed:item.deliveryAutoComputed||false,
+          category:item.category||'', moq:item.moq||null, leadTime:item.leadTime||null
+        })),
+        totalAmount:cartTotal, currency:cart[0]?.currency||'PHP',
+        status:initialStatus,
+        requiresOrderApproval:requiresApproval,
+        ...approvalFields,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      const orderRef = db.collection('orders').doc();
+      await orderRef.set(orderData);
+
+      // ── Notifications ────────────────────────────────────────────────────────
+      try {
+        const nb = db.batch();
+        if (requiresApproval) {
+          // Notify the assigned approver (by ID if set, otherwise all admins with matching role)
+          if (approvalStep?.approverAdminId) {
+            nb.set(db.collection('notifications').doc(), {
+              type:'order-approval-request',
+              message:`Order ${orderNumber} from ${form.customerName} requires your approval`,
+              details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending_approval',orderId:orderRef.id},
+              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+              read:false, userId:approvalStep.approverAdminId, userRole:'admin'
+            });
+          } else {
+            // Notify all admins with matching role (or all admins if no role specified)
+            const admSnap = await db.collection('users').where('role','==','admin').get();
+            admSnap.docs.forEach(a => {
+              const matchesRole = !approvalStep?.approverRole ||
+                a.data().assignedRoleName===approvalStep.approverRole;
+              if (matchesRole) {
+                nb.set(db.collection('notifications').doc(), {
+                  type:'order-approval-request',
+                  message:`Order ${orderNumber} from ${form.customerName} requires approval`,
+                  details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending_approval',orderId:orderRef.id},
+                  timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+                  read:false, userId:a.id, userRole:'admin'
+                });
+              }
+            });
+          }
+          // Notify the customer that order is pending approval
+          nb.set(db.collection('notifications').doc(), {
+            type:'order-pending-approval',
+            message:`Your order ${orderNumber} has been submitted and is awaiting approval`,
+            details:{orderNumber,totalAmount:cartTotal,status:'pending_approval'},
+            timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+            read:false, userId:user.uid, userRole
+          });
+        } else {
+          // Normal flow — notify all admins
+          const admSnap = await db.collection('users').where('role','==','admin').get();
+          admSnap.docs.forEach(a => {
+            nb.set(db.collection('notifications').doc(), {
+              type:'order',
+              message:`New order ${orderNumber} from ${form.customerName}`,
+              details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending'},
+              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+              read:false, userId:a.id, userRole:'admin'
+            });
+          });
+          if (userRole!=='admin') {
+            nb.set(db.collection('notifications').doc(), {
+              type:'order',
+              message:`Order ${orderNumber} placed successfully`,
+              details:{orderNumber,totalAmount:cartTotal,status:'pending'},
+              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+              read:false, userId:user.uid, userRole
+            });
+          }
+        }
+        await nb.commit();
+      } catch(e){ console.warn('notification non-fatal:',e); }
+
+      try{await fetch(`${RENDER}/webhook/send-invoice`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({orderNumber,customerEmail:form.customerEmail,customerName:form.customerName,items:cart.map(i=>({name:i.name,quantity:i.quantity,price:i.price.toFixed(2)})),total:cartTotal.toFixed(2)})});}catch(e){console.warn(e);}
+
+      setSuccess({
+        orderNumber, total:cartTotal, currency:cart[0]?.currency||'PHP',
+        items:[...cart], pendingApproval:requiresApproval,
+        approvalGroupName:approvalGroup?.name
+      });
+      setCart([]);setShowCO(false);
+      try{localStorage.removeItem('operix_cart');}catch{}
+      await load(user.uid,userRole,user.assignedAdminId,firebase.firestore(),user);
+    }catch(e){console.error(e);alert('Error: '+e.message);}
+    setSubmitting(false);
+  };
+
+  const sendQuote=async()=>{
+    if(!quoteForm.recipientName.trim()){alert('Recipient name is required.');return;}
+    if(!quoteForm.email.trim()){alert('Email address is required.');return;}
+    if(!quoteForm.reference.trim()){alert('Your reference / name is required.');return;}
+    if(!cart.length){alert('Add items to your cart first.');return;}
+    setQuoteSending(true);
+    try{
+      const db=firebase.firestore();
+      const expiry=new Date();expiry.setDate(expiry.getDate()+30);
+      const quoteNumber='QT-'+Date.now().toString().slice(-8);
+      await db.collection('quotes').add({
+        quoteNumber,
+        userId:           user.uid,
+        userName:         user.displayName || user.fullName || user.email,
+        senderFullName:   user.fullName    || user.displayName || user.email,
+        senderOwnCompany: user.ownCompanyName || '',
+        senderPosition:   user.position    || '',
+        senderDepartment: user.department  || '',
+        senderPhone:      user.phoneNumber || '',
+        senderEmail:      user.email       || '',
+        recipientEmail:   quoteForm.email.trim(),
+        recipientName:    quoteForm.recipientName?.trim() || '',
+        reference:        quoteForm.reference.trim(),
+        notes:            quoteForm.notes.trim(),
+        items:            cart.map(i=>({productId:i.id,name:i.name,sku:i.sku||'',quantity:i.quantity,unitPrice:i.price,lineTotal:i.price*i.quantity,unit:i.unit||'unit'})),
+        subtotal:         cartTotal,
+        currency:         'PHP',
+        status:           'active',
+        validUntil:       firebase.firestore.Timestamp.fromDate(expiry),
+        createdAt:        firebase.firestore.FieldValue.serverTimestamp()
+      });
+      try{await fetch(`${RENDER}/webhook/send-quote`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({quoteNumber,recipientEmail:quoteForm.email.trim(),reference:quoteForm.reference.trim(),notes:quoteForm.notes.trim(),validUntil:expiry.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),items:cart.map(i=>({name:i.name,sku:i.sku||'',quantity:i.quantity,unitPrice:i.price.toFixed(2),lineTotal:(i.price*i.quantity).toFixed(2),unit:i.unit||'unit'})),subtotal:cartTotal.toFixed(2)})})}catch(e){console.warn(e);}
+      setQuoteSuccess(true);
+    }catch(e){console.error(e);alert('Error: '+e.message);}
+    setQuoteSending(false);
+  };
+
+  if(loading)return(<div className="loader"><Logo/><div className="loader-spin"/><p style={{fontSize:13,color:'var(--slate)'}}>Loading Procurement Shop…</p></div>);
+
+  const heroTitle=shopConfig.heroTitle||'What are you looking for?';
+  const heroSub=shopConfig.heroSubtitle||'Select a category to browse products and submit a requisition.';
+
+  return(
+    <>
+      {/* TOPBAR */}
+      <header className="tb">
+        <div className="tb-brand">
+          <Logo/>
+          <div><b>Operix</b><small>Procurement Shop</small></div>
+        </div>
+        <div className="tb-r">
+          <a href="my-profile.html" className="tb-link">
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            My Profile
+          </a>
+          <a href="my-orders.html" className="tb-link"><Ic d={P.orders} s={13}/> My Orders</a>
+          {userRole==='admin' && (user?.assignedRole==='admin_approver' || user?.permissions?.includes('*')) &&(
+            <a href="shop-admin.html" className="tb-link" style={{color:'#FBBF24',borderColor:'rgba(251,191,36,.3)',background:'rgba(251,191,36,.08)'}}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+              Edit Shop
+            </a>
+          )}
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div className="tb-av">{(user?.displayName||'U').charAt(0).toUpperCase()}</div>
+            <span className="tb-name">{user?.displayName?.split(' ')[0]}</span>
+          </div>
+          <button onClick={()=>{setQuoteForm({email:'',recipientName:'',reference:user?.displayName||user?.fullName||'',notes:''});setQuoteSuccess(false);setShowQuote(true);}}
+            style={{display:'flex',alignItems:'center',gap:7,background:'rgba(255,255,255,.06)',color:'#CBD5E1',border:'1px solid rgba(255,255,255,.13)',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .18s',whiteSpace:'nowrap'}}
+            onMouseOver={e=>{e.currentTarget.style.color='#fff';e.currentTarget.style.background='rgba(255,255,255,.12)'}}
+            onMouseOut={e=>{e.currentTarget.style.color='#CBD5E1';e.currentTarget.style.background='rgba(255,255,255,.06)'}}>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Quick Quote
+          </button>
+          <button className="cart-btn" onClick={()=>setShowCO(true)}>
+            <Ic d={P.cart} s={15}/>Cart
+            <span className="cart-cnt">{cartCount}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* BREADCRUMB */}
+      <div className="bc">
+        <span className="bc-item" style={{color:view==='landing'?'var(--ink)':'var(--blue)'}} onClick={goLanding}>Shop</span>
+        {selMain&&(<><span className="bc-sep">›</span><span className="bc-item" style={{color:selSub?'var(--blue)':'var(--ink)'}} onClick={()=>{setSelSub(null);setSearchQ('')}}>{selMain}</span></>)}
+        {selSub&&(<><span className="bc-sep">›</span><span className="bc-item bc-active">{selSub}</span></>)}
+        <span style={{marginLeft:'auto',fontSize:11,color:'var(--slate)'}}>{products.length} products · {products.filter(p=>p.stock>0).length} available</span>
+      </div>
+
+      {/* BODY */}
+      <div className="layout">
+        <main className="main">
+
+          {/* LANDING */}
+          {view==='landing'&&(
+            <div>
+              <div className="hero">
+                <h1>{heroTitle}</h1>
+                <p>{heroSub}</p>
+              </div>
+              <div className="cat-grid">
+                {mainCats.map((main,idx)=>{
+                  const{cc,cbg}=pal(idx);
+                  const subs=Object.keys(catTree[main]||{});
+                  const total=Object.values(catTree[main]||{}).flat().length;
+                  const avail=Object.values(catTree[main]||{}).flat().filter(p=>p.stock>0).length;
+                  const catImg=shopConfig.categoryImages?.[main];
+                  return(
+                    <div key={main} className="cat-card" onClick={()=>goCat(main)}>
+                      <div className="cat-card-bg" style={{background:cbg}}/>
+                      <div className="cat-arrow"><Ic d={P.arrow} s={16} c={cc}/></div>
+                      {catImg
+                        ? <img src={catImg} alt={main} className="cat-card-img" onError={e=>e.target.style.display='none'}/>
+                        : <div className="cat-card-img-ph" style={{background:cbg}}><Ic d={P.tag} s={36} c={cc}/></div>
+                      }
+                      <div className="cat-card-body">
+                        <div className="cat-name">{main}</div>
+                        <div className="cat-meta">
+                          <span>{total} item{total!==1?'s':''}</span>
+                          <span style={{width:3,height:3,borderRadius:'50%',background:'var(--line)',display:'inline-block'}}/>
+                          <span style={{color:cc,fontWeight:700}}>{avail} available</span>
+                        </div>
+                        <div className="sub-pills">
+                          {subs.slice(0,4).map(s=><span key={s} className="sub-pill">{s}</span>)}
+                          {subs.length>4&&<span className="sub-pill">+{subs.length-4} more</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CATEGORY VIEW */}
+          {view==='category'&&selMain&&(
+            <>
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12,marginBottom:22}}>
+                <div>
+                  <button onClick={goLanding} style={{display:'flex',alignItems:'center',gap:5,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:8,padding:'5px 12px',font:'600 12px DM Sans,sans-serif',cursor:'pointer',color:'var(--slate)',marginBottom:8}}>
+                    <Ic d={P.back} s={12}/> All Categories
+                  </button>
+                  <h2 style={{fontSize:22,fontWeight:900,color:'var(--ink)',letterSpacing:'-.4px'}}>{selMain}</h2>
+                  <p style={{fontSize:13,color:'var(--slate)',marginTop:3}}>{subCats.length} subcategor{subCats.length===1?'y':'ies'} · {Object.values(catTree[selMain]||{}).flat().length} total items</p>
+                </div>
+              </div>
+              {subCats.length>1&&(
+                <div style={{marginBottom:22}}>
+                  <div className="sec-lbl">Subcategories</div>
+                  <div className="subcat-strip">
+                    <div className={`subcat-btn ${!selSub?'sel':''}`} onClick={()=>{setSelSub(null);setSearchQ('');}}>
+                      <div className="subcat-icon" style={{background:'var(--surf)'}}><Ic d={P.grid} s={16} c="var(--slate)"/></div>
+                      <div><div className="subcat-name">All</div><div className="subcat-count">{Object.values(catTree[selMain]||{}).flat().length} items</div></div>
+                    </div>
+                    {subCats.map((sub,si)=>{const{cc,cbg}=pal(si+1);const cnt=(catTree[selMain]||{})[sub]?.length||0;return(
+                      <div key={sub} className={`subcat-btn ${selSub===sub?'sel':''}`} onClick={()=>{setSelSub(selSub===sub?null:sub);setSearchQ('');}}>
+                        <div className="subcat-icon" style={{background:cbg}}><Ic d={P.box} s={16} c={cc}/></div>
+                        <div><div className="subcat-name">{sub}</div><div className="subcat-count">{cnt} item{cnt!==1?'s':''}</div></div>
+                      </div>
+                    );})}
+                  </div>
+                </div>
+              )}
+              <div className="sbar">
+                <Ic d={P.search} s={15} c="var(--slate)"/>
+                <input type="text" placeholder={`Search in ${selSub||selMain}…`} value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
+                {searchQ&&<button onClick={()=>setSearchQ('')} style={{border:'none',background:'none',cursor:'pointer',color:'var(--slate)',display:'flex',padding:3}}><Ic d={P.x} s={13}/></button>}
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+                <div className="sec-lbl" style={{flex:1,marginBottom:0}}>{selSub?`${selMain} › ${selSub}`:`All in ${selMain}`}</div>
+                <span style={{fontSize:12,color:'var(--slate)',marginLeft:12,fontWeight:600,flexShrink:0}}>{visibleProds.length} item{visibleProds.length!==1?'s':''}</span>
+              </div>
+              {visibleProds.length===0&&(
+                <div style={{textAlign:'center',padding:'60px 20px',color:'var(--slate)'}}>
+                  <div style={{width:60,height:60,background:'var(--surf)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}><Ic d={P.box} s={26} c="var(--slate)"/></div>
+                  <p style={{fontSize:15,fontWeight:700,color:'var(--ink)',marginBottom:5}}>No products found</p>
+                  <p style={{fontSize:13}}>Try adjusting your search or selecting a different subcategory</p>
+                </div>
+              )}
+              <div className="prod-grid">
+                {visibleProds.map(product=>{
+                  const{sub}=parseCat(product.category);
+                  const inCart=cart.find(i=>i.id===product.id);
+                  const isOut=product.stock===0;
+                  const isLow=!isOut&&product.stock<=(product.threshold||10);
+                  return(
+                    <div key={product.id} className="prod-card" onClick={()=>openProduct(product)}>
+                      <div className="prod-img">
+                        {product.imageUrl
+                          ? <img src={product.imageUrl} alt={product.name} onError={e=>e.target.style.display='none'}/>
+                          : <div style={{opacity:.3}}><Ic d={P.box} s={34} c="var(--slate)"/></div>
+                        }
+                        {isOut&&<div className="badge-out">OUT OF STOCK</div>}
+                        {!isOut&&isLow&&<div className="badge-low">LOW STOCK</div>}
+                      </div>
+                      <div className="prod-body">
+                        {!selSub&&subCats.length>1&&<div className="prod-sub">{sub}</div>}
+                        <div className="prod-name">{product.name}</div>
+                        <div className="prod-sku">{product.sku}</div>
+                        {product.description&&<div className="prod-desc">{product.description}</div>}
+                        <div className="prod-price">{getCurrencySymbol(product.currency)}{fmt(product.price)}</div>
+                        <div className="prod-uom">per {product.unit||'unit'}</div>
+                        {(product.moq||product.leadTime)&&(
+                          <div className="prod-specs">
+                            {product.moq&&<span className="spec-tag">MOQ <b>{product.moq} {product.unit||'unit'}</b></span>}
+                            {product.leadTime&&<span className="spec-tag">Lead Time <b>{product.leadTime} day{product.leadTime!=1?'s':''}</b></span>}
+                          </div>
+                        )}
+                        <div className="prod-footer" onClick={e=>e.stopPropagation()}>
+                          {isOut
+                            ? <span className="stk-out"><span className="dot"/>Out of stock</span>
+                            : isLow
+                            ? <span className="stk-low"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
+                            : <span className="stk-ok"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
+                          }
+                          {inCart
+                            ? <div className="in-cart"><Ic d={P.check} s={12}/>{inCart.quantity} in cart</div>
+                            : <button className="add-btn" disabled={isOut} onClick={e=>{e.stopPropagation();addToCart(product,ltAdjustMap);}}>
+                                <Ic d={P.plus} s={12}/>Add
+                              </button>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </main>
+
+        {/* CART SIDEBAR */}
+        <aside className="sidebar">
+          <div className="cart-hd">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <div className="cart-title">Your Cart</div>
+              {cart.length>0&&<button className="clr-btn" onClick={()=>{setCart([]);try{localStorage.removeItem('operix_cart');}catch{}}}>Clear all</button>}
+            </div>
+            <div className="cart-sub">{cartCount} item{cartCount!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</div>
+          </div>
+          {cart.length===0?(
+            <div className="cart-empty">
+              <div style={{width:56,height:56,background:'var(--surf)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12}}><Ic d={P.cart} s={26} c="var(--slate)"/></div>
+              <p style={{fontSize:14,fontWeight:700,color:'var(--ink)',marginBottom:5}}>Cart is empty</p>
+              <p style={{fontSize:12,color:'var(--slate)',lineHeight:1.6}}>Browse categories and add items to your requisition</p>
+            </div>
+          ):(
+            <div style={{flex:1,overflowY:'auto'}}>
+              {needByWarning&&(
+                <div className="nb-warn">
+                  <div className="nb-warn-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+                  <div style={{flex:1}}>
+                    <div className="nb-warn-title">⚠ Need By Date is Earlier Than Tentative Delivery</div>
+                    <div className="nb-warn-text"><strong>{needByWarning.itemName}</strong>: your requested date <strong>{new Date(needByWarning.needBy+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</strong> is before the estimated delivery of <strong>{new Date(needByWarning.tentative+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</strong>.</div>
+                  </div>
+                  <button onClick={()=>setNeedByWarning(null)} style={{background:'none',border:'none',cursor:'pointer',color:'#FB923C',fontSize:14,fontWeight:900,lineHeight:1,padding:'0 2px',flexShrink:0}}>✕</button>
+                </div>
+              )}
+              {cart.map(item=>(
+                <div key={item.id} className="c-item">
+                  <div style={{display:'flex',gap:10,marginBottom:8,alignItems:'flex-start'}}>
+                    {item.imageUrl?<img src={item.imageUrl} alt={item.name} className="c-img"/>:<div className="c-img-ph"><Ic d={P.box} s={18} c="var(--slate)"/></div>}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="c-name" style={{paddingRight:4}}>{item.name}</div>
+                      <div className="c-meta">{getCurrencySymbol(item.currency)}{fmt(item.price)} / {item.unit||'unit'} · {item.sku}{item.moq&&<span style={{marginLeft:4,color:'var(--blue)',fontWeight:600}}>· MOQ {item.moq}</span>}{item.leadTime&&<span style={{marginLeft:4,color:'var(--amber)',fontWeight:600}}>· {item.leadTime}d lead</span>}</div>
+                    </div>
+                    <button className="rm-btn" onClick={()=>removeFromCart(item.id)}><Ic d={P.x} s={12}/></button>
+                  </div>
+                  <div className="qty-row">
+                    <div className="qc">
+                      <button className="qb" onClick={()=>updateQty(item.id,item.quantity-1)}>−</button>
+                      <input className="qi" type="number" min="1" max={item.stock} value={item.quantity} onChange={e=>updateQty(item.id,parseInt(e.target.value)||1)}/>
+                      <button className="qb" onClick={()=>updateQty(item.id,item.quantity+1)}>+</button>
+                    </div>
+                    <span className="c-uom">{item.unit||'unit'}</span>
+                    <span className="c-sub">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span>
+                  </div>
+                  {item.deliveryAutoComputed&&item.tentativeDelivery&&(
+                    <div className="tent-row">
+                      <Ic d={P.cal} s={11} c="var(--blue)"/>
+                      <span style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--blue)',whiteSpace:'nowrap'}}>Tentative Delivery</span>
+                      <div className="tent-badge">🚚 {new Date(item.tentativeDelivery+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+                    </div>
+                  )}
+                  <div className="need-row">
+                    <Ic d={P.cal} s={11} c="var(--slate)"/>
+                    <span className="need-lbl">Need by</span>
+                    <input type="date" className="need-input" value={item.needByDate||''} min={new Date().toISOString().split('T')[0]} onChange={e=>updateNeedBy(item.id,e.target.value)} style={{borderColor:item.needByDate&&item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FB923C':'var(--line)',background:item.needByDate&&item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FFF7ED':'#fff'}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {cart.length>0&&(
+            <>
+              <div className="divider"/>
+              <div>
+                <div className="ttl-row"><span className="ttl-lbl">Subtotal ({cartCount} items)</span><span className="ttl-val">{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
+                <div className="ttl-row"><span className="ttl-lbl">Shipping</span><span style={{fontSize:12,color:'var(--green)',fontWeight:600}}>TBD at checkout</span></div>
+                <div className="grand-row"><span className="grand-lbl">Estimated Total</span><span className="grand-val">{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
+              </div>
+              {approvalBlocked&&approvalChecked&&(<div style={{background:'#FFF7ED',border:'1.5px solid #FED7AA',borderRadius:8,padding:'10px 12px',marginBottom:10,fontSize:11,color:'#92400E',lineHeight:1.5}}>⚠️ <strong>No approval workflow</strong> set up. Contact your administrator.</div>)}
+              <button className="co-btn" onClick={()=>setShowCO(true)} disabled={!cart.length}><Ic d={P.cart} s={16}/>Proceed to Checkout</button>
+            </>
+          )}
+        </aside>
+      </div>
+
+      {/* RECENTLY VIEWED */}
+      <RecentlyViewed items={recentlyViewed.filter(p=>p.id!==detailProduct?.id)} onOpen={openProduct}/>
+
+      {/* FOOTER */}
+      <ShopFooter footerData={shopConfig.footer}/>
+
+      {/* PRODUCT DETAIL MODAL */}
+      {detailProduct&&(
+        <ProductDetail
+          product={detailProduct}
+          allProducts={products}
+          cart={cart}
+          onAdd={addToCart}
+          onClose={()=>setDetailProduct(null)}
+          onOpenProduct={p=>{setDetailProduct(null);setTimeout(()=>setDetailProduct(p),80);}}
+          ltAdjustMap={ltAdjustMap}
+        />
+      )}
+
+      {/* CHECKOUT MODAL */}
+      {showCO&&(
+        <div className="ov" onClick={e=>e.target===e.currentTarget&&setShowCO(false)}>
+          <div className="modal">
+            <div className="m-hd">
+              <div><div className="m-title">Checkout</div><div className="m-sub">{cartCount} item{cartCount!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</div></div>
+              <button className="m-close" onClick={()=>setShowCO(false)}><Ic d={P.x} s={16}/></button>
+            </div>
+            <div className="m-body">
+              <div className="f-sec">
+                <div className="f-lbl"><Ic d={P.orders} s={13}/>Order Summary</div>
+                {cart.map(item=>(
+                  <div key={item.id} className="ord-item">
+                    <div>
+                      <div className="ord-name">{item.name}</div>
+                      <div className="ord-meta">{item.quantity} × {getCurrencySymbol(item.currency)}{fmt(item.price)}{item.unit&&` · ${item.unit}`}{item.moq&&` · MOQ: ${item.moq}`}{item.leadTime&&` · Lead: ${item.leadTime}d`}{item.tentativeDelivery&&<span style={{color:'var(--blue)',fontWeight:600}}>{` · 🚚 ${new Date(item.tentativeDelivery+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`}</span>}{item.needByDate&&<span style={{color:item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FB923C':'inherit'}}>{` · Need by: ${new Date(item.needByDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?' ⚠':''}`}</span>}</div>
+                    </div>
+                    <span className="ord-total">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span>
+                  </div>
+                ))}
+                <div className="grand-box"><span>Grand Total</span><span>{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
+              </div>
+              <div className="divider"/>
+              <div className="f-sec">
+                <div className="f-lbl"><Ic d={P.info} s={13}/>Contact Information</div>
+                <div className="fg fg2">
+                  <div><label className="fl">Full Name *</label><input className="fi" type="text" placeholder="Your full name" value={form.customerName} onChange={e=>setForm({...form,customerName:e.target.value})}/></div>
+                  <div><label className="fl">Email *</label><input className="fi" type="email" placeholder="email@example.com" value={form.customerEmail} onChange={e=>setForm({...form,customerEmail:e.target.value})}/></div>
+                  <div><label className="fl">Phone</label><input className="fi" type="tel" placeholder="+63 000 000 0000" value={form.customerPhone} onChange={e=>setForm({...form,customerPhone:e.target.value})}/></div>
+                  <div><label className="fl">Payment Method</label><select className="fi fsel" value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value})}>{['Cash','Credit Card','Debit Card','Bank Transfer','Check','GCash'].map(m=><option key={m}>{m}</option>)}</select></div>
+                </div>
+              </div>
+              <div className="f-sec">
+                <div className="f-lbl"><Ic d={P.box} s={13}/>Delivery Information</div>
+                <div className="fg">
+                  {savedAddresses.length > 0 ? (
+                    <div>
+                      <label className="fl">Delivery Address *</label>
+                      <div style={{display:'grid',gap:8,marginBottom:8}}>
+                        {savedAddresses.map(addr=>{
+                          const full=[addr.street,addr.city,addr.province,addr.zipCode,addr.country].filter(Boolean).join(', ');
+                          const isSelected=form.deliveryAddress===full;
+                          return(
+                            <div key={addr.id}
+                              onClick={()=>setForm(f=>({...f,deliveryAddress:full}))}
+                              style={{padding:'10px 14px',border:`1.5px solid ${isSelected?'var(--blue)':'var(--line)'}`,borderRadius:10,cursor:'pointer',background:isSelected?'var(--blue-bg)':'#fff',transition:'all .18s',display:'flex',alignItems:'flex-start',gap:10}}>
+                              <div style={{width:16,height:16,borderRadius:'50%',border:`2px solid ${isSelected?'var(--blue)':'#CBD5E1'}`,background:isSelected?'var(--blue)':'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:2,transition:'all .18s'}}>
+                                {isSelected&&<div style={{width:6,height:6,borderRadius:'50%',background:'#fff'}}/>}
+                              </div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                                  <span style={{fontSize:11,fontWeight:800,color:isSelected?'var(--blue)':'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em'}}>{addr.label}</span>
+                                  {addr.isDefault&&<span style={{fontSize:9,fontWeight:800,background:isSelected?'var(--blue)':'var(--green)',color:'#fff',padding:'1px 6px',borderRadius:99,letterSpacing:'.05em'}}>DEFAULT</span>}
+                                </div>
+                                <div style={{fontSize:12,color:'var(--ink)',lineHeight:1.45,fontWeight:500}}>{full}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{marginBottom:4}}>
+                        <label className="fl" style={{marginBottom:4}}>Or enter a different address</label>
+                        <input className="fi" type="text" placeholder="Type a custom address…" value={savedAddresses.some(a=>[a.street,a.city,a.province,a.zipCode,a.country].filter(Boolean).join(', ')===form.deliveryAddress)?'':form.deliveryAddress}
+                          onChange={e=>setForm(f=>({...f,deliveryAddress:e.target.value}))}/>
+                      </div>
+                      <a href="my-profile.html" style={{fontSize:11,color:'var(--blue)',fontWeight:600,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4,marginTop:2}}>
+                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        Manage addresses in My Profile
+                      </a>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="fl">Delivery Address *</label>
+                      <input className="fi" type="text" placeholder="Complete delivery address" value={form.deliveryAddress} onChange={e=>setForm(f=>({...f,deliveryAddress:e.target.value}))}/>
+                      <div style={{marginTop:8,padding:'10px 12px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,display:'flex',alignItems:'center',gap:8}}>
+                        <svg width="13" height="13" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span style={{fontSize:11,color:'#92400E',fontWeight:600}}>No saved addresses. </span>
+                        <a href="my-profile.html" style={{fontSize:11,color:'var(--blue)',fontWeight:700,textDecoration:'none'}}>+ Add address in My Profile →</a>
+                      </div>
+                    </div>
+                  )}
+                  <div><label className="fl">Special Instructions</label><textarea className="fi" rows={3} placeholder="Notes or special instructions…" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={{resize:'vertical'}}/></div>
+                </div>
+              </div>
+              <button className="co-btn" onClick={submitOrder} disabled={submitting}>
+                {submitting?<><div className="spin-anim"/>Placing Order…</>:<><Ic d={P.check} s={16}/>Confirm Order · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK QUOTE SLIDE PANEL */}
+      {showQuote&&(
+        <>
+          <div className="qq-backdrop" onClick={()=>{if(!quoteSending){setShowQuote(false);setQuoteSuccess(false);}}}/>
+          <div className="qq-panel">
+
+            {/* Header */}
+            <div className="qq-hd">
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:40,height:40,background:'rgba(96,165,250,.15)',borderRadius:11,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <svg width="20" height="20" fill="none" stroke="#60A5FA" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                  <div style={{fontSize:16,fontWeight:800,color:'#fff',letterSpacing:'-.3px'}}>Quick Quote</div>
+                  <div style={{fontSize:11,color:'#94A3B8',marginTop:2}}>
+                    {cart.length} item{cart.length!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)} est. total
+                  </div>
+                </div>
+              </div>
+              <button className="qq-close" onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} disabled={quoteSending}>✕</button>
+            </div>
+
+            {quoteSuccess?(
+              /* ── SUCCESS STATE ── */
+              <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'48px 32px',textAlign:'center'}}>
+                <div style={{width:72,height:72,background:'var(--green-bg)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,border:'2px solid rgba(5,150,105,.2)'}}>
+                  <svg width="34" height="34" fill="none" stroke="#059669" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div style={{fontSize:20,fontWeight:900,color:'var(--ink)',letterSpacing:'-.4px',marginBottom:8}}>Quote Sent!</div>
+                <div style={{fontSize:13,color:'var(--slate)',lineHeight:1.7,marginBottom:8}}>
+                  A quote has been sent to<br/><strong style={{color:'var(--ink)'}}>{quoteForm.email}</strong>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:6,background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,padding:'8px 14px',marginBottom:28,fontSize:12,color:'#92400E',fontWeight:600}}>
+                  <svg width="13" height="13" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  Prices fixed and valid for 30 days
+                </div>
+                <button onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} style={{width:'100%',maxWidth:280,padding:'12px',background:'var(--ink)',color:'#fff',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                  Done
+                </button>
+                <a href="my-orders.html" style={{marginTop:10,fontSize:12,color:'var(--blue)',fontWeight:600,textDecoration:'none'}}>View My Quotes →</a>
+              </div>
+            ):(
+              <>
+                {/* ── BODY ── */}
+                <div className="qq-body">
+
+                  {/* Validity notice */}
+                  <div className="qq-validity">
+                    <svg width="16" height="16" fill="none" stroke="#2563EB" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0}}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span><strong>Quick Quote</strong> — prices will be <strong>fixed for 30 days</strong>. The recipient can redeem this quote directly from the email.</span>
+                  </div>
+
+                  {/* Items in quote */}
+                  <div className="qq-section">
+                    <div className="qq-section-title">Items in this Quote ({cart.length})</div>
+                    {cart.map(item=>(
+                      <div key={item.id} className="qq-item-row">
+                        <div style={{flex:1,minWidth:0,marginRight:12}}>
+                          <div className="qq-item-name">{item.name}</div>
+                          <div className="qq-item-meta">{item.quantity} {item.unit||'unit'} × {getCurrencySymbol(item.currency)}{fmt(item.price)}{item.sku&&` · ${item.sku}`}</div>
+                        </div>
+                        <div className="qq-item-price">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</div>
+                      </div>
+                    ))}
+                    <div className="qq-total-row">
+                      <span style={{fontSize:13,fontWeight:700,color:'#F59E0B'}}>Estimated Total</span>
+                      <span style={{fontSize:17,fontWeight:900,color:'#F59E0B'}}>{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span>
+                    </div>
+                  </div>
+
+                  {/* Recipient details */}
+                  <div style={{marginBottom:14}}>
+                    <label className="qq-fl">Recipient Name <span style={{color:'var(--red)'}}>*</span></label>
+                    <input type="text" className="qq-fi" value={quoteForm.recipientName} placeholder="e.g. Maria Santos"
+                      onChange={e=>setQuoteForm(f=>({...f,recipientName:e.target.value}))}/>
+                    <div style={{fontSize:11,color:'var(--slate)',marginTop:4}}>Full name of the person receiving this quote</div>
+                  </div>
+
+                  <div style={{marginBottom:14}}>
+                    <label className="qq-fl">Send To — Email Address <span style={{color:'var(--red)'}}>*</span></label>
+                    <input type="email" className="qq-fi" value={quoteForm.email} placeholder="recipient@company.com"
+                      onChange={e=>setQuoteForm(f=>({...f,email:e.target.value}))}/>
+                  </div>
+
+                  <div style={{marginBottom:14}}>
+                    <label className="qq-fl">Your Reference / Name <span style={{color:'var(--red)'}}>*</span></label>
+                    <input type="text" className="qq-fi" value={quoteForm.reference} placeholder="e.g. Q1 Supplies — Maria Santos"
+                      onChange={e=>setQuoteForm(f=>({...f,reference:e.target.value}))}/>
+                    <div style={{fontSize:11,color:'var(--slate)',marginTop:4}}>This appears as the quote reference on the email</div>
+                  </div>
+
+                  <div style={{marginBottom:6}}>
+                    <label className="qq-fl">Notes to Recipient</label>
+                    <textarea className="qq-fi" rows={3} value={quoteForm.notes} placeholder="Additional instructions, terms, or remarks…"
+                      onChange={e=>setQuoteForm(f=>({...f,notes:e.target.value}))} style={{resize:'vertical'}}/>
+                  </div>
+
+                </div>
+
+                {/* ── FOOTER ── */}
+                <div className="qq-ft">
+                  <button className="qq-send" onClick={sendQuote} disabled={quoteSending||!cart.length}>
+                    {quoteSending
+                      ? <><div className="spin-anim"/>Sending Quote…</>
+                      : <><svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Quote</>
+                    }
+                  </button>
+                  <button onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} disabled={quoteSending}
+                    style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',border:'none',color:'var(--slate)',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* SUCCESS MODAL */}
+      {success&&(
+        <div className="ov">
+          <div className="modal">
+            <div className="succ">
+              {success.pendingApproval ? (
+                <>
+                  <div className="succ-icon" style={{background:'#FFF7ED',border:'2px solid #FED7AA'}}>
+                    <Ic d={P.clock} s={32} c="var(--amber)"/>
+                  </div>
+                  <div className="succ-title" style={{color:'#92400E'}}>Pending Approval</div>
+                  <div className="succ-sub">Your order has been submitted and is awaiting approval{success.approvalGroupName?` via "${success.approvalGroupName}"`:''} before it enters processing. You'll be notified once it's approved.</div>
+                </>
+              ) : (
+                <>
+                  <div className="succ-icon"><Ic d={P.check} s={32} c="var(--green)"/></div>
+                  <div className="succ-title">Order Placed!</div>
+                  <div className="succ-sub">Your requisition has been submitted. You'll receive a confirmation email shortly.</div>
+                </>
+              )}
+              <div className="ord-badge" style={success.pendingApproval?{background:'#FFF7ED',color:'#92400E',border:'1.5px solid #FED7AA'}:{}}>{success.orderNumber}</div>
+              {success.pendingApproval&&(
+                <div style={{width:'100%',background:'#FFF7ED',border:'1.5px solid #FED7AA',borderRadius:10,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'flex-start',gap:10,textAlign:'left'}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <div style={{fontSize:12,color:'#92400E',lineHeight:1.5}}>
+                    <strong>What happens next?</strong> An approver will review your order. You can track its status in <strong>My Orders</strong>. You'll receive a notification when it's approved or if there's any issue.
+                  </div>
+                </div>
+              )}
+              <div style={{width:'100%',background:'var(--surf)',borderRadius:12,padding:'14px 16px',marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--slate)',marginBottom:10}}>Items Ordered</div>
+                {success.items.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:6,color:'var(--ink2)'}}><span>{item.name} × {item.quantity}</span><span style={{fontWeight:700}}>{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span></div>)}
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:800,color:'var(--ink)',paddingTop:10,borderTop:'1.5px solid var(--line)',marginTop:8}}><span>Total</span><span>{getCurrencySymbol(success.currency)}{fmt(success.total)}</span></div>
+              </div>
+              <div style={{display:'flex',gap:10,width:'100%'}}>
+                <button onClick={()=>{setSuccess(null);goLanding();}} style={{flex:1,padding:11,borderRadius:9,border:'1.5px solid var(--line)',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'DM Sans,sans-serif',color:'var(--ink)'}}>Continue Shopping</button>
+                <a href="my-orders.html" style={{flex:1,padding:11,borderRadius:9,background:'var(--ink)',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Ic d={P.orders} s={13}/>My Orders</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast&&<Toast msg={toast} onDone={()=>setToast(null)}/>}
+    </>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>

@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operix — Create Purchase Order</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0F1724;--ink2:#1E2D45;--ink3:#374B65;--muted:#6B84A3;--muted2:#9FB3CB;--line:#E2EAF4;--line2:#EEF3FA;--bg:#F5F8FC;--white:#FFFFFF;--blue:#1A56DB;--blue2:#1E40AF;--blue-l:#EEF2FF;--blue-m:#BFDBFE;--red:#DC2626;--red-l:#FEF2F2;--amber:#D97706;--amber-l:#FFFBEB;--green:#059669;--green-l:#ECFDF5;--purple:#7C3AED;--purple-l:#F5F3FF;--locked:#F8FAFC;}
+*{margin:0;padding:0;box-sizing:border-box;}html{font-size:14px;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+body.unverified{visibility:hidden!important;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.topbar{height:52px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:200;}
+.topbar-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#60A5FA;background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.25);padding:2px 8px;border-radius:4px;}
+.stepbar{background:var(--white);border-bottom:1px solid var(--line);padding:0 24px;display:flex;align-items:center;overflow-x:auto;}
+.step{display:flex;align-items:center;gap:8px;padding:14px 20px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;flex-shrink:0;}
+.step.active{border-bottom-color:var(--blue);}.step-num{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--muted);transition:all .15s;flex-shrink:0;}
+.step.active .step-num{background:var(--blue);border-color:var(--blue);color:#fff;}.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff;}
+.step-label{font-size:12px;font-weight:600;color:var(--muted);transition:color .15s;}.step.active .step-label{color:var(--blue2);}.step.done .step-label{color:var(--green);}
+.step-div{width:32px;height:1px;background:var(--line);flex-shrink:0;}
+.layout{display:flex;height:calc(100vh - 104px);}
+.panel-main{flex:1;overflow-y:auto;padding:24px;}.panel-side{width:320px;flex-shrink:0;background:var(--white);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;}
+.card{background:var(--white);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:visible;}
+.card-hd{padding:14px 18px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:10px;border-radius:12px 12px 0 0;}
+.card-hd-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.card-hd-title{font-size:13px;font-weight:800;color:var(--ink);}.card-hd-sub{font-size:11px;color:var(--muted);margin-top:1px;}.card-body{padding:18px;border-radius:0 0 12px 12px;}
+.locked-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:10px;margin-bottom:16px;font-size:12px;color:#92400E;font-weight:600;}
+.locked-field{background:var(--locked);border:1.5px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink3);display:flex;align-items:center;gap:6px;cursor:not-allowed;}
+.label{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.label.req::after{content:' *';color:var(--red);}.label-locked{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}.label-locked::after{content:' \1F512';font-size:9px;}
+.input,.select,.textarea{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-weight:500;color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .14s,box-shadow .14s;background:var(--bg);}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(26,86,219,.1);}
+.input::placeholder,.textarea::placeholder{color:var(--muted2);font-weight:400;}
+.select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236B84A3' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px;cursor:pointer;}
+.textarea{resize:vertical;min-height:72px;}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}.fg{margin-bottom:14px;}
+.search-box{position:relative;}.s-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}.s-input{padding-left:34px;}
+.dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:999;background:var(--white);border:1.5px solid var(--line);border-radius:10px;box-shadow:0 8px 32px rgba(15,23,36,.12);overflow:hidden;max-height:260px;overflow-y:auto;}
+.d-item{padding:10px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--line2);}.d-item:last-child{border-bottom:none;}.d-item:hover{background:var(--blue-l);}
+.d-item-name{font-size:13px;font-weight:700;color:var(--ink);}.d-item-sub{font-size:11px;color:var(--muted);margin-top:2px;}.d-empty{padding:16px;text-align:center;font-size:12px;color:var(--muted);}
+.supp-chip{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--blue-l);border:1.5px solid var(--blue-m);border-radius:10px;}
+.supp-chip-icon{width:32px;height:32px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
+.supp-chip-locked{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--locked);border:1.5px solid var(--line);border-radius:10px;cursor:not-allowed;}
+.chip-remove{margin-left:auto;cursor:pointer;color:var(--muted);padding:4px;border-radius:4px;transition:color .1s;}.chip-remove:hover{color:var(--red);}
+.vat-strip{display:flex;align-items:center;gap:12px;padding:8px 14px;background:var(--green-l);border:1px solid #A7F3D0;border-radius:8px;margin-top:10px;}
+.vat-tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green);background:#D1FAE5;padding:2px 8px;border-radius:4px;}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{padding:8px 12px;text-align:left;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--line2);border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:middle;}.tbl tr:last-child td{border-bottom:none;}.tbl tr:hover td{background:rgba(238,242,255,.4);}
+.qty-in{width:64px;padding:5px 8px;border:1.5px solid var(--line);border-radius:6px;font-size:12px;font-weight:600;text-align:center;font-family:'JetBrains Mono',monospace;outline:none;}
+.qty-in:focus{border-color:var(--blue);}
+.qty-locked{width:64px;padding:5px 8px;background:var(--locked);border:1.5px solid var(--line);border-radius:6px;font-size:12px;font-weight:700;text-align:center;font-family:'JetBrains Mono',monospace;color:var(--ink3);display:inline-flex;align-items:center;justify-content:center;}
+.remove-btn{width:24px;height:24px;border-radius:6px;border:1.5px solid var(--line);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .12s;}
+.remove-btn:hover{background:var(--red-l);border-color:#FCA5A5;color:var(--red);}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border:1px solid;}
+.stock-ok{color:var(--green);background:var(--green-l);border-color:#A7F3D0;}.stock-low{color:var(--amber);background:var(--amber-l);border-color:#FDE68A;}.stock-out{color:var(--red);background:var(--red-l);border-color:#FECACA;}
+.side-hd{padding:14px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px;}
+.side-sec{padding:14px 16px;border-bottom:1px solid var(--line2);}
+.side-lbl{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.side-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
+.side-row-lbl{color:var(--muted);}.side-row-val{font-weight:700;color:var(--ink);font-family:'JetBrains Mono',monospace;}
+.side-total{padding:14px 16px;}.side-grand{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:2px solid var(--ink);margin-top:4px;}
+.side-grand-lbl{font-size:12px;font-weight:800;color:var(--ink);}.side-grand-val{font-size:18px;font-weight:900;color:var(--blue2);font-family:'JetBrains Mono',monospace;}
+.action-bar{background:var(--white);border-top:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;bottom:0;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .14s;border:none;font-family:'Plus Jakarta Sans',sans-serif;}
+.btn-ghost{background:none;border:1.5px solid var(--line);color:var(--ink3);}.btn-ghost:hover{border-color:var(--muted);background:var(--line2);}
+.btn-solid{background:var(--blue);color:#fff;}.btn-solid:hover{background:var(--blue2);box-shadow:0 4px 12px rgba(26,86,219,.3);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#047857;box-shadow:0 4px 12px rgba(5,150,105,.3);}.btn:disabled{opacity:.5;cursor:not-allowed;}
+.toast-stack{position:fixed;bottom:72px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+.toast{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:12px;font-weight:600;box-shadow:0 8px 24px rgba(15,23,36,.25);animation:toastIn .2s ease;max-width:300px;}
+.toast.ok{border-left:3px solid var(--green);}.toast.err{border-left:3px solid var(--red);}.toast.warn{border-left:3px solid var(--amber);}
+@keyframes toastIn{from{transform:translateX(12px);opacity:0}to{transform:translateX(0);opacity:1}}
+.spinner{width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.full-center{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);}
+mark{background:#FEF08A;border-radius:2px;padding:0 2px;}
+.empty-items{padding:40px 20px;text-align:center;color:var(--muted);}
+.empty-items-icon{font-size:36px;margin-bottom:10px;}.empty-items-title{font-size:13px;font-weight:700;color:var(--ink3);margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>document.body.classList.add('unverified');</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const CURRENCIES=['PHP','USD','EUR','GBP','JPY','CNY','AUD','SGD','HKD','KRW'];
+const PAYMENT_TERMS=['Net 15','Net 30','Net 45','Net 60','Net 90','COD','Prepaid','50% Deposit','Letter of Credit'];
+const SYM={PHP:'₱',USD:'$',EUR:'€',GBP:'£',JPY:'¥',CNY:'¥',AUD:'A$',SGD:'S$',HKD:'HK$',KRW:'₩'};
+const sym=c=>SYM[c]||c;
+
+function hl(text,q){
+  if(!q||!text)return text||'';
+  const i=text.toLowerCase().indexOf(q.toLowerCase());
+  if(i===-1)return text;
+  return React.createElement(React.Fragment,null,text.slice(0,i),React.createElement('mark',null,text.slice(i,i+q.length)),text.slice(i+q.length));
+}
+
+const Ico=({d,size=14,sw=1.8,color='currentColor'})=>
+  React.createElement('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:color,strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round',style:{flexShrink:0}},
+    Array.isArray(d)?d.map((p,i)=>React.createElement('path',{key:i,d:p})):React.createElement('path',{d}));
+
+const I={
+  back:"M19 12H5M12 19l-7-7 7-7",
+  search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  lock:"M12 17a2 2 0 100-4 2 2 0 000 4zm6-9V7a6 6 0 10-12 0v1a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V10a2 2 0 00-2-2z",
+  check:"M5 13l4 4L19 7",
+  x:"M18 6L6 18M6 6l12 12",
+  plus:"M12 5v14M5 12h14",
+  trash:"M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6",
+  doc:"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+  truck:["M1 3h15v13H1z","M16 8h4l3 3v5h-7V8z"],
+  tag:"M7 7h.01M7 3h5l8.5 8.5a2.121 2.121 0 010 3L15 20a2.121 2.121 0 01-3 0L3.5 11.5A2 2 0 013 10V5a2 2 0 012-2z",
+  notes:"M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+  warn:"M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
+  send:"M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z",
+  draft:"M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z",
+  calc:["M4 4h6v6H4z","M14 4h6v6h-6z","M4 14h6v6H4z","M17 14v6M14 17h6"],
+  supplier:"M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+};
+
+const STEPS=[{id:1,label:'Supplier'},{id:2,label:'Line Items'},{id:3,label:'Delivery'},{id:4,label:'Review'}];
+
+function CreatePOApp(){
+  const [loading,setLoading]=useState(true);
+  const [adminUser,setAdminUser]=useState(null);
+  const [step,setStep]=useState(1);
+  const [toasts,setToasts]=useState([]);
+  const [submitting,setSubmitting]=useState(false);
+  const [lockedMode,setLockedMode]=useState(false);
+  const [lockedItemIds,setLockedItemIds]=useState([]);
+  const [showQtyConfirm,setShowQtyConfirm]=useState(false);
+  const [qtyConfirmItem,setQtyConfirmItem]=useState(null);
+  const [suppliers,setSuppliers]=useState([]);
+  const [products,setProducts]=useState([]);
+  const [poNumber,setPoNumber]=useState('');
+  const [poNumberReserved,setPoNumberReserved]=useState(false);
+  const [draftPoId,setDraftPoId]=useState(null);
+  const [resumingDraft,setResumingDraft]=useState(false);
+  const [suppQ,setSuppQ]=useState('');
+  const [suppOpen,setSuppOpen]=useState(false);
+  const [supplier,setSupplier]=useState(null);
+  const [supplierLocked,setSupplierLocked]=useState(false);
+  const [vatInfo,setVatInfo]=useState(null);
+  const [currency,setCurrency]=useState('PHP');
+  const [payTerms,setPayTerms]=useState('Net 30');
+  const [suppRef,setSuppRef]=useState('');
+  const [priority,setPriority]=useState('normal');
+  const [productQ,setProductQ]=useState('');
+  const [productOpen,setProductOpen]=useState(false);
+  const [items,setItems]=useState([]);
+  const [discount,setDiscount]=useState('');
+  const [shipping,setShipping]=useState('');
+  const [taxRate,setTaxRate]=useState('12');
+  const [delivAddr,setDelivAddr]=useState('');
+  const [delivDate,setDelivDate]=useState('');
+  const [delivNotes,setDelivNotes]=useState('');
+  const [intNotes,setIntNotes]=useState('');
+  const dbRef=useRef(null);
+  const adminRef=useRef(null);
+  const agRef=useRef({agList:[],companyAdmins:[],myRoleName:'',myCompany:''});
+  const suppDropRef=useRef(null);
+  const prodDropRef=useRef(null);
+  const originalDraftRef=useRef(null); // stores snapshot of loaded draft for change-diff
+
+  const toast=(msg,type='ok')=>{
+    const id=Date.now();
+    setToasts(p=>[...p,{id,msg,type}]);
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3500);
+  };
+
+  const loadVAT=async(s)=>{
+    if(!s){setVatInfo(null);return;}
+    const rate=s.taxExempt?0:(parseFloat(s.taxRate)||12);
+    setVatInfo({rate,number:s.vatNumber||s.taxId||'',exempt:s.taxExempt||false,discountRate:parseFloat(s.discountRate)||0});
+    setTaxRate(String(rate));
+    if(s.discountRate)setDiscount(String(s.discountRate));
+  };
+
+  useEffect(()=>{
+    const cfg={apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",authDomain:"operix-c8a8c.firebaseapp.com",projectId:"operix-c8a8c",storageBucket:"operix-c8a8c.firebasestorage.app",messagingSenderId:"794223223499",appId:"1:794223223499:web:f059007b909cc15766f14e"};
+    const iv=setInterval(()=>{
+      if(!window.firebase)return;
+      clearInterval(iv);
+      if(!firebase.apps.length)firebase.initializeApp(cfg);
+      const auth=firebase.auth();const db=firebase.firestore();dbRef.current=db;
+      auth.onAuthStateChanged(async cu=>{
+        if(!cu){window.location.replace('login.html');return;}
+        const doc=await db.collection('users').doc(cu.uid).get();
+        if(!doc.exists||doc.data().role!=='admin'){window.location.replace('login.html');return;}
+        document.body.classList.remove('unverified');
+        const adminData0=doc.data();
+        adminRef.current=cu.uid;setAdminUser({uid:cu.uid,...adminData0});
+        if(adminData0.address)setDelivAddr(adminData0.address);
+
+        // Load admin's user doc for companyName + role info (needed for approval routing)
+        const adminData=adminData0;
+        const myCompany=adminData.companyName||'';
+        const myRoleName=adminData.assignedRoleName||'';
+
+        // ── Get all admin UIDs in the same company (same strategy as Dashboard) ──
+        let companyAdminIds=[cu.uid]; // always include self
+        if(myCompany){
+          try{
+            const coSnap=await db.collection('users').where('role','==','admin').where('companyName','==',myCompany).get();
+            companyAdminIds=[...new Set(coSnap.docs.map(d=>d.id))];
+            if(!companyAdminIds.includes(cu.uid))companyAdminIds.push(cu.uid);
+          }catch(e){console.warn('Could not load company admins:',e.message);}
+        }
+
+        // Chunk helper (Firestore 'in' supports max 30)
+        const chunkArr=(arr,size)=>{const c=[];for(let i=0;i<arr.length;i+=size)c.push(arr.slice(i,i+size));return c;};
+
+        // Load suppliers — all admins in company
+        let suppList=[];
+        try{
+          for(const chunk of chunkArr(companyAdminIds,30)){
+            const snap=await db.collection('suppliers').where('createdBy','in',chunk).get();
+            snap.docs.forEach(d=>suppList.push({id:d.id,...d.data()}));
+          }
+        }catch(e){
+          console.warn('Supplier load fallback:',e.message);
+          const snap=await db.collection('suppliers').where('createdBy','==',cu.uid).get();
+          suppList=snap.docs.map(d=>({id:d.id,...d.data()}));
+        }
+        setSuppliers(suppList);
+
+        // Load products — all admins in company
+        let prodList=[];
+        try{
+          for(const chunk of chunkArr(companyAdminIds,30)){
+            const snap=await db.collection('products').where('createdBy','in',chunk).get();
+            snap.docs.forEach(d=>prodList.push({id:d.id,...d.data()}));
+          }
+        }catch(e){
+          console.warn('Product load fallback:',e.message);
+          const snap=await db.collection('products').where('createdBy','==',cu.uid).get();
+          prodList=snap.docs.map(d=>({id:d.id,...d.data()}));
+        }
+        setProducts(prodList);
+        // Load approval groups for this company
+        let agList=[];
+        try{
+          const agSnap=await db.collection('approvalGroups').get();
+          const allGroups=agSnap.docs.map(d=>({id:d.id,...d.data()}));
+          console.log('📋 All approval groups loaded:',allGroups.length);
+          allGroups.forEach(g=>console.log('  Group:',g.name,'| active:',g.active,'| docType:',g.docType,'| companyName:',g.companyName,'| steps:',g.steps?.length));
+          agList=allGroups.filter(g=>
+            g.active!==false &&
+            (!g.companyName||g.companyName===myCompany) &&
+            (g.docType==='PO'||g.docType==='Both'||g.docType==='Both PO & Invoice')
+          );
+          console.log('✅ Matching approval groups for company "'+myCompany+'":',agList.length);
+        }catch(e){console.warn('Could not load approvalGroups',e);}
+        // Load all admins in same company for approver lookup
+        let companyAdmins=[];
+        try{
+          if(myCompany){
+            const admSnap=await db.collection('users').where('role','==','admin').where('companyName','==',myCompany).get();
+            companyAdmins=admSnap.docs.map(d=>({id:d.id,...d.data()}));
+          } else {
+            // No company set — just load all admins as fallback
+            const admSnap=await db.collection('users').where('role','==','admin').get();
+            companyAdmins=admSnap.docs.map(d=>({id:d.id,...d.data()}));
+          }
+          console.log('👥 Company admins for approver lookup:',companyAdmins.length);
+          companyAdmins.forEach(a=>console.log('  Admin:',a.fullName,'| assignedRoleName:',a.assignedRoleName,'| assignedRole:',a.assignedRole,'| companyName:',a.companyName));
+        }catch(e){console.warn('Could not load company admins',e);}
+        // ── Pre-load PO series so reservePoNumber doesn't need to re-query ──
+        let seriesOwnerUid=cu.uid;
+        let seriesData=null;
+        try{
+          const ownSeries=await db.collection('poNumberSeries').doc(cu.uid).get();
+          if(ownSeries.exists){
+            seriesOwnerUid=cu.uid;
+            seriesData=ownSeries.data();
+          } else if(myCompany){
+            // Fall back to any company admin who has a series configured
+            for(const adminDoc of (await db.collection('users').where('role','==','admin').where('companyName','==',myCompany).get()).docs){
+              if(adminDoc.id===cu.uid)continue;
+              const shared=await db.collection('poNumberSeries').doc(adminDoc.id).get();
+              if(shared.exists){seriesOwnerUid=adminDoc.id;seriesData=shared.data();break;}
+            }
+          }
+        }catch(e){console.warn('Could not pre-load PO series:',e.message);}
+
+        agRef.current={agList,companyAdmins,myRoleName,myCompany,myRoleId:adminData0.assignedRole||'',companyAdminIds,seriesOwnerUid,seriesData};
+        const params=new URLSearchParams(window.location.search);
+        const isLocked=params.get('locked')==='1';
+        const preSuppId=params.get('supplierId');
+        const preProductId=params.get('productId');
+        const preProductIds=params.get('productIds');
+        const preQtys=params.get('qtys');
+        const resumeDraftId=params.get('draftId');
+        setLockedMode(isLocked);
+
+        // ── Resume a saved draft ──
+        if(resumeDraftId){
+          try{
+            const draftDoc=await db.collection('purchaseOrders').doc(resumeDraftId).get();
+            if(draftDoc.exists&&draftDoc.data().status==='draft'&&draftDoc.data().createdBy===cu.uid){
+              const d=draftDoc.data();
+              setDraftPoId(resumeDraftId);
+              setPoNumber(d.poNumber||'');
+              setPoNumberReserved(true);
+              setResumingDraft(true);
+              const ps=suppList.find(s=>s.id===d.supplierId);
+              if(ps){setSupplier(ps);setCurrency(ps.currency||d.currency||'PHP');setPayTerms(ps.paymentTerms||d.paymentTerms||'Net 30');await loadVAT(ps);}
+              setSuppRef(d.supplierRef||'');
+              setPriority(d.priority||'normal');
+              setDiscount(d.discount?String(d.discount):'');
+              setShipping(d.shipping?String(d.shipping):'');
+              setTaxRate(d.taxRate?String(d.taxRate):'12');
+              setDelivAddr(d.deliveryAddress||adminData0.address||'');
+              setDelivDate(d.expectedDeliveryDate||'');
+              setDelivNotes(d.deliveryNotes||'');
+              setIntNotes(d.internalNotes||'');
+              if(d.items&&d.items.length>0){
+                const restored=d.items.map(it=>{
+                  const p=prodList.find(pr=>pr.id===it.productId)||{id:it.productId,name:it.productName,sku:it.sku||''};
+                  return{product:p,qty:it.quantity,unitCost:it.unitCost,notes:it.notes||'',locked:false};
+                });
+                setItems(restored);
+              }
+              setStep(1);
+              // Store original snapshot for change-diff at submit time
+              originalDraftRef.current={
+                supplierId:d.supplierId||'',supplierName:d.supplierName||'',
+                currency:d.currency||'PHP',paymentTerms:d.paymentTerms||'',
+                supplierRef:d.supplierRef||'',priority:d.priority||'normal',
+                discount:d.discount||0,shipping:d.shipping||0,taxRate:d.taxRate||12,
+                deliveryAddress:d.deliveryAddress||'',expectedDeliveryDate:d.expectedDeliveryDate||'',
+                deliveryNotes:d.deliveryNotes||'',internalNotes:d.internalNotes||'',
+                grandTotal:d.grandTotal||0,
+                items:(d.items||[]).map(it=>({productId:it.productId,productName:it.productName,qty:it.quantity,unitCost:it.unitCost,lineTotal:it.lineTotal||0})),
+              };
+            }
+          }catch(e){console.warn('Could not resume draft:',e);}
+          setLoading(false);
+          return;
+        }
+
+        if(preSuppId){
+          const ps=suppList.find(s=>s.id===preSuppId);
+          if(ps){setSupplier(ps);setCurrency(ps.currency||'PHP');setPayTerms(ps.paymentTerms||'Net 30');if(isLocked)setSupplierLocked(true);await loadVAT(ps);}
+        }
+        const idsToLoad=preProductIds?preProductIds.split(',').filter(Boolean):preProductId?[preProductId]:[];
+        const qtyMap={};
+        if(preQtys){const qArr=preQtys.split(',');idsToLoad.forEach((id,i)=>{qtyMap[id]=Math.max(1,parseInt(qArr[i])||1);});}
+        if(idsToLoad.length>0){
+          const pi=idsToLoad.map(id=>{
+            const p=prodList.find(pr=>pr.id===id);
+            if(!p)return null;
+            const qty=qtyMap[id]||(p.moq||1);
+            return{product:p,qty,unitCost:p.price||p.cost||0,notes:'',locked:false,costLocked:isLocked};
+          }).filter(Boolean);
+          setItems(pi);
+          setLockedItemIds(isLocked?idsToLoad:[]);
+          if(pi.length>0&&preSuppId)setStep(2);
+          if(isLocked&&idsToLoad.length===1&&!preProductIds){setQtyConfirmItem(pi[0]);setShowQtyConfirm(true);}
+        }
+        setLoading(false);
+      });
+    },100);
+    return()=>clearInterval(iv);
+  },[]);
+
+  useEffect(()=>{
+    const h=e=>{
+      if(suppDropRef.current&&!suppDropRef.current.contains(e.target))setSuppOpen(false);
+      if(prodDropRef.current&&!prodDropRef.current.contains(e.target))setProductOpen(false);
+    };
+    document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h);
+  },[]);
+
+  const subtotal=items.reduce((s,i)=>s+(i.qty*i.unitCost),0);
+  const discAmt=discount?parseFloat(discount):0;
+  const shipAmt=shipping?parseFloat(shipping):0;
+  const taxable=Math.max(subtotal-discAmt,0)+shipAmt;
+  const taxAmt=taxable*(parseFloat(taxRate)||0)/100;
+  const grand=taxable+taxAmt;
+
+  const filtSupp=suppliers.filter(s=>{
+    const q=suppQ.toLowerCase();
+    return !q||(s.name||'').toLowerCase().includes(q)||(s.email||'').toLowerCase().includes(q)||(s.category||'').toLowerCase().includes(q);
+  });
+  const filtProd=products.filter(p=>{
+    const q=productQ.toLowerCase();
+    const matchQ=!q||(p.name||'').toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q);
+    const notInCart=!items.find(i=>i.product.id===p.id);
+    // Always filter products by selected supplier — only show that supplier's items
+    const matchSupplier=!supplier||(p.supplierId===supplier.id||p.supplier===supplier.name||p.supplierName===supplier.name);
+    return matchQ&&notInCart&&matchSupplier;
+  });
+
+  const addItem=p=>{ setItems(prev=>[...prev,{product:p,qty:p.moq||1,unitCost:p.price||p.cost||0,notes:'',locked:false}]);setProductQ('');setProductOpen(false);};
+  const updItem=(idx,f,v)=>setItems(prev=>prev.map((it,i)=>i===idx?{...it,[f]:v}:it));
+  const delItem=idx=>setItems(prev=>prev.filter((_,i)=>i!==idx));
+  const canProceed=()=>{if(step===1)return!!supplier;if(step===2)return items.length>0;if(step===3)return!!delivDate;return true;};
+  const stockBadge=p=>{if(p.stock===0)return React.createElement('span',{className:'status-badge stock-out'},'Out of Stock');if(p.stock<=p.threshold)return React.createElement('span',{className:'status-badge stock-low'},'Low Stock');return React.createElement('span',{className:'status-badge stock-ok'},'In Stock');};
+
+  /* ── Reserve the next PO number from series (called only when creating/saving) ── */
+  const reservePoNumber=async()=>{
+    if(poNumberReserved&&poNumber)return poNumber;
+    const db=dbRef.current;
+    const uid=adminRef.current;
+    const {seriesData,seriesOwnerUid,companyAdminIds,myCompany}=agRef.current;
+
+    // ── If a series was pre-loaded at init, use it ──
+    if(seriesData){
+      try{
+        const rawSeries=seriesData.seriesStart||'1';
+        const padLen=rawSeries.length;
+        const seriesStart=BigInt(rawSeries);
+
+        // Always re-fetch the latest counter from Firestore to avoid stale state
+        const freshDoc=await db.collection('poNumberSeries').doc(seriesOwnerUid).get();
+        const freshCounter=freshDoc.exists&&freshDoc.data().currentCounter
+          ?BigInt(freshDoc.data().currentCounter)
+          :seriesStart-BigInt(1);
+        let candidate=freshCounter>=seriesStart?freshCounter+BigInt(1):seriesStart;
+
+        // Collect ALL used PO numbers across every company admin to avoid collisions
+        const allUids=(companyAdminIds&&companyAdminIds.length>0)?companyAdminIds:[uid];
+        let allUsedNums=new Set();
+        for(let i=0;i<allUids.length;i+=30){
+          const chunk=allUids.slice(i,i+30);
+          const snap=await db.collection('purchaseOrders').where('createdBy','in',chunk).get();
+          snap.docs.forEach(d=>{if(d.data().poNumber)allUsedNums.add(d.data().poNumber);});
+        }
+
+        // Find next number not already in use
+        let pn=candidate.toString().padStart(padLen,'0');
+        while(allUsedNums.has(pn)){candidate+=BigInt(1);pn=candidate.toString().padStart(padLen,'0');}
+
+        // Write counter back to the series owner's doc
+        // Uses a Firestore transaction-style set to avoid race conditions
+        await db.collection('poNumberSeries').doc(seriesOwnerUid).update({
+          currentCounter:candidate.toString(),
+          lastUsedBy:uid,
+          lastUsedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        setPoNumber(pn);setPoNumberReserved(true);
+        return pn;
+      }catch(e){
+        console.warn('Series-based PO number failed:',e.message);
+        // Fall through to date-based fallback below
+      }
+    }
+
+    // ── No series configured — date-based fallback ──
+    const ts=new Date();
+    const pn='PO-'+ts.getFullYear()+String(ts.getMonth()+1).padStart(2,'0')+String(ts.getDate()).padStart(2,'0')+'-'+Math.floor(Math.random()*9000+1000);
+    setPoNumber(pn);setPoNumberReserved(true);
+    return pn;
+  };
+
+  /* ── Build a human-readable change summary by diffing original vs new values ── */
+  const buildChangeSummary=(orig,newData)=>{
+    if(!orig)return null;
+    const changes=[];
+    const fmt=(v)=>v==null||v===''?'(none)':String(v);
+    const fmtMoney=(v)=>v==null?'(none)':`₱${parseFloat(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+
+    if(orig.supplierName!==newData.supplierName)
+      changes.push(`Supplier changed from "${orig.supplierName}" to "${newData.supplierName}"`);
+    if(orig.currency!==newData.currency)
+      changes.push(`Currency changed from ${orig.currency} to ${newData.currency}`);
+    if(orig.paymentTerms!==newData.paymentTerms)
+      changes.push(`Payment Terms changed from "${orig.paymentTerms}" to "${newData.paymentTerms}"`);
+    if(orig.priority!==newData.priority)
+      changes.push(`Priority changed from ${orig.priority} to ${newData.priority}`);
+    if(orig.supplierRef!==newData.supplierRef)
+      changes.push(`Supplier Reference changed from "${fmt(orig.supplierRef)}" to "${fmt(newData.supplierRef)}"`);
+    if(String(orig.discount)!==String(newData.discount))
+      changes.push(`Discount changed from ${fmtMoney(orig.discount)} to ${fmtMoney(newData.discount)}`);
+    if(String(orig.shipping)!==String(newData.shipping))
+      changes.push(`Shipping Cost changed from ${fmtMoney(orig.shipping)} to ${fmtMoney(newData.shipping)}`);
+    if(String(orig.taxRate)!==String(newData.taxRate))
+      changes.push(`Tax Rate changed from ${orig.taxRate}% to ${newData.taxRate}%`);
+    if(orig.deliveryAddress!==newData.deliveryAddress)
+      changes.push(`Delivery Address changed`);
+    if(orig.expectedDeliveryDate!==newData.expectedDeliveryDate)
+      changes.push(`Expected Delivery Date changed from "${fmt(orig.expectedDeliveryDate)}" to "${fmt(newData.expectedDeliveryDate)}"`);
+    if(orig.deliveryNotes!==newData.deliveryNotes)
+      changes.push(`Delivery Notes updated`);
+    if(orig.internalNotes!==newData.internalNotes)
+      changes.push(`Internal Notes updated`);
+    // Grand total change
+    if(Math.abs((orig.grandTotal||0)-(newData.grandTotal||0))>0.01)
+      changes.push(`Grand Total changed from ${fmtMoney(orig.grandTotal)} to ${fmtMoney(newData.grandTotal)}`);
+    // Line items diff
+    const origItems=orig.items||[];
+    const newItems=newData.items||[];
+    // Removed items
+    origItems.forEach(oi=>{
+      const found=newItems.find(ni=>ni.productId===oi.productId);
+      if(!found)changes.push(`Item removed: "${oi.productName}"`);
+    });
+    // Added items
+    newItems.forEach(ni=>{
+      const found=origItems.find(oi=>oi.productId===ni.productId);
+      if(!found)changes.push(`Item added: "${ni.productName}" x${ni.qty} @ ${fmtMoney(ni.unitCost)}`);
+    });
+    // Changed items
+    newItems.forEach(ni=>{
+      const oi=origItems.find(o=>o.productId===ni.productId);
+      if(!oi)return;
+      const itemChanges=[];
+      if(oi.qty!==ni.qty)itemChanges.push(`qty ${oi.qty} → ${ni.qty}`);
+      if(Math.abs((oi.unitCost||0)-(ni.unitCost||0))>0.001)itemChanges.push(`unit cost ${fmtMoney(oi.unitCost)} → ${fmtMoney(ni.unitCost)}`);
+      if(itemChanges.length>0)changes.push(`"${ni.productName}" changed: ${itemChanges.join(', ')}`);
+    });
+    return changes.length>0?changes.join('\n'):null;
+  };
+
+  /* ── Find matching approval group and first approver for a given PO amount ── */
+  const resolveApprover=(amount)=>{
+    const {agList,companyAdmins,myRoleName,myRoleId}=agRef.current;
+
+    // Role authority order — higher index = higher authority
+    const ROLE_RANK={viewer:0,purchaser:1,supervisor:2,finance_manager:3,admin_approver:4};
+    const getRank=(roleId)=>{
+      if(!roleId)return 0;
+      const norm=roleId.toLowerCase().replace(/ /g,'_');
+      return ROLE_RANK[norm]??0;
+    };
+    const myRank=getRank(myRoleId||myRoleName);
+
+    if(!agList.length){return null;}
+
+    // Find the group whose amount range covers this PO
+    const match=agList.find(g=>{
+      const min=parseFloat(g.minAmount)||0;
+      const max=g.maxAmount?parseFloat(g.maxAmount):Infinity;
+      return amount>=min&&amount<=max;
+    });
+    if(!match||!match.steps?.length){return null;}
+
+    // ── Key rule: if the submitter's role is AT OR ABOVE every step in the chain,
+    //    they are already the top authority — no further approval needed.
+    const stepsAboveMe=match.steps.filter(s=>{
+      if(!s.approverRole)return false;
+      const stepRank=getRank(s.approverRole);
+      return stepRank>myRank; // only steps held by someone MORE senior than me
+    });
+    if(stepsAboveMe.length===0){
+      // Every step in the chain is at or below my authority level — auto-approved
+      console.log('✅ Submitter role "'+myRoleName+'" (rank '+myRank+') is at or above all approval steps — no approval required');
+      return null;
+    }
+
+    // Walk steps in order — skip any step at or below my authority level
+    for(let i=0;i<match.steps.length;i++){
+      const stepDef=match.steps[i];
+      const roleName=stepDef.approverRole;
+      if(!roleName)continue;
+
+      const stepRank=getRank(roleName);
+      // Skip this step if the submitter is at the same or higher rank
+      if(stepRank<=myRank){
+        console.log('  Step',i+1,'role "'+roleName+'" (rank '+stepRank+') <= submitter rank ('+myRank+') — skipping');
+        continue;
+      }
+
+      // Find an admin in the same company with this role who is not the submitter
+      const approver=companyAdmins.find(a=>{
+        const nameMatch=a.assignedRoleName===roleName;
+        const idMatch=a.assignedRole&&roleName&&a.assignedRole.toLowerCase()===roleName.toLowerCase().replace(/ /g,'_');
+        const notSelf=a.id!==adminRef.current;
+        return (nameMatch||idMatch)&&notSelf;
+      });
+
+      if(approver){
+        console.log('✅ Routed to step',i+1,':',approver.fullName,'| role:',roleName);
+        return{approverId:approver.id,approverName:approver.fullName,approverRole:roleName,groupId:match.id,groupName:match.name,stepIndex:i,totalSteps:match.steps.length};
+      }else{
+        console.warn('  No admin with role "'+roleName+'" found — trying next step');
+      }
+    }
+
+    // All steps above me have no one assigned — no approval needed
+    console.warn('No eligible approver found above submitter rank — submitting without routing');
+    return null;
+  };
+
+  const submitPO=async(asDraft=false)=>{
+    setSubmitting(true);
+    try{
+      const db=dbRef.current;
+      // Reserve PO number only at save/submit time (not on page load)
+      const pn=await reservePoNumber();
+      // Resolve approval routing (only for submitted POs, not drafts)
+      let approvalFields={};
+      let finalStatus=asDraft?'draft':'submitted';
+      if(!asDraft){
+        const route=resolveApprover(grand);
+        if(route){
+          approvalFields={
+            approvalStatus:'pending_approval',
+            assignedApproverId:route.approverId,
+            assignedApproverName:route.approverName,
+            assignedApproverRole:route.approverRole,
+            approvalGroupId:route.groupId,
+            approvalGroupName:route.groupName,
+            approvalStepIndex:route.stepIndex,
+            approvalTotalSteps:route.totalSteps,
+          };
+          await db.collection('notifications').add({
+            type:'po_approval_request',
+            message:`PO ${pn} (${sym(currency)}${grand.toFixed(2)}) requires your approval`,
+            details:{poNumber:pn,supplierName:supplier.name,grandTotal:grand,currency,submittedBy:adminUser?.fullName||''},
+            timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+            read:false,
+            userId:route.approverId,
+            userRole:'admin'
+          });
+        } else {
+          // Submitter is top authority — no approval needed, mark as approved immediately
+          approvalFields={
+            approvalStatus:'no_approval_required',
+            approvedAt:firebase.firestore.FieldValue.serverTimestamp(),
+            approvedBy:adminUser?.fullName||'',
+          };
+          finalStatus='approved';
+        }
+      }
+      const poData={
+        poNumber:pn,
+        status:finalStatus,
+        supplierId:supplier.id,supplierName:supplier.name,supplierEmail:supplier.email||'',
+        supplierTaxId:supplier.taxId||supplier.vatNumber||'',vatNumber:vatInfo?.number||'',
+        supplierRef:suppRef,currency,paymentTerms:payTerms,priority,
+        items:items.map(it=>({productId:it.product.id,productName:it.product.name,sku:it.product.sku||'',unit:it.product.unit||it.product.uom||'',quantity:it.qty,unitCost:it.unitCost,lineTotal:it.qty*it.unitCost,notes:it.notes||''})),
+        subtotal,discount:discAmt,shipping:shipAmt,taxRate:parseFloat(taxRate)||0,tax:taxAmt,grandTotal:grand,
+        deliveryAddress:delivAddr,expectedDeliveryDate:delivDate,deliveryNotes:delivNotes,internalNotes:intNotes,
+        fromAlert:lockedMode,createdBy:adminRef.current,createdByName:adminUser?.fullName||'',
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp(),revision:0,
+        ...approvalFields,
+      };
+      if(draftPoId){
+        // Resume: update the existing draft doc
+        // Detect mode: 'revise' (from Revise PO button) vs normal resubmit (from Edit & Resubmit)
+        const urlMode=new URLSearchParams(window.location.search).get('mode');
+        const isReviseMode=urlMode==='revise';
+
+        // Build change summary by diffing original vs new values
+        const changeSummary=!asDraft?buildChangeSummary(originalDraftRef.current,{
+          supplierName:supplier?.name||'',supplierRef:suppRef,currency,
+          paymentTerms:payTerms,priority,discount:discAmt,shipping:shipAmt,
+          taxRate:parseFloat(taxRate)||0,deliveryAddress:delivAddr,
+          expectedDeliveryDate:delivDate,deliveryNotes:delivNotes,
+          internalNotes:intNotes,grandTotal:grand,
+          items:items.map(it=>({productId:it.product.id,productName:it.product.name,sku:it.product.sku||'',unit:it.product.unit||it.product.uom||'',qty:it.qty,unitCost:it.unitCost})),
+        }):null;
+
+        // Build history entry
+        const historyEntry=!asDraft?{
+          action:isReviseMode?'revised':'resubmitted',
+          by:adminUser?.fullName||adminUser?.email||'',
+          byId:adminRef.current,
+          at:new Date().toISOString(),
+          ...(changeSummary?{reason:'Changes made:\n'+changeSummary}:{}),
+        }:null;
+
+        const extraFields={};
+        if(historyEntry){
+          extraFields.approvalHistory=firebase.firestore.FieldValue.arrayUnion(historyEntry);
+          if(isReviseMode){
+            // Increment revision number
+            extraFields.revision=(poData.revision||0)+1;
+            extraFields.revisionNotes=changeSummary||'No changes declared';
+            extraFields.revisedAt=firebase.firestore.FieldValue.serverTimestamp();
+            extraFields.revisedBy=adminUser?.fullName||'';
+          }
+        }
+
+        await db.collection('purchaseOrders').doc(draftPoId).update({
+          ...poData,
+          ...extraFields,
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      }else{
+        // New PO
+        poData.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection('purchaseOrders').add(poData);
+      }
+      const routeMsg=approvalFields.assignedApproverName?` — routed to ${approvalFields.assignedApproverName} for approval`:'';
+      toast(asDraft?'Draft saved — PO #'+pn:`Purchase Order #${pn} submitted${routeMsg}!`,'ok');
+      setTimeout(()=>window.location.href='Dashboard.html',1800);
+    }catch(e){toast(e.message,'err');}
+    setSubmitting(false);
+  };
+
+  if(loading)return(
+    <div className="full-center">
+      <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,#1A56DB,#1E40AF)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <Ico d={I.doc} size={22} color="#fff"/>
+      </div>
+      <div className="spinner"/>
+      <p style={{color:'var(--muted)',fontSize:12,fontWeight:600}}>Loading PO Creator...</p>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)'}}>
+      {/* TOPBAR */}
+      <div className="topbar">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <svg width="26" height="26" viewBox="0 0 40 40"><rect width="40" height="40" rx="7" fill="#1B2A8A"/><path d="M20 10C25 10 28 13 28 18C28 23 25 26 20 26C15 26 12 23 12 18C12 13 15 10 20 10ZM20 14C17 14 16 15.5 16 18C16 20.5 17 22 20 22C23 22 24 20.5 24 18C24 15.5 23 14 20 14Z" fill="white"/><rect x="18" y="26" width="4" height="4" fill="white"/></svg>
+          <span style={{fontSize:15,fontWeight:800,color:'#fff',letterSpacing:'-.3px'}}>Operix</span>
+          <span className="topbar-tag">Purchase Order</span>
+          {lockedMode&&<span style={{fontSize:10,fontWeight:700,color:'#FCD34D',background:'rgba(252,211,77,.15)',border:'1px solid rgba(252,211,77,.3)',padding:'2px 8px',borderRadius:4}}>ALERT-DRIVEN</span>}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <span className="mono" style={{fontSize:12,color:'#60A5FA',fontWeight:600}}>{poNumber || '— pending —'}</span>
+          {poNumber && <span style={{fontSize:9,fontWeight:700,color:'#34D399',background:'rgba(52,211,153,.15)',border:'1px solid rgba(52,211,153,.3)',padding:'1px 6px',borderRadius:3}}>{resumingDraft?'DRAFT':'AUTO'}</span>}
+          <span style={{width:1,height:18,background:'rgba(255,255,255,.15)',display:'inline-block'}}/>
+          <span style={{fontSize:11,color:'#94A3B8',fontWeight:500}}>{adminUser?.fullName}</span>
+          <button onClick={()=>window.location.href='Dashboard.html'} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',background:'rgba(255,255,255,.08)',border:'1px solid rgba(255,255,255,.12)',borderRadius:7,color:'#CBD5E1',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'Plus Jakarta Sans,sans-serif'}}>
+            <Ico d={I.back} size={12}/> Dashboard
+          </button>
+        </div>
+      </div>
+
+      {/* STEPBAR */}
+      <div className="stepbar">
+        {STEPS.map((s,idx)=>(
+          <React.Fragment key={s.id}>
+            {idx>0&&<div className="step-div"/>}
+            <div className={`step ${step===s.id?'active':''} ${step>s.id?'done':''}`} onClick={()=>step>s.id&&setStep(s.id)}>
+              <div className="step-num">{step>s.id?<Ico d={I.check} size={11} sw={2.5}/>:s.id}</div>
+              <span className="step-label">{s.label}</span>
+            </div>
+          </React.Fragment>
+        ))}
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,paddingRight:8}}>
+          {priority==='urgent'&&<span style={{fontSize:10,fontWeight:800,color:'#DC2626',background:'#FEF2F2',border:'1px solid #FECACA',padding:'2px 8px',borderRadius:4}}>URGENT</span>}
+          <span style={{fontSize:11,color:'var(--muted)',fontWeight:500}}>{items.length} item{items.length!==1?'s':''} · {sym(currency)}{grand.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="layout">
+        <div className="panel-main">
+
+          {/* Resume Draft Banner */}
+          {resumingDraft&&(()=>{
+            const isRevise=new URLSearchParams(window.location.search).get('mode')==='revise';
+            return(
+            <div style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',background:isRevise?'#FAF5FF':'#FFFBEB',border:`1.5px solid ${isRevise?'#E9D5FF':'#FDE68A'}`,borderRadius:10,marginBottom:16}}>
+              <Ico d={I.draft} size={16} color={isRevise?'#7E22CE':'#D97706'}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:800,color:isRevise?'#6B21A8':'#92400E'}}>{isRevise?'Revising PO':'Resuming Draft PO'} {poNumber}</div>
+                <div style={{fontSize:11,color:isRevise?'#7E22CE':'#B45309',marginTop:1}}>
+                  {isRevise
+                    ?'Make your changes below. A full change summary will be automatically generated and included in the approval history when you resubmit.'
+                    :'All your previous selections have been restored. Continue editing and submit when ready.'}
+                </div>
+              </div>
+              <span style={{fontSize:10,fontWeight:700,color:'#fff',background:isRevise?'#7E22CE':'#D97706',padding:'2px 8px',borderRadius:4}}>{isRevise?'REVISING':'DRAFT'}</span>
+            </div>
+            );
+          })()}
+
+          {/* STEP 1 - SUPPLIER */}
+          {step===1&&(
+            <div style={{maxWidth:720}}>
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:18,fontWeight:900,color:'var(--ink)',letterSpacing:'-.3px',marginBottom:4}}>Select Supplier</div>
+                <div style={{fontSize:12,color:'var(--muted)'}}>{supplierLocked?'Supplier is pre-assigned from the stock alert. VAT and payment terms load from the supplier record.':'Search by name, category, or email. VAT rate auto-loads from the supplier record.'}</div>
+              </div>
+              {lockedMode&&<div className="locked-banner"><Ico d={I.lock} size={16} color="#92400E"/>Alert-driven PO — supplier is pre-assigned. Unit costs come from your inventory records and are locked. <strong>Quantities are fully editable.</strong> You can still add extra items from the same supplier.</div>}
+              <div className="card" style={{position:'relative',zIndex:10}}>
+                <div className="card-hd">
+                  <div className="card-hd-icon" style={{background:'var(--blue-l)',color:'var(--blue)'}}><Ico d={I.supplier} size={15}/></div>
+                  <div><div className="card-hd-title">Supplier</div><div className="card-hd-sub">Vendor for this purchase order</div></div>
+                </div>
+                <div className="card-body">
+                  {supplier?(
+                    <div className={supplierLocked?'supp-chip-locked':'supp-chip'}>
+                      <div className="supp-chip-icon">{supplier.name?.[0]||'S'}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:700,color:supplierLocked?'var(--ink3)':'var(--blue2)'}}>{supplier.name}</div>
+                        <div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>{supplier.email}{supplier.category?` · ${supplier.category}`:''}</div>
+                      </div>
+                      {supplierLocked?<Ico d={I.lock} size={14} color="var(--muted)"/>:<button className="chip-remove" onClick={()=>{setSupplier(null);setVatInfo(null);setTaxRate('12');setDiscount('');}}><Ico d={I.x} size={14}/></button>}
+                    </div>
+                  ):(
+                    <div className="search-box" ref={suppDropRef} style={{position:'relative',zIndex:999}}>
+                      <span className="s-icon"><Ico d={I.search} size={14}/></span>
+                      <input className="input s-input" placeholder="Search suppliers by name, email, or category..." value={suppQ} onChange={e=>{setSuppQ(e.target.value);setSuppOpen(true);}} onFocus={()=>setSuppOpen(true)}/>
+                      {suppOpen&&(
+                        <div className="dropdown">
+                          {filtSupp.length===0?<div className="d-empty">No suppliers found</div>:filtSupp.map(s=>(
+                            <div key={s.id} className="d-item" onClick={async()=>{setSupplier(s);setCurrency(s.currency||'PHP');setPayTerms(s.paymentTerms||'Net 30');setSuppQ('');setSuppOpen(false);await loadVAT(s);}}>
+                              <div className="d-item-name">{hl(s.name,suppQ)}</div>
+                              <div className="d-item-sub">{s.email}{s.category?` · ${s.category}`:''}{s.taxExempt?' · Tax Exempt':s.taxRate?` · VAT ${s.taxRate}%`:''}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {vatInfo&&(
+                    <div className="vat-strip">
+                      {vatInfo.exempt?<><span className="vat-tag" style={{color:'#6B7280',background:'#F3F4F6'}}>TAX EXEMPT</span><span style={{fontSize:12,color:'#6B7280',fontWeight:600}}>VAT set to 0%</span></>:
+                      <><span className="vat-tag">VAT {vatInfo.rate}%</span><span style={{fontSize:12,color:'var(--green)',fontWeight:600}}>Auto-loaded from supplier</span></>}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hd">
+                  <div className="card-hd-icon" style={{background:'var(--purple-l)',color:'var(--purple)'}}><Ico d={I.tag} size={15}/></div>
+                  <div><div className="card-hd-title">Order Details</div><div className="card-hd-sub">PO number, currency, payment terms</div></div>
+                </div>
+                <div className="card-body">
+                  <div className="grid3" style={{marginBottom:14}}>
+                    <div className="fg" style={{marginBottom:0}}>
+                      <label className="label-locked">PO Number</label>
+                      <div className="locked-field mono">
+                        <Ico d={I.lock} size={13} color="var(--muted)"/>
+                        {poNumber
+                          ? <span style={{fontWeight:700,color:'var(--ink)'}}>{poNumber}</span>
+                          : <span style={{color:'var(--muted2)',fontWeight:400,fontStyle:'italic'}}>Assigned when saved</span>}
+                      </div>
+                      <div style={{fontSize:10,color:'var(--muted2)',marginTop:4}}>{poNumber?'Auto-assigned from PO series':'Will be set when you save or submit'}</div>
+                    </div>
+                    <div className="fg" style={{marginBottom:0}}>
+                      <label className="label-locked">Currency</label>
+                      {supplier ? (
+                        <div className="locked-field">
+                          <Ico d={I.lock} size={13} color="var(--muted)"/>
+                          <span style={{fontWeight:700,color:'var(--ink)'}}>{currency}</span>
+                          <span style={{fontSize:10,color:'var(--muted)',marginLeft:4}}>from supplier</span>
+                        </div>
+                      ) : (
+                        <div className="locked-field" style={{opacity:0.5}}>
+                          <Ico d={I.lock} size={13} color="var(--muted)"/>
+                          <span style={{color:'var(--muted2)',fontWeight:400}}>Select supplier first</span>
+                        </div>
+                      )}
+                      <div style={{fontSize:10,color:'var(--muted2)',marginTop:4}}>Locked to supplier currency</div>
+                    </div>
+                    <div className="fg" style={{marginBottom:0}}><label className="label">Priority</label><select className="select" value={priority} onChange={e=>setPriority(e.target.value)}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">🔴 Urgent</option></select></div>
+                  </div>
+                  <div className="grid2">
+                    <div className="fg" style={{marginBottom:0}}>
+                      <label className="label-locked">Payment Terms</label>
+                      {supplier ? (
+                        <div className="locked-field">
+                          <Ico d={I.lock} size={13} color="var(--muted)"/>
+                          <span style={{fontWeight:700,color:'var(--ink)'}}>{payTerms}</span>
+                          <span style={{fontSize:10,color:'var(--muted)',marginLeft:4}}>from supplier</span>
+                        </div>
+                      ) : (
+                        <div className="locked-field" style={{opacity:0.5}}>
+                          <Ico d={I.lock} size={13} color="var(--muted)"/>
+                          <span style={{color:'var(--muted2)',fontWeight:400}}>Select supplier first</span>
+                        </div>
+                      )}
+                      <div style={{fontSize:10,color:'var(--muted2)',marginTop:4}}>Locked to supplier payment terms</div>
+                    </div>
+                    <div className="fg" style={{marginBottom:0}}><label className="label">Supplier Quote / Ref #</label><input className="input mono" placeholder="e.g. QT-2024-0891" value={suppRef} onChange={e=>setSuppRef(e.target.value)}/></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2 - LINE ITEMS */}
+          {step===2&&(
+            <div>
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:18,fontWeight:900,color:'var(--ink)',letterSpacing:'-.3px',marginBottom:4}}>Line Items</div>
+                <div style={{fontSize:12,color:'var(--muted)'}}>{lockedMode?'Pre-filled items from stock alert — unit cost is locked from inventory, but you can freely adjust the quantity. Add more items from this supplier using search.':'Search products by name or SKU. Qty and unit cost are fully editable.'}</div>
+              </div>
+              {lockedMode&&lockedItemIds.length>0&&(
+                <div className="locked-banner" style={{marginBottom:16}}>
+                  <Ico d={I.lock} size={16} color="#92400E"/>
+                  <span>
+                    <strong>{lockedItemIds.length} alert item{lockedItemIds.length>1?'s':''}</strong> — unit cost is locked from inventory. <strong>You can freely edit quantities.</strong>
+                    {supplier&&<> Add more items by searching {supplier.name} products below.</>}
+                  </span>
+                </div>
+              )}
+              <div className="card">
+                <div className="card-hd">
+                  <div className="card-hd-icon" style={{background:'#F0FDF4',color:'var(--green)'}}><Ico d={I.search} size={15}/></div>
+                  <div><div className="card-hd-title">Add Items</div><div className="card-hd-sub">Search by product name or SKU</div></div>
+                </div>
+                <div className="card-body">
+                  <div style={{display:'flex',gap:10,marginBottom:14}}>
+                    <div className="search-box" ref={prodDropRef} style={{flex:1}}>
+                      <span className="s-icon"><Ico d={I.search} size={14}/></span>
+                      <input className="input s-input" placeholder={lockedMode&&supplier?`Search ${supplier.name} items only...`:"Search by product name or SKU..."} value={productQ} onChange={e=>{setProductQ(e.target.value);setProductOpen(true);}} onFocus={()=>setProductOpen(true)}/>
+                      {productOpen&&productQ&&(
+                        <div className="dropdown">
+                          {filtProd.length===0?<div className="d-empty">{lockedMode&&supplier?`No products linked to ${supplier.name} match "${productQ}" — only items for this supplier can be added to this PO`:`No products found matching "${productQ}"`}</div>:filtProd.slice(0,12).map(p=>(
+                            <div key={p.id} className="d-item" onClick={()=>addItem(p)}>
+                              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                                <div><div className="d-item-name">{hl(p.name,productQ)}</div><div className="d-item-sub mono">{hl(p.sku||'No SKU',productQ)}{p.category?` · ${p.category}`:''}</div></div>
+                                <div style={{textAlign:'right',flexShrink:0}}>{stockBadge(p)}<div style={{fontSize:11,color:'var(--muted)',marginTop:3,fontFamily:'JetBrains Mono',fontWeight:600}}>{sym(currency)}{(p.price||p.cost||0).toFixed(2)}</div></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {items.length===0?(
+                    <div className="empty-items"><div className="empty-items-icon">📦</div><div className="empty-items-title">No items added</div><div style={{fontSize:12,color:'var(--muted)'}}>Search for a product above</div></div>
+                  ):(
+                    <div style={{overflowX:'auto'}}>
+                      <table className="tbl">
+                        <thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Qty</th><th>Unit Cost ({sym(currency)})</th><th>Line Total</th><th>Notes</th><th></th></tr></thead>
+                        <tbody>
+                          {items.map((it,idx)=>{
+                            const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id); // only cost locked, qty editable
+                            return(
+                              <tr key={idx} style={isCostLocked?{background:'#FAFBFF'}:{}}>
+                                <td>
+                                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                    {isCostLocked&&<Ico d={I.lock} size={11} color="var(--muted2)"/>}
+                                    <div><div style={{fontWeight:700,color:'var(--ink)',fontSize:12}}>{it.product.name}</div>{it.product.category&&<div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{it.product.category}</div>}</div>
+                                  </div>
+                                </td>
+                                <td><span className="mono" style={{fontSize:11,color:'var(--ink3)',background:'var(--line2)',padding:'2px 6px',borderRadius:4}}>{it.product.sku||'—'}</span></td>
+                                <td>{stockBadge(it.product)}</td>
+                                <td><input type="number" min="1" className="qty-in" value={it.qty} onChange={e=>updItem(idx,'qty',Math.max(1,parseInt(e.target.value)||1))}/></td>
+                                <td>
+                                  {isCostLocked?(
+                                    <div style={{fontFamily:'JetBrains Mono',fontSize:12,fontWeight:700,color:'var(--ink3)',display:'flex',alignItems:'center',gap:4}}>
+                                      <Ico d={I.lock} size={10} color="var(--muted2)"/>{sym(currency)}{it.unitCost.toFixed(2)}
+                                    </div>
+                                  ):(
+                                    <div style={{position:'relative'}}>
+                                      <span style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',fontSize:11,color:'var(--muted)',fontWeight:600}}>{sym(currency)}</span>
+                                      <input type="number" min="0" step="0.01" value={it.unitCost} onChange={e=>updItem(idx,'unitCost',parseFloat(e.target.value)||0)} style={{width:100,padding:'5px 8px',paddingLeft:sym(currency).length>1?24:18,border:'1.5px solid var(--line)',borderRadius:6,fontSize:12,fontFamily:'JetBrains Mono',outline:'none'}}/>
+                                    </div>
+                                  )}
+                                </td>
+                                <td><span className="mono" style={{fontSize:12,fontWeight:700,color:'var(--blue2)'}}>{sym(currency)}{(it.qty*it.unitCost).toFixed(2)}</span></td>
+                                <td><input className="input" style={{width:130,padding:'5px 8px',fontSize:11}} placeholder="Optional note..." value={it.notes} onChange={e=>updItem(idx,'notes',e.target.value)}/></td>
+                                <td>{!isCostLocked&&<button className="remove-btn" onClick={()=>delItem(idx)}><Ico d={I.trash} size={12}/></button>}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hd">
+                  <div className="card-hd-icon" style={{background:'var(--line2)',color:'var(--ink3)'}}><Ico d={I.calc} size={15}/></div>
+                  <div><div className="card-hd-title">Cost Adjustments</div><div className="card-hd-sub">Discount, shipping, tax — VAT auto-loaded from supplier record</div></div>
+                </div>
+                <div className="card-body">
+                  <div className="grid3">
+                    <div className="fg" style={{marginBottom:0}}>
+                      <label className="label">Discount ({sym(currency)})</label>
+                      <input type="number" min="0" step="0.01" className="input" placeholder="0.00" value={discount} onChange={e=>setDiscount(e.target.value)}/>
+                      {vatInfo?.discountRate>0&&<div style={{fontSize:10,color:'var(--muted)',marginTop:4}}>Supplier default: {vatInfo.discountRate}%</div>}
+                    </div>
+                    <div className="fg" style={{marginBottom:0}}><label className="label">Shipping Cost ({sym(currency)})</label><input type="number" min="0" step="0.01" className="input" placeholder="0.00" value={shipping} onChange={e=>setShipping(e.target.value)}/></div>
+                    <div className="fg" style={{marginBottom:0}}>
+                      <label className={vatInfo?'label-locked':'label'}>Tax / VAT (%)</label>
+                      {vatInfo?<div className="locked-field"><Ico d={I.lock} size={12} color="var(--muted)"/><span className="mono">{taxRate}%</span><span style={{fontSize:10,color:'var(--muted)',marginLeft:'auto'}}>{vatInfo.exempt?'Exempt':'From supplier'}</span></div>:<input type="number" min="0" step="0.01" className="input" placeholder="12" value={taxRate} onChange={e=>setTaxRate(e.target.value)}/>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 - DELIVERY */}
+          {step===3&&(
+            <div style={{maxWidth:720}}>
+              <div style={{marginBottom:20}}><div style={{fontSize:18,fontWeight:900,color:'var(--ink)',letterSpacing:'-.3px',marginBottom:4}}>Delivery & Notes</div><div style={{fontSize:12,color:'var(--muted)'}}>Specify where and when goods should be delivered.</div></div>
+              <div className="card">
+                <div className="card-hd"><div className="card-hd-icon" style={{background:'#EFF6FF',color:'#1D4ED8'}}><Ico d={I.truck} size={15}/></div><div><div className="card-hd-title">Delivery Details</div><div className="card-hd-sub">Shipping address and expected delivery date</div></div></div>
+                <div className="card-body">
+                  <div className="fg">
+                    <label className="label-locked">Delivery Address</label>
+                    {delivAddr
+                      ? <div className="locked-field" style={{alignItems:'flex-start',minHeight:72,whiteSpace:'pre-wrap',lineHeight:1.5}}>
+                          <Ico d={I.lock} size={12} color="var(--muted2)" style={{marginTop:2,flexShrink:0}}/>
+                          <span style={{flex:1}}>{delivAddr}</span>
+                        </div>
+                      : <div className="locked-field" style={{color:'var(--muted2)',fontWeight:500,fontStyle:'italic'}}>
+                          <Ico d={I.warn} size={12} color="var(--amber)"/>
+                          No company address set — ask your Master Admin to add it in the User Dashboard.
+                        </div>
+                    }
+                    <div style={{fontSize:10,color:'var(--muted)',marginTop:4,display:'flex',alignItems:'center',gap:4}}>
+                      <Ico d={I.lock} size={9} color="var(--muted2)"/>
+                      Auto-filled from your company profile. Contact your Master Admin to update.
+                    </div>
+                  </div>
+                  <div className="grid2">
+                    <div className="fg" style={{marginBottom:0}}><label className="label req">Expected Delivery Date</label><input type="date" className="input" value={delivDate} onChange={e=>setDelivDate(e.target.value)}/></div>
+                    <div className="fg" style={{marginBottom:0}}><label className="label">Delivery Instructions</label><input className="input" placeholder="e.g. Deliver to warehouse bay 3..." value={delivNotes} onChange={e=>setDelivNotes(e.target.value)}/></div>
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hd"><div className="card-hd-icon" style={{background:'#FEF3C7',color:'#92400E'}}><Ico d={I.notes} size={15}/></div><div><div className="card-hd-title">Internal Notes</div><div className="card-hd-sub">Private notes for your procurement team — not shown to supplier</div></div></div>
+                <div className="card-body"><textarea className="textarea" rows={4} placeholder="Budget code, project reference, approver notes..." value={intNotes} onChange={e=>setIntNotes(e.target.value)}/></div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4 - REVIEW */}
+          {step===4&&(
+            <div style={{maxWidth:760}}>
+              <div style={{marginBottom:20}}><div style={{fontSize:18,fontWeight:900,color:'var(--ink)',letterSpacing:'-.3px',marginBottom:4}}>Review & Submit</div><div style={{fontSize:12,color:'var(--muted)'}}>Review all details carefully. Once submitted this PO enters the approval queue.</div></div>
+              <div className="card">
+                <div className="card-body" style={{padding:20}}>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
+                    {[
+                      {label:'PO Number',val:<span className="mono">{poNumber}</span>},
+                      {label:'Supplier',val:supplier?.name},
+                      {label:'Currency',val:currency},
+                      {label:'Payment',val:payTerms},
+                      {label:'VAT Rate',val:vatInfo?`${taxRate}% ${vatInfo.exempt?'(Exempt)':''}`:taxRate+'%'},
+                      {label:'Priority',val:<span style={{textTransform:'capitalize',color:priority==='urgent'?'var(--red)':priority==='high'?'var(--amber)':'var(--ink)'}}>{priority}</span>},
+                      {label:'Delivery To',val:delivAddr,span:2},
+                      {label:'Delivery By',val:delivDate},
+                      {label:'Alert-Driven',val:lockedMode?'Yes — from stock alert':'No'},
+                    ].map((f,i)=>(
+                      <div key={i} style={f.span?{gridColumn:`span ${f.span}`}:{}}>
+                        <div style={{fontSize:10,fontWeight:800,letterSpacing:'.07em',textTransform:'uppercase',color:'var(--muted)',marginBottom:4}}>{f.label}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:'var(--ink)'}}>{f.val||<span style={{color:'var(--muted2)'}}>—</span>}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-hd"><div className="card-hd-icon" style={{background:'var(--line2)',color:'var(--ink3)'}}><Ico d={I.doc} size={15}/></div><div><div className="card-hd-title">Line Items ({items.length})</div></div></div>
+                <div style={{overflowX:'auto'}}>
+                  <table className="tbl">
+                    <thead><tr><th>#</th><th>Product</th><th>SKU</th><th>Qty</th><th>Unit Cost</th><th>Line Total</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {items.map((it,idx)=>{
+                        const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id); // only cost locked, qty editable
+                        return(
+                          <tr key={idx}>
+                            <td style={{color:'var(--muted)',fontWeight:600}}>{idx+1}</td>
+                            <td><div style={{fontWeight:700,color:'var(--ink)'}}>{it.product.name}</div>{it.notes&&<div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>{it.notes}</div>}</td>
+                            <td><span className="mono" style={{fontSize:11,color:'var(--muted)'}}>{it.product.sku||'—'}</span></td>
+                            <td className="mono" style={{fontWeight:600}}>{it.qty}</td>
+                            <td className="mono" style={{fontWeight:600}}>{sym(currency)}{it.unitCost.toFixed(2)}</td>
+                            <td className="mono" style={{fontWeight:800,color:'var(--blue2)'}}>{sym(currency)}{(it.qty*it.unitCost).toFixed(2)}</td>
+                            <td>{isCostLocked?<span style={{fontSize:10,fontWeight:700,color:'#92400E',background:'#FFF7ED',border:'1px solid #FED7AA',padding:'2px 7px',borderRadius:4}}>COST LOCKED</span>:<span style={{fontSize:10,color:'var(--muted2)'}}>—</span>}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {intNotes&&<div style={{background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#92400E',display:'flex',gap:8,alignItems:'flex-start'}}><Ico d={I.notes} size={13} color="#92400E"/><span><strong>Internal note:</strong> {intNotes}</span></div>}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT PANEL */}
+        <div className="panel-side">
+          <div className="side-hd"><Ico d={I.doc} size={14} color="var(--muted)"/> Order Summary</div>
+          <div className="side-sec">
+            <div className="side-lbl">Supplier</div>
+            {supplier?<><div style={{fontWeight:700,fontSize:13,color:'var(--ink)'}}>{supplier.name}</div>{supplier.email&&<div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{supplier.email}</div>}{vatInfo&&<div style={{fontSize:10,marginTop:4,color:vatInfo.exempt?'#6B7280':'var(--green)',fontWeight:700}}>{vatInfo.exempt?'Tax Exempt':`VAT ${vatInfo.rate}%`}</div>}</>:<div style={{fontSize:12,color:'var(--muted2)',fontStyle:'italic'}}>Not selected</div>}
+          </div>
+          <div className="side-sec" style={{flex:1,overflowY:'auto'}}>
+            <div className="side-lbl">Items ({items.length})</div>
+            {items.length===0?<div style={{fontSize:11,color:'var(--muted2)',fontStyle:'italic'}}>No items yet</div>:items.map((it,i)=>(
+              <div key={i} style={{display:'flex',justifyContent:'space-between',marginBottom:8,paddingBottom:8,borderBottom:i<items.length-1?'1px solid var(--line2)':'none'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:4}}>
+                    {(it.locked||lockedItemIds.includes(it.product.id))&&<Ico d={I.lock} size={9} color="var(--muted2)"/>}
+                    <div style={{fontSize:12,fontWeight:600,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{it.product.name}</div>
+                  </div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>{it.qty} × {sym(currency)}{it.unitCost.toFixed(2)}</div>
+                </div>
+                <div className="mono" style={{fontSize:12,fontWeight:700,color:'var(--ink3)',flexShrink:0,marginLeft:8}}>{sym(currency)}{(it.qty*it.unitCost).toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="side-total">
+            <div className="side-row"><span className="side-row-lbl">Subtotal</span><span className="side-row-val">{sym(currency)}{subtotal.toFixed(2)}</span></div>
+            {discAmt>0&&<div className="side-row"><span className="side-row-lbl" style={{color:'var(--green)'}}>Discount</span><span className="side-row-val" style={{color:'var(--green)'}}>−{sym(currency)}{discAmt.toFixed(2)}</span></div>}
+            {shipAmt>0&&<div className="side-row"><span className="side-row-lbl">Shipping</span><span className="side-row-val">+{sym(currency)}{shipAmt.toFixed(2)}</span></div>}
+            <div className="side-row"><span className="side-row-lbl">VAT ({taxRate}%){vatInfo?' ●':''}</span><span className="side-row-val">+{sym(currency)}{taxAmt.toFixed(2)}</span></div>
+            <div className="side-grand"><span className="side-grand-lbl">GRAND TOTAL</span><span className="side-grand-val">{sym(currency)}{grand.toFixed(2)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ACTION BAR */}
+      <div className="action-bar">
+        <button className="btn btn-ghost" onClick={()=>step>1?setStep(step-1):window.location.href='Dashboard.html'}>
+          <Ico d={I.back} size={12}/>{step>1?'Back':'Cancel'}
+        </button>
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-ghost" onClick={()=>submitPO(true)} disabled={items.length===0||!supplier||submitting}>
+            <Ico d={I.draft} size={12}/>Save as Draft
+          </button>
+          {step<4?<button className="btn btn-solid" onClick={()=>canProceed()?setStep(step+1):toast('Please complete required fields','warn')} disabled={!canProceed()}>Continue <Ico d="M9 18l6-6-6-6" size={12}/></button>:<button className="btn btn-green" onClick={()=>submitPO(false)} disabled={submitting}>{submitting?<><div className="spinner" style={{width:14,height:14,borderWidth:2}}/> Submitting...</>:<><Ico d={I.send} size={12}/>Submit PO</>}</button>}
+        </div>
+      </div>
+
+      {/* ═══ QTY CONFIRM OVERLAY (single-item +PO from alert) ═══ */}
+      {showQtyConfirm&&qtyConfirmItem&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(15,23,36,.65)',backdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:600,padding:20}}>
+          <div style={{background:'var(--white)',borderRadius:16,width:'100%',maxWidth:460,boxShadow:'0 24px 64px rgba(15,23,36,.3)',overflow:'hidden'}}>
+            {/* Header */}
+            <div style={{padding:'18px 22px',borderBottom:'1px solid var(--line)',display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:36,height:36,borderRadius:10,background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Ico d={I.doc} size={18} color="var(--blue)"/>
+              </div>
+              <div>
+                <div style={{fontSize:15,fontWeight:900,color:'var(--ink)',letterSpacing:'-.2px'}}>Set Order Quantity</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>Confirm how many units to order for this alert item</div>
+              </div>
+            </div>
+            {/* Product info */}
+            <div style={{padding:'18px 22px',background:'var(--line2)',borderBottom:'1px solid var(--line)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:800,color:'var(--ink)',marginBottom:2}}>{qtyConfirmItem.product.name}</div>
+                  <div style={{display:'flex',gap:12,fontSize:11,color:'var(--muted)'}}>
+                    <span className="mono">{qtyConfirmItem.product.sku||'No SKU'}</span>
+                    <span>In stock: <strong style={{color:qtyConfirmItem.product.stock===0?'var(--red)':'var(--amber)'}}>{qtyConfirmItem.product.stock}</strong></span>
+                    <span>MOQ: <strong>{qtyConfirmItem.product.moq||1}</strong></span>
+                  </div>
+                </div>
+                <span className={qtyConfirmItem.product.stock===0?'status-badge stock-out':'status-badge stock-low'}>
+                  {qtyConfirmItem.product.stock===0?'Out of Stock':'Low Stock'}
+                </span>
+              </div>
+              <div style={{marginTop:10,display:'flex',gap:16,fontSize:11,color:'var(--muted)'}}>
+                <span>Unit cost: <strong style={{color:'var(--ink)',fontFamily:'JetBrains Mono,monospace'}}>{sym(currency)}{qtyConfirmItem.unitCost.toFixed(2)}</strong> <span style={{fontSize:10,color:'var(--muted2)'}}>(locked from inventory)</span></span>
+              </div>
+            </div>
+            {/* Qty selector */}
+            <div style={{padding:'22px 22px'}}>
+              <label style={{display:'block',fontSize:10,fontWeight:800,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--muted)',marginBottom:12}}>Order Quantity</label>
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+                <button
+                  onClick={()=>setQtyConfirmItem(p=>({...p,qty:Math.max(1,(p.qty||1)-1)}))}
+                  style={{width:40,height:40,borderRadius:10,border:'1.5px solid var(--line)',background:'var(--bg)',cursor:'pointer',fontSize:20,fontWeight:700,color:'var(--ink3)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}}
+                >−</button>
+                <input
+                  type="number" min="1"
+                  value={qtyConfirmItem.qty||1}
+                  onChange={e=>setQtyConfirmItem(p=>({...p,qty:Math.max(1,parseInt(e.target.value)||1)}))}
+                  style={{width:90,padding:'10px',border:'1.5px solid var(--blue)',borderRadius:10,fontSize:18,fontWeight:800,textAlign:'center',fontFamily:'JetBrains Mono,monospace',outline:'none',color:'var(--ink)',background:'var(--white)'}}
+                />
+                <button
+                  onClick={()=>setQtyConfirmItem(p=>({...p,qty:(p.qty||1)+1}))}
+                  style={{width:40,height:40,borderRadius:10,border:'1.5px solid var(--line)',background:'var(--bg)',cursor:'pointer',fontSize:20,fontWeight:700,color:'var(--ink3)',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}}
+                >+</button>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--blue2)',fontFamily:'JetBrains Mono,monospace'}}>
+                    {sym(currency)}{((qtyConfirmItem.qty||1)*qtyConfirmItem.unitCost).toFixed(2)}
+                  </div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:1}}>Estimated line total</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:10}}>
+                <button
+                  className="btn btn-ghost"
+                  style={{flex:1}}
+                  onClick={()=>{setShowQtyConfirm(false);setQtyConfirmItem(null);}}
+                >Cancel</button>
+                <button
+                  className="btn btn-solid"
+                  style={{flex:2}}
+                  onClick={()=>{
+                    setItems(prev=>prev.map(it=>it.product.id===qtyConfirmItem.product.id?{...it,qty:qtyConfirmItem.qty}:it));
+                    setShowQtyConfirm(false);setQtyConfirmItem(null);
+                    toast(`Qty set to ${qtyConfirmItem.qty} — continue to delivery details`,'ok');
+                  }}
+                >
+                  <Ico d={I.check} size={13}/> Confirm & Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOASTS */}
+      <div className="toast-stack">
+        {toasts.map(t=>(
+          <div key={t.id} className={`toast ${t.type}`}>
+            {t.type==='ok'&&<Ico d={I.check} size={13} color="#10b981" sw={2.5}/>}
+            {t.type==='err'&&<Ico d={I.x} size={13} color="#ef4444" sw={2.5}/>}
+            {t.type==='warn'&&<Ico d={I.warn} size={13} color="#d97706" sw={2}/>}
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<CreatePOApp/>, document.getElementById('root'));
+</script>
+</body>
+</html>

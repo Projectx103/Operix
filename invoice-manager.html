@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Invoice Manager - Operix</title>
+<title>Invoice Manager — Operix</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,115 +12,397 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', sans-serif; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  
-  .dragging {
-    opacity: 0.5;
-    transform: scale(0.98);
-  }
-  
-  .drag-over {
-    border-color: #3B82F6 !important;
-    background-color: #EFF6FF !important;
-  }
+:root {
+  --ink: #0C1220;
+  --ink2: #1E2D45;
+  --slate: #64748B;
+  --line: #E4EAF2;
+  --surf: #F4F7FB;
+  --white: #ffffff;
+  --blue: #050C9C;
+  --blue-mid: #1a24b8;
+  --blue-lt: #3B4FD8;
+  --blue-bg: #EEF0FF;
+  --green: #059669;
+  --green-bg: #ECFDF5;
+  --amber: #D97706;
+  --red: #DC2626;
+  --accent: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif; background: var(--surf); color: var(--ink); min-height: 100vh; }
+
+/* ── TITLEBAR ── */
+.titlebar {
+  height: 38px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  position: sticky; top: 0; z-index: 200;
+}
+.titlebar-brand { display: flex; align-items: center; gap: 10px; }
+.titlebar-brand span { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.titlebar-brand small { font-size: 9px; color: #64748B; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.titlebar-file { font-size: 12px; color: #94A3B8; font-weight: 500; }
+.titlebar-actions { display: flex; align-items: center; gap: 8px; }
+.tb-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #94A3B8; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: all .15s; text-decoration: none; }
+.tb-pill:hover { color: #fff; background: rgba(255,255,255,.12); }
+.tb-pill.danger { color: #FCA5A5; }
+.tb-pill.danger:hover { background: rgba(220,38,38,.2); color: #fff; }
+
+/* ── RIBBON ── */
+.ribbon {
+  background: var(--white);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 38px; z-index: 190;
+  box-shadow: 0 1px 6px rgba(0,0,0,.04);
+}
+.ribbon-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.rtab {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--slate);
+  padding: 8px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.rtab:hover { color: var(--ink); background: var(--surf); }
+.rtab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--blue-bg); }
+
+.ribbon-tools {
+  display: flex;
+  align-items: stretch;
+  padding: 4px 12px;
+  gap: 2px;
+  min-height: 62px;
+  overflow-x: auto;
+}
+
+.rtool-group {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 0 6px;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.rtool-group:last-child { border-right: none; }
+.rtool-group-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%; transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--slate);
+  white-space: nowrap;
+}
+
+.rtool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .14s;
+  min-width: 48px;
+}
+.rtool:hover { background: var(--surf); border-color: var(--line); }
+.rtool.active { background: var(--blue-bg); border-color: #c7ccf5; color: var(--blue); }
+.rtool.primary:hover { background: var(--blue); color: #fff; }
+.rtool.primary:hover .rtool-icon { color: #fff !important; }
+.rtool.primary:hover .rtool-label { color: #fff !important; }
+.rtool.success { background: #ECFDF5; border-color: #A7F3D0; }
+.rtool.success:hover { background: var(--green); color: #fff; }
+.rtool.success:hover .rtool-icon, .rtool.success:hover .rtool-label { color: #fff !important; }
+.rtool-icon { color: var(--slate); transition: color .14s; }
+.rtool-icon svg { display: block; }
+.rtool-label { font-size: 10px; font-weight: 700; color: var(--slate); white-space: nowrap; transition: color .14s; text-align: center; }
+
+.rtool-separator { width: 1px; background: var(--line); margin: 4px 4px; align-self: stretch; }
+
+/* ── RIBBON GROUP WRAPPER ── */
+.ribbon-groups-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 24px;
+  gap: 0;
+  overflow-x: auto;
+}
+
+/* ── WORKSPACE ── */
+.workspace {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 140px);
+}
+
+/* ── PANEL ── */
+.panel {
+  background: var(--white);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+  position: sticky;
+  top: 140px;
+}
+.panel-section {
+  border-bottom: 1px solid var(--line);
+  padding: 18px;
+}
+.panel-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.form-group { margin-bottom: 12px; }
+.form-label { display: block; font-size: 11px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; letter-spacing: .02em; }
+.form-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  background: var(--surf);
+  transition: all .15s;
+  outline: none;
+}
+.form-input:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px rgba(5,12,156,.08); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+/* ── NUMBER SERIES BLOCK ── */
+.series-preview {
+  background: linear-gradient(135deg, var(--blue), var(--blue-lt));
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  margin-top: 10px;
+}
+.series-preview-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 4px; }
+.series-preview-number { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: #fff; letter-spacing: .05em; }
+
+/* ── PREVIEW AREA ── */
+.preview-area {
+  background: var(--surf);
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+}
+.preview-paper {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+  padding: 32px;
+  max-width: 680px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── SECTION ITEM ── */
+.section-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--surf);
+  cursor: grab;
+  transition: all .15s;
+  margin-bottom: 6px;
+  user-select: none;
+}
+.section-item:hover { border-color: var(--blue-lt); background: var(--blue-bg); }
+.section-item.selected { border-color: var(--blue); background: var(--blue-bg); box-shadow: 0 0 0 3px rgba(5,12,156,.08); }
+.section-item.dragging { opacity: .4; transform: scale(.97); }
+.section-order { width: 22px; height: 22px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-name { flex: 1; font-size: 12px; font-weight: 700; color: var(--ink); }
+.section-vis { width: 20px; height: 12px; border-radius: 6px; background: #E2E8F0; position: relative; cursor: pointer; transition: background .15s; }
+.section-vis.on { background: var(--green); }
+.section-vis::after { content: ''; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.section-vis.on::after { transform: translateX(8px); }
+
+/* ── COLOR SWATCH ── */
+.color-row { display: flex; gap: 6px; align-items: center; }
+.color-swatch { width: 36px; height: 36px; border-radius: 7px; border: 2px solid var(--line); cursor: pointer; overflow: hidden; position: relative; flex-shrink: 0; }
+.color-swatch input[type=color] { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); border: none; cursor: pointer; opacity: 0; }
+.color-swatch-preview { position: absolute; inset: 0; border-radius: 5px; pointer-events: none; }
+
+/* ── SAVE TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  z-index: 9999;
+  animation: toastIn .2s ease;
+}
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+@keyframes toastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── UPLOAD ZONE ── */
+.upload-zone {
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--surf);
+}
+.upload-zone:hover { border-color: var(--blue); background: var(--blue-bg); }
+
+/* ── LOADING ── */
+.loader { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #D1D9E6; border-radius: 99px; }
+
+/* number series counter animation */
+@keyframes countUp { from { transform: translateY(4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.series-preview-number { animation: countUp .25s ease; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect } = React;
+const { useState, useEffect, useCallback, useRef } = React;
 
-// Lucide Icons
-const X = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+/* ─────────── SVG ICONS ─────────── */
+const Icon = ({ d, size=16, stroke=2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    {typeof d === 'string' ? <path d={d} /> : d}
+  </svg>
+);
+const SaveIcon = () => <Icon size={18} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8" />;
+const UploadIcon = () => <Icon size={18} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
+const EyeIcon = () => <Icon size={18} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 100 6 3 3 0 000-6z" />;
+const LayoutIcon = () => <Icon size={18} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5zM14 11a1 1 0 011-1h4a1 1 0 011 1v8a1 1 0 01-1 1h-4a1 1 0 01-1-1v-8z" />;
+const PaletteIcon = () => <Icon size={18} d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.69 0 1.28-.57 1.28-1.28 0-.34-.13-.64-.32-.87-.19-.24-.31-.53-.31-.85 0-.69.57-1.28 1.28-1.28h1.51c3.03 0 5.56-2.48 5.56-5.56C21.5 6.18 17.21 2 12 2z" />;
+const HashIcon = () => <Icon size={18} d={[<line key="1" x1="4" y1="9" x2="20" y2="9"/>,<line key="2" x1="4" y1="15" x2="20" y2="15"/>,<line key="3" x1="10" y1="3" x2="8" y2="21"/>,<line key="4" x1="16" y1="3" x2="14" y2="21"/>]} />;
+const SignIcon = () => <Icon size={18} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />;
+const GearIcon = () => <Icon size={18} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />;
+const ImageIcon = () => <Icon size={18} d="M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h3l2-3h4l2 3h3a2 2 0 012 2z M12 13a3 3 0 100-6 3 3 0 000 6z" />;
+const TypeIcon = () => <Icon size={18} d="M4 7V4h16v3M9 20h6M12 4v16" />;
+const MoveIcon = () => <Icon size={16} d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />;
+const CheckIcon = () => <Icon size={16} stroke={2.5} d="M20 6L9 17l-5-5" />;
+const XIcon = () => <Icon size={16} stroke={2.5} d="M18 6L6 18M6 6l12 12" />;
+const RefreshIcon = () => <Icon size={18} d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />;
+const DragIcon = () => <Icon size={14} d="M9 5h2M9 10h2M9 15h2M13 5h2M13 10h2M13 15h2" stroke={2.5} />;
+const BuildIcon = () => <Icon size={18} d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />;
+const HomeIcon = () => <Icon size={16} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10" />;
+const LogoutIcon = () => <Icon size={14} d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />;
+const InfoIcon = () => <Icon size={14} d="M12 16v-4M12 8h.01M22 12a10 10 0 11-20 0 10 10 0 0120 0z" />;
+
+const OperixLogo = () => (
+  <svg width="26" height="26" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="8" fill="#050C9C"/>
+    <path d="M20 10 C25 10 28 13 28 18 C28 23 25 26 20 26 C15 26 12 23 12 18 C12 13 15 10 20 10 Z M20 14 C17 14 16 15.5 16 18 C16 20.5 17 22 20 22 C23 22 24 20.5 24 18 C24 15.5 23 14 20 14 Z" fill="white"/>
+    <rect x="18" y="26" width="4" height="4" fill="white"/>
   </svg>
 );
 
-const Save = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-  </svg>
-);
-
-const Upload = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-  </svg>
-);
-
-const ArrowLeft = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-  </svg>
-);
-
-const FileText = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const Menu = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-  </svg>
-);
-
-// Operix Logo Component
-const OperixLogo = ({ size = 'default' }) => {
-  const dimensions = size === 'small' ? { w: 40, h: 40 } : { w: 60, h: 60 };
-  
+/* ─────────── TOAST ─────────── */
+function Toast({ message, type = 'success', onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
   return (
-    <svg width={dimensions.w} height={dimensions.h} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      <rect width="40" height="40" rx="8" fill="#050C9C"/>
-      <path d="M20 10 C25 10 28 13 28 18 C28 23 25 26 20 26 C15 26 12 23 12 18 C12 13 15 10 20 10 Z M20 14 C17 14 16 15.5 16 18 C16 20.5 17 22 20 22 C23 22 24 20.5 24 18 C24 15.5 23 14 20 14 Z" fill="white"/>
-      <rect x="18" y="26" width="4" height="4" fill="white"/>
-    </svg>
+    <div className={`toast ${type}`}>
+      {type === 'success' ? <CheckIcon /> : <XIcon />}
+      {message}
+    </div>
   );
-};
+}
 
+/* ─────────── MAIN APP ─────────── */
 function InvoiceManager() {
-  const { useState, useEffect } = React;
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('layout'); // layout, settings, signature
+  const [activeRibbonTab, setActiveRibbonTab] = useState('home');
+  const [activePanel, setActivePanel] = useState('sections');
+  const [toast, setToast] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [draggedSection, setDraggedSection] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
-  // Invoice Settings
   const [invoiceSettings, setInvoiceSettings] = useState({
     companyName: '',
     companyTIN: '',
     companyAddress: '',
     defaultVAT: '12',
-    invoicePrefix: 'INV',
+    invoicePrefix: 'WQI',
     startingInvoiceNumber: 1,
+    numberPadding: 4,
+    numberSeparator: '-',
     termsAndConditions: '',
     signatureUrl: '',
     signedBy: ''
   });
 
-
-
- // Layout Configuration - THIS SHOULD BE HERE, INSIDE THE FUNCTION
-const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
+  const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
     sections: {
-      header: { visible: true, order: 1, fontSize: 24, color: '#050C9C', fontWeight: 'bold' },
+      header:      { visible: true, order: 1, fontSize: 24, color: '#050C9C', fontWeight: 'bold' },
       companyInfo: { visible: true, order: 2, columns: 2, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      itemsTable: { visible: true, order: 3, fontSize: 10, color: '#000000', headerBgColor: '#050C9C' },
-      totals: { visible: true, order: 4, position: 'right', fontSize: 10, color: '#000000', fontWeight: 'normal' },
+      itemsTable:  { visible: true, order: 3, fontSize: 10, color: '#000000', headerBgColor: '#050C9C' },
+      totals:      { visible: true, order: 4, position: 'right', fontSize: 10, color: '#000000', fontWeight: 'normal' },
       paymentMethod: { visible: true, order: 5, fontSize: 10, color: '#050C9C', fontWeight: 'normal' },
-      terms: { visible: true, order: 6, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      signature: { visible: true, order: 7, columns: 2, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      footer: { visible: true, order: 8, fontSize: 10, color: '#666666', fontWeight: 'normal' }
+      terms:       { visible: true, order: 6, fontSize: 10, color: '#000000', fontWeight: 'normal' },
+signature:          { visible: true, order: 7, columns: 2, fontSize: 10, color: '#000000', fontWeight: 'normal' },
+      specialInstructions: { visible: true, order: 8, fontSize: 10, color: '#78350F', fontWeight: 'normal' },
+      footer:             { visible: true, order: 9, fontSize: 10, color: '#666666', fontWeight: 'normal' }
     },
     styling: {
       primaryColor: '#050C9C',
-      secondaryColor: '#3B82F6',
+      secondaryColor: '#3B4FD8',
       fontFamily: 'Arial',
       fontSize: 10,
       headerSize: 24
@@ -129,12 +411,11 @@ const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
     logoPosition: 'top'
   });
 
-  const [draggedSection, setDraggedSection] = useState(null);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingSignature, setUploadingSignature] = useState(false);
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+  };
 
-  // Initialize Firebase
+  // ── Firebase Init ──
   useEffect(() => {
     const firebaseConfig = {
       apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
@@ -145,26 +426,14 @@ const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
       appId: "1:794223223499:web:f059007b909cc15766f14e",
       measurementId: "G-6E4BD657K1"
     };
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
         const db = firebase.firestore();
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        
         if (userDoc.exists && userDoc.data().role === 'admin') {
-          setUser({
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: userDoc.data().fullName || currentUser.email,
-            ...userDoc.data()
-          });
-          
-          // Load invoice settings and layout config
+          setUser({ uid: currentUser.uid, email: currentUser.email, displayName: userDoc.data().fullName || currentUser.email, ...userDoc.data() });
           await loadInvoiceSettings(db, currentUser.uid);
           await loadLayoutConfig(db, currentUser.uid);
         } else {
@@ -177,1106 +446,926 @@ const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
     });
   }, []);
 
-  // Load Invoice Settings
-  const loadInvoiceSettings = async (db, userId) => {
+  const loadInvoiceSettings = async (db, uid) => {
     try {
-      const settingsDoc = await db.collection('invoiceSettings').doc(userId).get();
-      if (settingsDoc.exists) {
-        const settings = settingsDoc.data();
+      const doc = await db.collection('invoiceSettings').doc(uid).get();
+      if (doc.exists) {
+        const s = doc.data();
         setInvoiceSettings({
-          companyName: settings.companyName || '',
-          companyTIN: settings.companyTIN || '',
-          companyAddress: settings.companyAddress || '',
-          defaultVAT: settings.defaultVAT || '12',
-          invoicePrefix: settings.invoicePrefix || 'INV',
-          startingInvoiceNumber: settings.startingInvoiceNumber || 1,
-          termsAndConditions: settings.termsAndConditions || '',
-          signatureUrl: settings.signatureUrl || '',
-          signedBy: settings.signedBy || ''
+          companyName: s.companyName || '',
+          companyTIN: s.companyTIN || '',
+          companyAddress: s.companyAddress || '',
+          defaultVAT: s.defaultVAT || '12',
+          invoicePrefix: s.invoicePrefix || 'WQI',
+          startingInvoiceNumber: s.startingInvoiceNumber || 1,
+          numberPadding: s.numberPadding || 4,
+          numberSeparator: s.numberSeparator || '-',
+          termsAndConditions: s.termsAndConditions || '',
+          signatureUrl: s.signatureUrl || '',
+          signedBy: s.signedBy || ''
         });
-        console.log('✅ Invoice settings loaded:', settings);
       }
-    } catch (error) {
-      console.error('❌ Error loading invoice settings:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  // Load Layout Configuration
-const loadLayoutConfig = async (db, userId) => {
-  try {
-    const layoutDoc = await db.collection('invoiceLayoutConfigs').doc(userId).get();
-    
-    if (layoutDoc.exists) {
-      const loadedConfig = layoutDoc.data();
-      
-      // Ensure footer section exists (for backward compatibility)
-      if (!loadedConfig.sections.footer) {
-        loadedConfig.sections.footer = { visible: true, order: 8 };
-      }
-      
-      setInvoiceLayoutConfig(loadedConfig);
-      console.log('✅ Layout config loaded:', loadedConfig);
-    } else {
-      console.log('⚠️ No saved layout, using defaults');
-    }
-  } catch (error) {
-    console.error('❌ Error loading layout config:', error);
-  }
-};
+  const loadLayoutConfig = async (db, uid) => {
+    try {
+      const doc = await db.collection('invoiceLayoutConfigs').doc(uid).get();
+      if (doc.exists) {
+        const cfg = doc.data();
+        if (!cfg.sections.footer) cfg.sections.footer = { visible: true, order: 9 };
+        if (!cfg.sections.specialInstructions) cfg.sections.specialInstructions = { visible: true, order: 8, fontSize: 10, color: '#78350F', fontWeight: 'normal' };
 
-  // Save Invoice Settings
-  const saveInvoiceSettings = async () => {
+        setInvoiceLayoutConfig(cfg);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const saveAll = async () => {
+    setSaving(true);
     try {
       const db = firebase.firestore();
       await db.collection('invoiceSettings').doc(user.uid).set({
         ...invoiceSettings,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      
-      console.log('✅ Invoice settings saved successfully!');
-      alert('Invoice settings saved successfully!');
-    } catch (error) {
-      console.error('❌ Error saving invoice settings:', error);
-      alert('Error saving invoice settings: ' + error.message);
-    }
-  };
-
-  // Save Layout Configuration
-  const saveLayoutConfiguration = async () => {
-    try {
-      const db = firebase.firestore();
-      
-      // Validate section orders
-      const sections = Object.entries(invoiceLayoutConfig.sections);
-      const orders = sections.map(([_, config]) => config.order);
-      const hasValidOrders = orders.every(o => typeof o === 'number' && o > 0);
-      
-      if (!hasValidOrders) {
-        alert('Error: Invalid section ordering detected');
-        return;
-      }
-      
-      // Save to Firestore
       await db.collection('invoiceLayoutConfigs').doc(user.uid).set({
         ...invoiceLayoutConfig,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      
-      console.log('✅ Layout configuration saved successfully!');
-      alert('Layout configuration saved successfully!');
-      
-    } catch (error) {
-      console.error('❌ Error saving layout:', error);
-      alert('Error saving layout configuration: ' + error.message);
+      showToast('All changes saved successfully!');
+    } catch (e) {
+      showToast('Save failed: ' + e.message, 'error');
     }
+    setSaving(false);
   };
 
-  // Drag and Drop Handlers
-  const handleDragStart = (sectionKey) => {
-    setDraggedSection(sectionKey);
-  };
-
-  const handleDragOver = (e, targetSectionKey) => {
-    e.preventDefault();
-    
-    if (!draggedSection || draggedSection === targetSectionKey) return;
-    
-    const draggedOrder = invoiceLayoutConfig.sections[draggedSection].order;
-    const targetOrder = invoiceLayoutConfig.sections[targetSectionKey].order;
-    
-    if (draggedOrder === targetOrder) return;
-    
-    const newSections = { ...invoiceLayoutConfig.sections };
-    
-    // Shift sections between dragged and target
-    Object.keys(newSections).forEach(key => {
-      const section = newSections[key];
-      
-      if (draggedOrder < targetOrder) {
-        // Dragging down
-        if (section.order > draggedOrder && section.order <= targetOrder) {
-          section.order--;
-        }
-      } else {
-        // Dragging up
-        if (section.order >= targetOrder && section.order < draggedOrder) {
-          section.order++;
-        }
-      }
-    });
-    
-    newSections[draggedSection].order = targetOrder;
-    
-    setInvoiceLayoutConfig({
-      ...invoiceLayoutConfig,
-      sections: newSections
-    });
-  };
-
-  const handleDragEnd = () => {
-    setDraggedSection(null);
-  };
-
-  // Upload to Cloudinary
-  const uploadToCloudinary = async (file, type = 'logo') => {
-    if (!file) return;
-    
-    if (type === 'logo') {
-      setUploadingLogo(true);
-    } else {
-      setUploadingSignature(true);
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'operix_products');
-    formData.append('folder', type === 'logo' ? 'operix-logos' : 'operix-signatures');
-
+  const saveSettings = async () => {
+    setSaving(true);
     try {
-      const response = await fetch('https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload', {
-        method: 'POST',
-        body: formData
+      const db = firebase.firestore();
+      await db.collection('invoiceSettings').doc(user.uid).set({
+        ...invoiceSettings,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      
-      const data = await response.json();
-      
-      if (type === 'logo') {
-        setInvoiceLayoutConfig(prev => ({ ...prev, logoUrl: data.secure_url }));
-        setUploadingLogo(false);
-      } else {
-        setInvoiceSettings(prev => ({ ...prev, signatureUrl: data.secure_url }));
-        setUploadingSignature(false);
-      }
-      
-      console.log(`✅ ${type} uploaded successfully:`, data.secure_url);
-    } catch (error) {
-      console.error(`❌ ${type} upload error:`, error);
-      alert(`Failed to upload ${type}. Please try again.`);
-      if (type === 'logo') {
-        setUploadingLogo(false);
-      } else {
-        setUploadingSignature(false);
-      }
-    }
+      showToast('Settings saved!');
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+    setSaving(false);
   };
 
-  const handleLogout = async () => {
+  const saveLayout = async () => {
+    setSaving(true);
     try {
-      await firebase.auth().signOut();
-      window.location.href = 'login.html';
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+      const db = firebase.firestore();
+      await db.collection('invoiceLayoutConfigs').doc(user.uid).set({
+        ...invoiceLayoutConfig,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Layout saved!');
+    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+    setSaving(false);
   };
 
-  // Get sorted sections for preview
-  const getSortedSections = () => {
-    return Object.entries(invoiceLayoutConfig.sections)
+  // ── Reset Counter ──
+  const resetCounter = async () => {
+    if (!window.confirm(`Reset invoice counter to start from ${invoiceSettings.invoicePrefix}${invoiceSettings.numberSeparator}${String(invoiceSettings.startingInvoiceNumber).padStart(invoiceSettings.numberPadding, '0')}?\n\nThis does NOT delete existing invoices.`)) return;
+    try {
+      const db = firebase.firestore();
+      await db.collection('counters').doc('orderCounter').set({ count: invoiceSettings.startingInvoiceNumber - 1 });
+      showToast('Counter reset! Next invoice: ' + previewNumber);
+    } catch(e) { showToast('Reset failed: ' + e.message, 'error'); }
+  };
+
+  // ── Drag & Drop ──
+  const handleDragStart = (key) => setDraggedSection(key);
+  const handleDragOver = (e, targetKey) => {
+    e.preventDefault();
+    if (!draggedSection || draggedSection === targetKey) return;
+    const draggedOrder = invoiceLayoutConfig.sections[draggedSection].order;
+    const targetOrder = invoiceLayoutConfig.sections[targetKey].order;
+    if (draggedOrder === targetOrder) return;
+    const ns = { ...invoiceLayoutConfig.sections };
+    Object.keys(ns).forEach(k => {
+      if (draggedOrder < targetOrder) {
+        if (ns[k].order > draggedOrder && ns[k].order <= targetOrder) ns[k].order--;
+      } else {
+        if (ns[k].order >= targetOrder && ns[k].order < draggedOrder) ns[k].order++;
+      }
+    });
+    ns[draggedSection].order = targetOrder;
+    setInvoiceLayoutConfig({ ...invoiceLayoutConfig, sections: ns });
+  };
+  const handleDragEnd = () => setDraggedSection(null);
+
+  // ── Cloudinary Upload ──
+  const upload = async (file, type = 'logo') => {
+    if (!file) return;
+    if (type === 'logo') setUploadingLogo(true); else setUploadingSignature(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'operix_products');
+    fd.append('folder', type === 'logo' ? 'operix-logos' : 'operix-signatures');
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (type === 'logo') {
+        setInvoiceLayoutConfig(p => ({ ...p, logoUrl: data.secure_url }));
+      } else {
+        setInvoiceSettings(p => ({ ...p, signatureUrl: data.secure_url }));
+      }
+      showToast(`${type === 'logo' ? 'Logo' : 'Signature'} uploaded!`);
+    } catch (e) { showToast('Upload failed', 'error'); }
+    if (type === 'logo') setUploadingLogo(false); else setUploadingSignature(false);
+  };
+
+  const getSortedSections = () =>
+    Object.entries(invoiceLayoutConfig.sections)
       .sort((a, b) => a[1].order - b[1].order)
-      .map(([key]) => key);
+      .map(([k]) => k);
+
+const sectionLabels = {
+    header: 'Invoice Header', companyInfo: 'Company Info',
+    itemsTable: 'Items Table', totals: 'Totals Block',
+    paymentMethod: 'Payment Method', terms: 'Terms & Conditions',
+    signature: 'Signature', specialInstructions: 'Special Instructions', footer: 'Footer'
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Invoice Manager...</p>
+  const updateSection = (key, props) => {
+    setInvoiceLayoutConfig(p => ({
+      ...p,
+      sections: { ...p.sections, [key]: { ...p.sections[key], ...props } }
+    }));
+  };
+
+  const updateStyling = (props) => {
+    setInvoiceLayoutConfig(p => ({ ...p, styling: { ...p.styling, ...props } }));
+  };
+
+  // ── Preview number ──
+  const previewNumber = `${invoiceSettings.invoicePrefix}${invoiceSettings.numberSeparator}${String(invoiceSettings.startingInvoiceNumber).padStart(invoiceSettings.numberPadding || 4, '0')}`;
+
+  if (loading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0C1220' }}>
+      <div style={{ textAlign: 'center' }}>
+        <OperixLogo />
+        <div style={{ marginTop: 20, width: 32, height: 32, border: '2px solid rgba(255,255,255,.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .6s linear infinite', margin: '20px auto 0' }} />
+        <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: 'DM Sans, sans-serif' }}>Loading Invoice Manager...</p>
+      </div>
+    </div>
+  );
+
+  /* ─────────── RIBBON TOOLS PER TAB ─────────── */
+  const ribbonContent = {
+    home: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool success`} onClick={saveAll} disabled={saving}>
+            <span className="rtool-icon" style={{color: saving ? '#9CA3AF' : '#059669'}}>
+              {saving ? <div className="loader" style={{borderTopColor:'#059669', borderColor:'rgba(5,150,105,.2)'}} /> : <SaveIcon />}
+            </span>
+            <span className="rtool-label" style={{color: saving ? '#9CA3AF' : '#059669'}}>Save All</span>
+          </button>
+          <div className="rtool-separator" />
+          <button className="rtool" onClick={saveSettings}>
+            <span className="rtool-icon"><GearIcon /></span>
+            <span className="rtool-label">Settings</span>
+          </button>
+          <button className="rtool" onClick={saveLayout}>
+            <span className="rtool-icon"><LayoutIcon /></span>
+            <span className="rtool-label">Layout</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+
+        <div className="rtool-group">
+          <button className="rtool" onClick={() => { setActiveRibbonTab('numbering'); setActivePanel('numbering'); }}>
+            <span className="rtool-icon"><HashIcon /></span>
+            <span className="rtool-label">Number Series</span>
+          </button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('company'); setActivePanel('company'); }}>
+            <span className="rtool-icon"><BuildIcon /></span>
+            <span className="rtool-label">Company</span>
+          </button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('design'); setActivePanel('styling'); }}>
+            <span className="rtool-icon"><PaletteIcon /></span>
+            <span className="rtool-label">Branding</span>
+          </button>
+          <span className="rtool-group-label">Configure</span>
+        </div>
+
+        <div className="rtool-group">
+          <button className="rtool" onClick={() => window.location.href = 'dashboard.html'}>
+            <span className="rtool-icon"><HomeIcon /></span>
+            <span className="rtool-label">Dashboard</span>
+          </button>
+          <button className="rtool" onClick={async () => { await firebase.auth().signOut(); window.location.href = 'login.html'; }}>
+            <span className="rtool-icon"><LogoutIcon /></span>
+            <span className="rtool-label">Logout</span>
+          </button>
+          <span className="rtool-group-label">Navigate</span>
+        </div>
+      </div>
+    ),
+
+    layout: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel === 'sections' ? 'active' : ''}`} onClick={() => setActivePanel('sections')}>
+            <span className="rtool-icon"><MoveIcon /></span>
+            <span className="rtool-label">Sections</span>
+          </button>
+          <button className={`rtool ${activePanel === 'section-style' ? 'active' : ''}`} onClick={() => { setActivePanel('section-style'); if (!selectedSection) setSelectedSection('header'); }}>
+            <span className="rtool-icon"><TypeIcon /></span>
+            <span className="rtool-label">Style</span>
+          </button>
+          <span className="rtool-group-label">Sections</span>
+        </div>
+        <div className="rtool-group">
+          {getSortedSections().map(k => (
+            <button key={k} className={`rtool ${selectedSection === k ? 'active' : ''}`} onClick={() => { setSelectedSection(k); setActivePanel('section-style'); }}>
+              <span className="rtool-icon">
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: invoiceLayoutConfig.sections[k].visible ? '#059669' : '#E2E8F0', margin: 'auto' }} />
+              </span>
+              <span className="rtool-label" style={{ fontSize: 9, maxWidth: 52 }}>{sectionLabels[k].split(' ')[0]}</span>
+            </button>
+          ))}
+          <span className="rtool-group-label">Quick Select</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveLayout}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Layout</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+
+    design: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel === 'styling' ? 'active' : ''}`} onClick={() => setActivePanel('styling')}>
+            <span className="rtool-icon"><PaletteIcon /></span>
+            <span className="rtool-label">Colors & Font</span>
+          </button>
+          <button className={`rtool ${activePanel === 'logo' ? 'active' : ''}`} onClick={() => setActivePanel('logo')}>
+            <span className="rtool-icon"><ImageIcon /></span>
+            <span className="rtool-label">Logo</span>
+          </button>
+          <span className="rtool-group-label">Design</span>
+        </div>
+        <div className="rtool-group">
+          {['Arial','Times New Roman','Helvetica','Courier New','Georgia'].map(f => (
+            <button key={f} className={`rtool ${invoiceLayoutConfig.styling.fontFamily === f ? 'active' : ''}`}
+              onClick={() => updateStyling({ fontFamily: f })}>
+              <span className="rtool-icon" style={{ fontFamily: f, fontSize: 16, lineHeight: 1, color: 'var(--slate)' }}>Aa</span>
+              <span className="rtool-label" style={{ fontSize: 9 }}>{f.split(' ')[0]}</span>
+            </button>
+          ))}
+          <span className="rtool-group-label">Font</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveLayout}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Design</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+
+    numbering: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel === 'numbering' ? 'active' : ''}`} onClick={() => setActivePanel('numbering')}>
+            <span className="rtool-icon"><HashIcon /></span>
+            <span className="rtool-label">Series Config</span>
+          </button>
+          <button className="rtool" onClick={resetCounter} style={{ color: '#D97706' }}>
+            <span className="rtool-icon" style={{color:'#D97706'}}><RefreshIcon /></span>
+            <span className="rtool-label" style={{color:'#D97706'}}>Reset Counter</span>
+          </button>
+          <span className="rtool-group-label">Number Series</span>
+        </div>
+        <div className="rtool-group">
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '4px 12px' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--slate)', marginBottom: 4 }}>Next Invoice Preview</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 500, color: 'var(--blue)', letterSpacing: '.04em', background: 'var(--blue-bg)', padding: '4px 12px', borderRadius: 6, border: '1px solid #c7ccf5' }}>{previewNumber}</div>
+          </div>
+          <span className="rtool-group-label">Preview</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveSettings}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Series</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+
+    company: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel === 'company' ? 'active' : ''}`} onClick={() => setActivePanel('company')}>
+            <span className="rtool-icon"><BuildIcon /></span>
+            <span className="rtool-label">Info</span>
+          </button>
+          <button className={`rtool ${activePanel === 'signature' ? 'active' : ''}`} onClick={() => setActivePanel('signature')}>
+            <span className="rtool-icon"><SignIcon /></span>
+            <span className="rtool-label">Signature</span>
+          </button>
+          <button className={`rtool ${activePanel === 'terms' ? 'active' : ''}`} onClick={() => setActivePanel('terms')}>
+            <span className="rtool-icon"><TypeIcon /></span>
+            <span className="rtool-label">Terms</span>
+          </button>
+          <span className="rtool-group-label">Company</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveSettings}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Settings</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+  };
+
+  /* ─────────── PANELS ─────────── */
+  const renderPanel = () => {
+    if (activePanel === 'sections') return (
+      <>
+        <div className="panel-section">
+          <div className="panel-section-title"><MoveIcon /> Section Order</div>
+          <p style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 12 }}>Drag to reorder • toggle to show/hide</p>
+          {Object.entries(invoiceLayoutConfig.sections)
+            .sort((a, b) => a[1].order - b[1].order)
+            .map(([k, cfg]) => (
+              <div key={k}
+                className={`section-item ${selectedSection === k ? 'selected' : ''} ${draggedSection === k ? 'dragging' : ''}`}
+                draggable
+                onDragStart={() => handleDragStart(k)}
+                onDragOver={(e) => handleDragOver(e, k)}
+                onDragEnd={handleDragEnd}
+                onClick={() => { setSelectedSection(k); setActivePanel('section-style'); }}
+              >
+                <DragIcon />
+                <div className="section-order">{cfg.order}</div>
+                <span className="section-name">{sectionLabels[k]}</span>
+                <div className={`section-vis ${cfg.visible ? 'on' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); updateSection(k, { visible: !cfg.visible }); }} />
+              </div>
+            ))}
+        </div>
+      </>
+    );
+
+    if (activePanel === 'section-style' && selectedSection) {
+      const sec = invoiceLayoutConfig.sections[selectedSection];
+      return (
+        <div className="panel-section">
+          <div className="panel-section-title"><TypeIcon /> {sectionLabels[selectedSection]}</div>
+          <div className="form-group">
+            <label className="form-label">Font Size (px)</label>
+            <input type="range" min="8" max="48" value={sec.fontSize || 10}
+              onChange={e => updateSection(selectedSection, { fontSize: +e.target.value })}
+              style={{ width: '100%' }} />
+            <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--slate)', marginTop: 2 }}>{sec.fontSize || 10}px</div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Text Color</label>
+            <div className="color-row">
+              <div className="color-swatch">
+                <div className="color-swatch-preview" style={{ background: sec.color || '#000' }} />
+                <input type="color" value={sec.color || '#000000'} onChange={e => updateSection(selectedSection, { color: e.target.value })} />
+              </div>
+              <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
+                value={sec.color || '#000000'} onChange={e => updateSection(selectedSection, { color: e.target.value })} />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Font Weight</label>
+            <select className="form-input form-select" value={sec.fontWeight || 'normal'}
+              onChange={e => updateSection(selectedSection, { fontWeight: e.target.value })}>
+              <option value="300">Light (300)</option>
+              <option value="normal">Normal (400)</option>
+              <option value="600">Semi-Bold (600)</option>
+              <option value="bold">Bold (700)</option>
+            </select>
+          </div>
+          {selectedSection === 'itemsTable' && (
+            <div className="form-group">
+              <label className="form-label">Table Header Background</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{ background: sec.headerBgColor || '#050C9C' }} />
+                  <input type="color" value={sec.headerBgColor || '#050C9C'} onChange={e => updateSection(selectedSection, { headerBgColor: e.target.value })} />
+                </div>
+                <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
+                  value={sec.headerBgColor || '#050C9C'} onChange={e => updateSection(selectedSection, { headerBgColor: e.target.value })} />
+              </div>
+            </div>
+          )}
+          {(selectedSection === 'companyInfo' || selectedSection === 'signature') && (
+            <div className="form-group">
+              <label className="form-label">Columns</label>
+              <select className="form-input form-select" value={sec.columns || 2}
+                onChange={e => updateSection(selectedSection, { columns: +e.target.value })}>
+                <option value="1">1 Column (Full Width)</option>
+                <option value="2">2 Columns (Split)</option>
+              </select>
+            </div>
+          )}
+          {selectedSection === 'totals' && (
+            <div className="form-group">
+              <label className="form-label">Block Position</label>
+              <select className="form-input form-select" value={sec.position || 'right'}
+                onChange={e => updateSection(selectedSection, { position: e.target.value })}>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          )}
+          <button className="rtool success" style={{ width: '100%', flexDirection: 'row', gap: 8, height: 38, borderRadius: 8, justifyContent: 'center' }} onClick={saveLayout}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669', fontSize: 12}}>Apply & Save</span>
+          </button>
+        </div>
+      );
+    }
+
+    if (activePanel === 'styling') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><PaletteIcon /> Colors & Typography</div>
+        <div className="form-group">
+          <label className="form-label">Primary Brand Color</label>
+          <div className="color-row">
+            <div className="color-swatch">
+              <div className="color-swatch-preview" style={{ background: invoiceLayoutConfig.styling.primaryColor }} />
+              <input type="color" value={invoiceLayoutConfig.styling.primaryColor} onChange={e => updateStyling({ primaryColor: e.target.value })} />
+            </div>
+            <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
+              value={invoiceLayoutConfig.styling.primaryColor} onChange={e => updateStyling({ primaryColor: e.target.value })} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Secondary Color</label>
+          <div className="color-row">
+            <div className="color-swatch">
+              <div className="color-swatch-preview" style={{ background: invoiceLayoutConfig.styling.secondaryColor }} />
+              <input type="color" value={invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'} onChange={e => updateStyling({ secondaryColor: e.target.value })} />
+            </div>
+            <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
+              value={invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'} onChange={e => updateStyling({ secondaryColor: e.target.value })} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Font Family</label>
+          <select className="form-input form-select" value={invoiceLayoutConfig.styling.fontFamily}
+            onChange={e => updateStyling({ fontFamily: e.target.value })}>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+          </select>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="form-group">
+            <label className="form-label">Body Size (px)</label>
+            <input className="form-input" type="number" min="8" max="16"
+              value={invoiceLayoutConfig.styling.fontSize}
+              onChange={e => updateStyling({ fontSize: +e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Header Size (px)</label>
+            <input className="form-input" type="number" min="16" max="48"
+              value={invoiceLayoutConfig.styling.headerSize}
+              onChange={e => updateStyling({ headerSize: +e.target.value })} />
+          </div>
         </div>
       </div>
     );
-  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-30">
-        <div className="px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => window.location.href = 'dashboard.html'}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft />
-              <span>Back to Dashboard</span>
-            </button>
-            <div className="flex items-center gap-3">
-              <OperixLogo size="small" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Invoice Manager</h1>
-                <p className="text-sm text-gray-500">Configure your invoice templates and layout</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">{user?.displayName}</span>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-lg mb-6">
-          <div className="flex border-b border-gray-200">
-<button
-  onClick={() => setActiveTab('layout')}
-  className={`flex-1 px-6 py-4 font-semibold transition-colors flex items-center justify-center gap-2 ${
-    activeTab === 'layout'
-      ? 'border-b-2 border-blue-500 text-blue-600'
-      : 'text-gray-600 hover:text-gray-800'
-  }`}
->
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-  </svg>
-  Layout Editor
-</button>
-<button
-  onClick={() => setActiveTab('settings')}
-  className={`flex-1 px-6 py-4 font-semibold transition-colors flex items-center justify-center gap-2 ${
-    activeTab === 'settings'
-      ? 'border-b-2 border-blue-500 text-blue-600'
-      : 'text-gray-600 hover:text-gray-800'
-  }`}
->
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-  Invoice Settings
-</button>
-<button
-  onClick={() => setActiveTab('signature')}
-  className={`flex-1 px-6 py-4 font-semibold transition-colors flex items-center justify-center gap-2 ${
-    activeTab === 'signature'
-      ? 'border-b-2 border-blue-500 text-blue-600'
-      : 'text-gray-600 hover:text-gray-800'
-  }`}
->
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-  </svg>
-  Signature & Terms
-</button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Configuration */}
-          <div className="space-y-6">
-            {activeTab === 'layout' && (
-              <>
-                {/* Section Reordering */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Section Order</h3>
-                    <button
-                      onClick={saveLayoutConfiguration}
-                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
-                    >
-                      <Save />
-                      Save Layout
-                    </button>
-                  </div>
-                  
-<div className="flex items-center gap-2 text-sm text-gray-600 mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-  <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <span>Drag sections to reorder them. Toggle visibility with the checkbox.</span>
-</div>
-                  
-<div className="space-y-2">
-  {Object.entries(invoiceLayoutConfig.sections)
-    .sort((a, b) => a[1].order - b[1].order)
-    .map(([sectionKey, sectionConfig]) => (
-      <div
-        key={sectionKey}
-        draggable
-        onDragStart={() => handleDragStart(sectionKey)}
-        onDragOver={(e) => handleDragOver(e, sectionKey)}
-        onDragEnd={handleDragEnd}
-        onClick={() => setSelectedSection(sectionKey)}
-        className={`p-4 rounded-lg border-2 cursor-move transition-all ${
-          draggedSection === sectionKey
-            ? 'border-blue-500 bg-blue-50 opacity-50 dragging'
-            : selectedSection === sectionKey
-            ? 'border-green-500 bg-green-50 shadow-lg'
-            : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-              selectedSection === sectionKey ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
-            }`}>
-              {sectionConfig.order}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800 capitalize">
-                {sectionKey.replace(/([A-Z])/g, ' $1').trim()}
-              </p>
-              <p className="text-xs text-gray-500">
-                {sectionConfig.visible ? '✅ Visible' : '❌ Hidden'}
-                {selectedSection === sectionKey && ' • Selected'}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={sectionConfig.visible}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  setInvoiceLayoutConfig({
-                    ...invoiceLayoutConfig,
-                    sections: {
-                      ...invoiceLayoutConfig.sections,
-                      [sectionKey]: {
-                        ...sectionConfig,
-                        visible: e.target.checked
-                      }
-                    }
-                  });
-                }}
-                className="w-4 h-4"
-              />
-              <span className="text-sm text-gray-600">Show</span>
-            </label>
-            
-            <Menu />
-          </div>
-        </div>
-      </div>
-    ))}
-</div>
-</div>
-
-{/* Selected Section Style Editor */}
-{selectedSection && (
-  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-lg p-6 border-2 border-green-300">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-xl font-bold text-green-700 capitalize flex items-center gap-2">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        Editing: {selectedSection.replace(/([A-Z])/g, ' $1').trim()}
-      </h3>
-      <button
-        onClick={() => setSelectedSection(null)}
-        className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
-      >
-        Close
-      </button>
-    </div>
-    
-    <div className="space-y-4">
-      {/* Font Size */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Font Size (px)</label>
-        <input
-          type="number"
-          min="8"
-          max="48"
-          value={invoiceLayoutConfig.sections[selectedSection].fontSize || 10}
-          onChange={(e) => setInvoiceLayoutConfig({
-            ...invoiceLayoutConfig,
-            sections: {
-              ...invoiceLayoutConfig.sections,
-              [selectedSection]: {
-                ...invoiceLayoutConfig.sections[selectedSection],
-                fontSize: parseInt(e.target.value)
-              }
-            }
-          })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-        />
-      </div>
-      
-      {/* Text Color */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Text Color</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={invoiceLayoutConfig.sections[selectedSection].color || '#000000'}
-            onChange={(e) => setInvoiceLayoutConfig({
-              ...invoiceLayoutConfig,
-              sections: {
-                ...invoiceLayoutConfig.sections,
-                [selectedSection]: {
-                  ...invoiceLayoutConfig.sections[selectedSection],
-                  color: e.target.value
-                }
-              }
-            })}
-            className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-          />
-          <input
-            type="text"
-            value={invoiceLayoutConfig.sections[selectedSection].color || '#000000'}
-            onChange={(e) => setInvoiceLayoutConfig({
-              ...invoiceLayoutConfig,
-              sections: {
-                ...invoiceLayoutConfig.sections,
-                [selectedSection]: {
-                  ...invoiceLayoutConfig.sections[selectedSection],
-                  color: e.target.value
-                }
-              }
-            })}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-          />
-        </div>
-      </div>
-      
-      {/* Font Weight */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Font Weight</label>
-        <select
-          value={invoiceLayoutConfig.sections[selectedSection].fontWeight || 'normal'}
-          onChange={(e) => setInvoiceLayoutConfig({
-            ...invoiceLayoutConfig,
-            sections: {
-              ...invoiceLayoutConfig.sections,
-              [selectedSection]: {
-                ...invoiceLayoutConfig.sections[selectedSection],
-                fontWeight: e.target.value
-              }
-            }
-          })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-        >
-          <option value="normal">Normal</option>
-          <option value="bold">Bold</option>
-          <option value="600">Semi-Bold</option>
-          <option value="300">Light</option>
-        </select>
-      </div>
-      
-      {/* Additional options for specific sections */}
-      {selectedSection === 'itemsTable' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Table Header Background</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={invoiceLayoutConfig.sections[selectedSection].headerBgColor || '#050C9C'}
-              onChange={(e) => setInvoiceLayoutConfig({
-                ...invoiceLayoutConfig,
-                sections: {
-                  ...invoiceLayoutConfig.sections,
-                  [selectedSection]: {
-                    ...invoiceLayoutConfig.sections[selectedSection],
-                    headerBgColor: e.target.value
-                  }
-                }
-              })}
-              className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={invoiceLayoutConfig.sections[selectedSection].headerBgColor || '#050C9C'}
-              onChange={(e) => setInvoiceLayoutConfig({
-                ...invoiceLayoutConfig,
-                sections: {
-                  ...invoiceLayoutConfig.sections,
-                  [selectedSection]: {
-                    ...invoiceLayoutConfig.sections[selectedSection],
-                    headerBgColor: e.target.value
-                  }
-                }
-              })}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-            />
-          </div>
-        </div>
-      )}
-      
-      {(selectedSection === 'companyInfo' || selectedSection === 'signature') && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Layout Columns</label>
-          <select
-            value={invoiceLayoutConfig.sections[selectedSection].columns || 2}
-            onChange={(e) => setInvoiceLayoutConfig({
-              ...invoiceLayoutConfig,
-              sections: {
-                ...invoiceLayoutConfig.sections,
-                [selectedSection]: {
-                  ...invoiceLayoutConfig.sections[selectedSection],
-                  columns: parseInt(e.target.value)
-                }
-              }
-            })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="1">1 Column</option>
-            <option value="2">2 Columns</option>
+    if (activePanel === 'logo') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><ImageIcon /> Company Logo</div>
+        <div className="form-group">
+          <label className="form-label">Logo Position</label>
+          <select className="form-input form-select" value={invoiceLayoutConfig.logoPosition}
+            onChange={e => setInvoiceLayoutConfig(p => ({ ...p, logoPosition: e.target.value }))}>
+            <option value="top">Top (Centered above title)</option>
+            <option value="left">Left (Inline with title)</option>
           </select>
         </div>
-      )}
-      
-      {selectedSection === 'totals' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
-          <select
-            value={invoiceLayoutConfig.sections[selectedSection].position || 'right'}
-            onChange={(e) => setInvoiceLayoutConfig({
-              ...invoiceLayoutConfig,
-              sections: {
-                ...invoiceLayoutConfig.sections,
-                [selectedSection]: {
-                  ...invoiceLayoutConfig.sections[selectedSection],
-                  position: e.target.value
-                }
-              }
-            })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          >
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="center">Center</option>
+        <div className="upload-zone" onClick={() => document.getElementById('logoUpload').click()}>
+          <input type="file" id="logoUpload" accept="image/*" style={{display:'none'}}
+            onChange={e => { if (e.target.files[0]) upload(e.target.files[0], 'logo'); }} />
+          {uploadingLogo ? (
+            <div style={{ color: 'var(--slate)', fontSize: 13 }}>Uploading...</div>
+          ) : invoiceLayoutConfig.logoUrl ? (
+            <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 48, maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
+          ) : (
+            <>
+              <div style={{ color: 'var(--slate)', marginBottom: 4 }}><ImageIcon /></div>
+              <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>Click to upload logo</div>
+              <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 2 }}>PNG, JPG, SVG • Max 5MB</div>
+            </>
+          )}
+        </div>
+        {invoiceLayoutConfig.logoUrl && (
+          <button onClick={() => setInvoiceLayoutConfig(p => ({ ...p, logoUrl: '' }))}
+            style={{ marginTop: 8, fontSize: 11, color: 'var(--red)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, padding: 0 }}>
+            ✕ Remove logo
+          </button>
+        )}
+      </div>
+    );
+
+    if (activePanel === 'numbering') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><HashIcon /> Invoice Number Series</div>
+        <div style={{ background: 'var(--blue-bg)', border: '1px solid #c7ccf5', borderRadius: 8, padding: 10, marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <span style={{ color: 'var(--blue)', flexShrink: 0, marginTop: 1 }}><InfoIcon /></span>
+          <p style={{ fontSize: 11, color: 'var(--ink2)', lineHeight: 1.5 }}>
+            This controls the invoice number format used when customers place orders. Changes affect all <em>new</em> orders. Existing invoices are unchanged.
+          </p>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Invoice Prefix</label>
+          <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 14, fontWeight: 600, letterSpacing: '.05em' }}
+            type="text" maxLength="8" placeholder="e.g. WQI"
+            value={invoiceSettings.invoicePrefix}
+            onChange={e => setInvoiceSettings(p => ({ ...p, invoicePrefix: e.target.value.toUpperCase() }))} />
+          <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 3 }}>Up to 8 characters. Uppercase automatically.</div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Separator</label>
+          <select className="form-input form-select"
+            value={invoiceSettings.numberSeparator}
+            onChange={e => setInvoiceSettings(p => ({ ...p, numberSeparator: e.target.value }))}>
+            <option value="-">Hyphen ( - )</option>
+            <option value="/">Slash ( / )</option>
+            <option value=".">Period ( . )</option>
+            <option value="">None</option>
           </select>
         </div>
-      )}
-    </div>
-  </div>
-)}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                {/* Styling Configuration */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold mb-4">Invoice Styling</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={invoiceLayoutConfig.styling.primaryColor}
-                          onChange={(e) => setInvoiceLayoutConfig({
-                            ...invoiceLayoutConfig,
-                            styling: {
-                              ...invoiceLayoutConfig.styling,
-                              primaryColor: e.target.value
-                            }
-                          })}
-                          className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={invoiceLayoutConfig.styling.primaryColor}
-                          onChange={(e) => setInvoiceLayoutConfig({
-                            ...invoiceLayoutConfig,
-                            styling: {
-                              ...invoiceLayoutConfig.styling,
-                              primaryColor: e.target.value
-                            }
-                          })}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Font Family</label>
-                      <select
-                        value={invoiceLayoutConfig.styling.fontFamily}
-                        onChange={(e) => setInvoiceLayoutConfig({
-                          ...invoiceLayoutConfig,
-                          styling: {
-                            ...invoiceLayoutConfig.styling,
-                            fontFamily: e.target.value
-                          }
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        <option value="Arial">Arial</option>
-                        <option value="Times New Roman">Times New Roman</option>
-                        <option value="Helvetica">Helvetica</option>
-                        <option value="Courier New">Courier New</option>
-                      </select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Font Size (px)</label>
-                        <input
-                          type="number"
-                          min="8"
-                          max="16"
-                          value={invoiceLayoutConfig.styling.fontSize}
-                          onChange={(e) => setInvoiceLayoutConfig({
-                            ...invoiceLayoutConfig,
-                            styling: {
-                              ...invoiceLayoutConfig.styling,
-                              fontSize: parseInt(e.target.value)
-                            }
-                          })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Header Size (px)</label>
-                        <input
-                          type="number"
-                          min="16"
-                          max="36"
-                          value={invoiceLayoutConfig.styling.headerSize}
-                          onChange={(e) => setInvoiceLayoutConfig({
-                            ...invoiceLayoutConfig,
-                            styling: {
-                              ...invoiceLayoutConfig.styling,
-                              headerSize: parseInt(e.target.value)
-                            }
-                          })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Logo Upload */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold mb-4">Company Logo</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Logo Position</label>
-                      <select
-                        value={invoiceLayoutConfig.logoPosition}
-                        onChange={(e) => setInvoiceLayoutConfig({
-                          ...invoiceLayoutConfig,
-                          logoPosition: e.target.value
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        <option value="top">Top (Centered)</option>
-                        <option value="left">Left (Next to Header)</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <input
-                        type="file"
-                        id="logoUpload"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) uploadToCloudinary(file, 'logo');
-                        }}
-                      />
-                      
-                      <button
-                        onClick={() => document.getElementById('logoUpload').click()}
-                        disabled={uploadingLogo}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all ${
-                          uploadingLogo ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
-                        }`}
-                      >
-                        <Upload />
-                        {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
-                      </button>
-                      
-                      {invoiceLayoutConfig.logoUrl && (
-                        <div className="mt-4 relative inline-block">
-                          <img 
-                            src={invoiceLayoutConfig.logoUrl} 
-                            alt="Logo" 
-                            className="h-20 border-2 border-gray-200 rounded-lg"
-                          />
-                          <button
-                            onClick={() => setInvoiceLayoutConfig({ ...invoiceLayoutConfig, logoUrl: '' })}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                          >
-                            <X />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'settings' && (
-              <>
-                {/* Company Information */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Company Information</h3>
-                    <button
-                      onClick={saveInvoiceSettings}
-                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
-                    >
-                      <Save />
-                      Save Settings
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
-                      <input
-                        type="text"
-                        value={invoiceSettings.companyName}
-                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, companyName: e.target.value })}
-                        placeholder="Your Company Name"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company TIN *</label>
-                      <input
-                        type="text"
-                        value={invoiceSettings.companyTIN}
-                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, companyTIN: e.target.value })}
-                        placeholder="XXX-XXX-XXX-XXX"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Address *</label>
-                      <textarea
-                        value={invoiceSettings.companyAddress}
-                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, companyAddress: e.target.value })}
-                        placeholder="Complete business address"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        rows="3"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Default VAT %</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          value={invoiceSettings.defaultVAT}
-                          onChange={(e) => setInvoiceSettings({ ...invoiceSettings, defaultVAT: e.target.value })}
-                          placeholder="12"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Prefix</label>
-                        <input
-                          type="text"
-                          value={invoiceSettings.invoicePrefix}
-                          onChange={(e) => setInvoiceSettings({ ...invoiceSettings, invoicePrefix: e.target.value.toUpperCase() })}
-                          placeholder="INV"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'signature' && (
-              <>
-                {/* Terms and Conditions */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Terms and Conditions</h3>
-                    <button
-                      onClick={saveInvoiceSettings}
-                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold"
-                    >
-                      <Save />
-                      Save Settings
-                    </button>
-                  </div>
-                  
-                  <textarea
-                    value={invoiceSettings.termsAndConditions}
-                    onChange={(e) => setInvoiceSettings({ ...invoiceSettings, termsAndConditions: e.target.value })}
-                    placeholder="Enter your terms and conditions here..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    rows="8"
-                  />
-                </div>
-
-                {/* Signature Upload */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold mb-4">Company Signature</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Signed By</label>
-                      <input
-                        type="text"
-                        value={invoiceSettings.signedBy}
-                        onChange={(e) => setInvoiceSettings({ ...invoiceSettings, signedBy: e.target.value })}
-                        placeholder="Name of signatory"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    
-                    <div>
-                      <input
-                        type="file"
-                        id="signatureUpload"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) uploadToCloudinary(file, 'signature');
-                        }}
-                      />
-                      
-                      <button
-                        onClick={() => document.getElementById('signatureUpload').click()}
-                        disabled={uploadingSignature}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-all ${
-                          uploadingSignature ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
-                        }`}
-                      >
-                        <Upload />
-                        {uploadingSignature ? 'Uploading...' : 'Upload Signature'}
-                      </button>
-                      
-                      {invoiceSettings.signatureUrl && (
-                        <div className="mt-4 relative inline-block">
-                          <img 
-                            src={invoiceSettings.signatureUrl} 
-                            alt="Signature" 
-                            className="h-16 border-2 border-gray-200 rounded-lg"
-                          />
-                          <button
-                            onClick={() => setInvoiceSettings({ ...invoiceSettings, signatureUrl: '' })}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                          >
-                            <X />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right Column - Preview */}
-          <div className="lg:sticky lg:top-24 lg:h-fit">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <FileText />
-                Live Preview
-              </h3>
-              
-              <div className="border-2 border-gray-200 rounded-lg p-6 bg-gray-50" style={{ fontFamily: invoiceLayoutConfig.styling.fontFamily, fontSize: `${invoiceLayoutConfig.styling.fontSize}px` }}>
-                {/* Render sections in order */}
-                {getSortedSections().map(sectionKey => {
-                  const section = invoiceLayoutConfig.sections[sectionKey];
-                  if (!section.visible) return null;
-
-                  switch(sectionKey) {
-case 'header':
-  const isLogoLeft = invoiceLayoutConfig.logoPosition === 'left' && invoiceLayoutConfig.logoUrl;
-  const headerStyle = invoiceLayoutConfig.sections.header;
-  return (
-    <div key={sectionKey} className="mb-3 pb-3 border-b" style={{ borderColor: '#e5e7eb' }}>
-      <div className={isLogoLeft ? "flex items-center gap-4" : "text-center"}>
-        {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'top' && (
-          <div className="mb-2">
-            <img src={invoiceLayoutConfig.logoUrl} alt="Logo" className="h-12 mx-auto object-contain" />
-          </div>
-        )}
-        
-        {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'left' && (
-          <img src={invoiceLayoutConfig.logoUrl} alt="Logo" className="h-10 object-contain" />
-        )}
-        
-        <div className={isLogoLeft ? "flex-1" : ""}>
-          <h1 className="mb-1" style={{ 
-            color: headerStyle.color, 
-            fontSize: `${headerStyle.fontSize}px`,
-            fontWeight: headerStyle.fontWeight 
-          }}>INVOICE</h1>
-          <div style={{ fontSize: `${headerStyle.fontSize * 0.4}px`, color: headerStyle.color }}>
-            <strong>Invoice No:</strong> INV-0001 | <strong>Date:</strong> {new Date().toLocaleDateString()}
+        <div className="form-group">
+          <label className="form-label">Starting Number</label>
+          <input className="form-input" type="number" min="1" max="99999"
+            value={invoiceSettings.startingInvoiceNumber}
+            onChange={e => setInvoiceSettings(p => ({ ...p, startingInvoiceNumber: Math.max(1, +e.target.value) }))} />
+          <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 3 }}>Use "Reset Counter" from the ribbon to apply this to the live counter.</div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Number Padding (digits)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+            {[3,4,5,6,7].map(n => (
+              <button key={n}
+                onClick={() => setInvoiceSettings(p => ({ ...p, numberPadding: n }))}
+                style={{
+                  padding: '6px 4px', borderRadius: 6, fontSize: 11, fontFamily: 'DM Mono, monospace',
+                  border: '1.5px solid', cursor: 'pointer', fontWeight: 600, transition: 'all .15s',
+                  borderColor: invoiceSettings.numberPadding === n ? 'var(--blue)' : 'var(--line)',
+                  background: invoiceSettings.numberPadding === n ? 'var(--blue-bg)' : 'var(--surf)',
+                  color: invoiceSettings.numberPadding === n ? 'var(--blue)' : 'var(--slate)'
+                }}>
+                {String(1).padStart(n, '0')}
+              </button>
+            ))}
           </div>
         </div>
+        <div className="series-preview">
+          <div className="series-preview-label">Next Invoice Number Preview</div>
+          <div className="series-preview-number" key={previewNumber}>{previewNumber}</div>
+        </div>
+        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+          <button className="rtool success" style={{ flex: 1, flexDirection: 'row', gap: 8, height: 38, borderRadius: 8, justifyContent: 'center' }} onClick={saveSettings}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
+            <span className="rtool-label" style={{color:'#059669', fontSize: 12}}>Save Series</span>
+          </button>
+          <button style={{ flex: 1, height: 38, borderRadius: 8, border: '1.5px solid #FDE68A', background: '#FFFBEB', color: '#D97706', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', transition: 'all .15s' }} onClick={resetCounter}>
+            <RefreshIcon />
+            Reset Counter
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-case 'companyInfo':
-  const companyStyle = invoiceLayoutConfig.sections.companyInfo;
-  return (
-    <div key={sectionKey} className={`grid ${section.columns === 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-3 mb-3`}>
-      <div className="border p-2 rounded" style={{ borderColor: '#e5e7eb', fontSize: `${companyStyle.fontSize}px`, color: companyStyle.color, fontWeight: companyStyle.fontWeight }}>
-        <p className="font-bold mb-1" style={{ color: invoiceLayoutConfig.styling.primaryColor }}>Seller Information</p>
-        <p><strong>Name:</strong> {invoiceSettings.companyName || 'Your Company Name'}</p>
-        <p><strong>TIN:</strong> {invoiceSettings.companyTIN || 'XXX-XXX-XXX'}</p>
-        <p><strong>Address:</strong> {invoiceSettings.companyAddress || 'Your Address'}</p>
+    if (activePanel === 'company') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><BuildIcon /> Company Information</div>
+        <div className="form-group">
+          <label className="form-label">Company Name *</label>
+          <input className="form-input" type="text" placeholder="Your Company Name"
+            value={invoiceSettings.companyName}
+            onChange={e => setInvoiceSettings(p => ({ ...p, companyName: e.target.value }))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">TIN / Tax ID</label>
+          <input className="form-input" type="text" placeholder="XXX-XXX-XXX-XXX"
+            value={invoiceSettings.companyTIN}
+            onChange={e => setInvoiceSettings(p => ({ ...p, companyTIN: e.target.value }))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Business Address</label>
+          <textarea className="form-input form-textarea" placeholder="Complete business address"
+            value={invoiceSettings.companyAddress}
+            onChange={e => setInvoiceSettings(p => ({ ...p, companyAddress: e.target.value }))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Default VAT Rate (%)</label>
+          <input className="form-input" type="number" step=".01" min="0" max="100" placeholder="12"
+            value={invoiceSettings.defaultVAT}
+            onChange={e => setInvoiceSettings(p => ({ ...p, defaultVAT: e.target.value }))} />
+        </div>
       </div>
-      <div className="border p-2 rounded" style={{ borderColor: '#e5e7eb', fontSize: `${companyStyle.fontSize}px`, color: companyStyle.color, fontWeight: companyStyle.fontWeight }}>
-        <p className="font-bold mb-1" style={{ color: invoiceLayoutConfig.styling.primaryColor }}>Buyer Information</p>
-        <p><strong>Name:</strong> Customer Name</p>
-        <p><strong>TIN:</strong> N/A</p>
-        <p><strong>Address:</strong> Customer Address</p>
-      </div>
-    </div>
-  );
+    );
 
-case 'itemsTable':
-  const tableStyle = invoiceLayoutConfig.sections.itemsTable;
-  return (
-    <div key={sectionKey} className="mb-3 overflow-x-auto">
-      <table className="w-full border-collapse" style={{ fontSize: `${tableStyle.fontSize}px`, color: tableStyle.color }}>
-        <thead>
-          <tr style={{ backgroundColor: tableStyle.headerBgColor || invoiceLayoutConfig.styling.primaryColor, color: 'white' }}>
-            <th className="border p-1 text-left">Item</th>
-            <th className="border p-1 text-center">Qty</th>
-            <th className="border p-1 text-right">Price</th>
-            <th className="border p-1 text-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border p-1">Sample Product</td>
-            <td className="border p-1 text-center">2</td>
-            <td className="border p-1 text-right">₱100.00</td>
-            <td className="border p-1 text-right font-semibold">₱200.00</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-
-case 'totals':
-  const totalsStyle = invoiceLayoutConfig.sections.totals;
-  return (
-    <div key={sectionKey} className={`mb-3 ${section.position === 'right' ? 'ml-auto' : section.position === 'center' ? 'mx-auto' : ''}`} style={{ width: section.position === 'right' || section.position === 'center' ? '200px' : '100%' }}>
-      <div className="space-y-1" style={{ fontSize: `${totalsStyle.fontSize}px`, color: totalsStyle.color, fontWeight: totalsStyle.fontWeight }}>
-                            <div className="flex justify-between border-b pb-1">
-                              <span>Subtotal:</span>
-                              <span>₱200.00</span>
-                            </div>
-                            <div className="flex justify-between border-b pb-1">
-                              <span>VAT ({invoiceSettings.defaultVAT}%):</span>
-                              <span>₱{(200 * (parseFloat(invoiceSettings.defaultVAT) / 100)).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between font-bold p-2 rounded" style={{ backgroundColor: invoiceLayoutConfig.styling.primaryColor, color: 'white' }}>
-                              <span>Grand Total:</span>
-                              <span>₱{(200 * (1 + parseFloat(invoiceSettings.defaultVAT) / 100)).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-
-case 'paymentMethod':
-  const paymentStyle = invoiceLayoutConfig.sections.paymentMethod;
-  return (
-    <div key={sectionKey} className="mt-4 pt-3 border-t" style={{ borderTopWidth: '1px', borderColor: '#e5e7eb' }}>
-      <p style={{ fontSize: `${paymentStyle.fontSize}px`, color: paymentStyle.color, fontWeight: paymentStyle.fontWeight }}>
-        <span className="font-semibold">Payment Method: </span>
-                            <span className="font-medium">Cash</span>
-                          </p>
-                        </div>
-                      );
-
-case 'terms':
-  const termsStyle = invoiceLayoutConfig.sections.terms;
-  return (
-    <div key={sectionKey} className="mb-3 pb-3 border-b" style={{ borderColor: '#e5e7eb', fontSize: `${termsStyle.fontSize}px`, color: termsStyle.color, fontWeight: termsStyle.fontWeight }}>
-      {invoiceSettings.termsAndConditions && (
-        <>
-          <p className="font-bold mb-1" style={{ color: invoiceLayoutConfig.styling.primaryColor }}>Terms and Conditions</p>
-          <p className="whitespace-pre-line">{invoiceSettings.termsAndConditions}</p>
-        </>
-      )}
-      {!invoiceSettings.termsAndConditions && (
-        <p className="italic" style={{ color: '#9CA3AF' }}>We Buyers Agree!</p>
-      )}
-      <div className="mt-2">
-        <p className="font-bold mb-1" style={{ color: '#15803D' }}>Special Instructions (if any)</p>
-        <p className="italic" style={{ color: '#4B5563' }}>Will appear here if provided during order creation</p>
-                          </div>
-                        </div>
-                      );
-
-case 'signature':
-  const signatureStyle = invoiceLayoutConfig.sections.signature;
-  return (
-    <div key={sectionKey} className={`grid ${section.columns === 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mt-4 mb-4 pt-3 pb-3 border-t border-b`} style={{ borderColor: '#e5e7eb', fontSize: `${signatureStyle.fontSize}px`, color: signatureStyle.color, fontWeight: signatureStyle.fontWeight }}>
-      <div className="text-center">
-        <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
-        <p>Customer Signature</p>
-      </div>
-      <div className="text-center">
+    if (activePanel === 'signature') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><SignIcon /> Signature</div>
+        <div className="form-group">
+          <label className="form-label">Signatory Name & Title</label>
+          <input className="form-input" type="text" placeholder="e.g. Jane Doe, Manager"
+            value={invoiceSettings.signedBy}
+            onChange={e => setInvoiceSettings(p => ({ ...p, signedBy: e.target.value }))} />
+        </div>
+        <div className="upload-zone" onClick={() => document.getElementById('sigUpload').click()}>
+          <input type="file" id="sigUpload" accept="image/*" style={{display:'none'}}
+            onChange={e => { if (e.target.files[0]) upload(e.target.files[0], 'signature'); }} />
+          {uploadingSignature ? (
+            <div style={{ color: 'var(--slate)', fontSize: 13 }}>Uploading...</div>
+          ) : invoiceSettings.signatureUrl ? (
+            <img src={invoiceSettings.signatureUrl} alt="Signature" style={{ height: 40, maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
+          ) : (
+            <>
+              <div style={{ color: 'var(--slate)', marginBottom: 4 }}><SignIcon /></div>
+              <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>Click to upload signature image</div>
+            </>
+          )}
+        </div>
         {invoiceSettings.signatureUrl && (
-          <img src={invoiceSettings.signatureUrl} alt="Signature" className="h-8 mx-auto mb-1 object-contain" />
+          <button onClick={() => setInvoiceSettings(p => ({ ...p, signatureUrl: '' }))}
+            style={{ marginTop: 8, fontSize: 11, color: 'var(--red)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, padding: 0 }}>
+            ✕ Remove signature
+          </button>
         )}
-        <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
-        <p className="font-bold">{invoiceSettings.signedBy || 'Kristel mae Ben, Coil'}</p>
-        <p style={{ color: '#4B5563' }}>Company Representative</p>
       </div>
-    </div>
-  );
+    );
 
+    if (activePanel === 'terms') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><TypeIcon /> Terms & Conditions</div>
+        <div className="form-group">
+          <label className="form-label">Terms Text</label>
+          <textarea className="form-input form-textarea" rows="10" placeholder="Enter your terms and conditions..."
+            value={invoiceSettings.termsAndConditions}
+            onChange={e => setInvoiceSettings(p => ({ ...p, termsAndConditions: e.target.value }))} />
+        </div>
+      </div>
+    );
 
-case 'footer':
-  const footerStyle = invoiceLayoutConfig.sections.footer;
-  return (
-    <div key={sectionKey} className="mt-4 pt-3 border-t text-center" style={{ 
-      borderColor: '#e5e7eb',
-      fontSize: `${footerStyle.fontSize}px`,
-      color: footerStyle.color,
-      fontWeight: footerStyle.fontWeight
-    }}>
-      <p>Thank you for your business!</p>
-      <p className="mt-1">For inquiries: contact@{invoiceSettings.companyName?.toLowerCase().replace(/\s+/g, '') || 'yourcompany'}.com</p>
-    </div>
-  );
+    // default
+    return (
+      <div className="panel-section">
+        <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--slate)' }}>
+          <div style={{ marginBottom: 10, opacity: .5 }}><LayoutIcon /></div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Select a tool from the ribbon</div>
+        </div>
+      </div>
+    );
+  };
 
+  /* ─────────── LIVE PREVIEW ─────────── */
+  const renderPreviewSection = (key) => {
+    const section = invoiceLayoutConfig.sections[key];
+    if (!section.visible) return null;
 
-
-
-default:
-  return null;
-                  }
-                })}
+    switch (key) {
+      case 'header': {
+        const isLogoLeft = invoiceLayoutConfig.logoPosition === 'left' && invoiceLayoutConfig.logoUrl;
+        return (
+          <div key={key} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ display: isLogoLeft ? 'flex' : 'block', alignItems: 'center', gap: 12, textAlign: isLogoLeft ? 'left' : 'center' }}>
+              {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'top' && (
+                <div style={{ marginBottom: 6 }}>
+                  <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 40, margin: '0 auto', objectFit: 'contain', display: 'block' }} />
+                </div>
+              )}
+              {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'left' && (
+                <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 36, objectFit: 'contain' }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <h1 style={{ color: section.color, fontSize: `${section.fontSize}px`, fontWeight: section.fontWeight, marginBottom: 2 }}>INVOICE</h1>
+                <div style={{ fontSize: `${section.fontSize * 0.42}px`, color: section.color }}>
+                  <strong>Invoice No:</strong> {previewNumber} &nbsp;|&nbsp; <strong>Date:</strong> {new Date().toLocaleDateString()}
+                </div>
               </div>
             </div>
           </div>
+        );
+      }
+      case 'companyInfo': return (
+        <div key={key} style={{ display: 'grid', gridTemplateColumns: section.columns === 2 ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 10 }}>
+          <div style={{ border: '1px solid #e5e7eb', padding: 8, borderRadius: 4, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+            <p style={{ fontWeight: 700, marginBottom: 4, color: invoiceLayoutConfig.styling.primaryColor }}>Seller Information</p>
+            <p><strong>Name:</strong> {invoiceSettings.companyName || 'Your Company'}</p>
+            <p><strong>TIN:</strong> {invoiceSettings.companyTIN || 'XXX-XXX-XXX'}</p>
+            <p><strong>Address:</strong> {invoiceSettings.companyAddress || 'Company Address'}</p>
+          </div>
+          <div style={{ border: '1px solid #e5e7eb', padding: 8, borderRadius: 4, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+            <p style={{ fontWeight: 700, marginBottom: 4, color: invoiceLayoutConfig.styling.primaryColor }}>Buyer Information</p>
+            <p><strong>Name:</strong> Customer Name</p>
+            <p><strong>TIN:</strong> N/A</p>
+            <p><strong>Address:</strong> Customer Address</p>
+          </div>
+        </div>
+      );
+      case 'itemsTable': return (
+        <div key={key} style={{ marginBottom: 10, overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: `${section.fontSize}px`, color: section.color }}>
+            <thead>
+              <tr style={{ backgroundColor: section.headerBgColor || invoiceLayoutConfig.styling.primaryColor, color: '#fff' }}>
+                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'left' }}>Item</th>
+                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'center' }}>Qty</th>
+                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>Price</th>
+                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px' }}>Sample Product</td>
+                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'center' }}>2</td>
+                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>₱100.00</td>
+                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right', fontWeight: 600 }}>₱200.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+      case 'totals': {
+        const vat = parseFloat(invoiceSettings.defaultVAT) || 12;
+        return (
+          <div key={key} style={{ marginBottom: 10, marginLeft: section.position === 'right' ? 'auto' : section.position === 'center' ? 'auto' : '0', marginRight: section.position === 'center' ? 'auto' : '0', width: 180 }}>
+            <div style={{ fontSize: `${section.fontSize}px`, color: section.color }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: 3, marginBottom: 3 }}>
+                <span>Subtotal:</span><span>₱200.00</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: 3, marginBottom: 3 }}>
+                <span>VAT ({vat}%):</span><span>₱{(200 * vat/100).toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, padding: '4px 6px', borderRadius: 4, background: invoiceLayoutConfig.styling.primaryColor, color: '#fff' }}>
+                <span>Grand Total:</span><span>₱{(200 * (1 + vat/100)).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      case 'paymentMethod': return (
+        <div key={key} style={{ paddingTop: 8, borderTop: '1px solid #e5e7eb', marginBottom: 8, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+          <span style={{ fontWeight: 600 }}>Payment Method: </span>Cash on Delivery
+        </div>
+      );
+      case 'terms': return (
+        <div key={key} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #e5e7eb', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+          {invoiceSettings.termsAndConditions ? (
+            <>
+              <p style={{ fontWeight: 700, color: invoiceLayoutConfig.styling.primaryColor, marginBottom: 3 }}>Terms & Conditions</p>
+              <p style={{ whiteSpace: 'pre-line' }}>{invoiceSettings.termsAndConditions}</p>
+            </>
+          ) : (
+            <p style={{ fontStyle: 'italic', color: '#9CA3AF' }}>Terms and conditions will appear here.</p>
+          )}
+        </div>
+      );
+      case 'signature': return (
+        <div key={key} style={{ display: 'grid', gridTemplateColumns: section.columns === 2 ? '1fr 1fr' : '1fr', gap: 16, padding: '10px 0', marginBottom: 8, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ borderTop: '1px solid #9CA3AF', width: 100, margin: '0 auto 4px' }} />
+            <p>Customer Signature</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            {invoiceSettings.signatureUrl && <img src={invoiceSettings.signatureUrl} alt="Sig" style={{ height: 28, margin: '0 auto 4px', display: 'block', objectFit: 'contain' }} />}
+            <div style={{ borderTop: '1px solid #9CA3AF', width: 100, margin: '0 auto 4px' }} />
+            <p style={{ fontWeight: 700 }}>{invoiceSettings.signedBy || 'Company Representative'}</p>
+            <p style={{ color: '#6B7280' }}>Authorized Signature</p>
+          </div>
+        </div>
+      );
+
+
+
+case 'specialInstructions': return (
+        <div key={key} style={{ marginTop: 12, padding: 10, border: '1px solid #FDE68A', borderRadius: 6, background: '#FFFBEB', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+          <p style={{ fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Special Instructions</p>
+          <p style={{ margin: 0, fontStyle: 'italic', color: section.color }}>Customer notes and per-item need-by dates will appear here.</p>
+        </div>
+      );
+
+      case 'footer': return (
+        <div key={key} style={{ paddingTop: 8, borderTop: '1px solid #e5e7eb', textAlign: 'center', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
+          <p>Thank you for your business!</p>
+          <p style={{ marginTop: 2 }}>For inquiries: contact@{(invoiceSettings.companyName||'yourcompany').toLowerCase().replace(/\s+/g,'')}.com</p>
+        </div>
+      );
+      default: return null;
+    }
+  };
+
+  return (
+    <div>
+      {/* ── TITLEBAR ── */}
+      <div className="titlebar">
+        <div className="titlebar-brand">
+          <OperixLogo />
+          <div>
+            <span>Operix</span>
+            <small>Invoice Manager</small>
+          </div>
+        </div>
+        <div className="titlebar-file">invoice-template.operix</div>
+        <div className="titlebar-actions">
+          <span style={{ fontSize: 11, color: '#64748B', marginRight: 6 }}>{user?.displayName}</span>
+          <a href="dashboard.html" className="tb-pill"><HomeIcon />Dashboard</a>
+          <button className="tb-pill danger" onClick={async () => { await firebase.auth().signOut(); window.location.href = 'login.html'; }}>
+            <LogoutIcon />Logout
+          </button>
         </div>
       </div>
+
+      {/* ── RIBBON ── */}
+      <div className="ribbon">
+        <div className="ribbon-tabs">
+          {[
+            { id: 'home', label: 'Home' },
+            { id: 'layout', label: 'Layout' },
+            { id: 'design', label: 'Design' },
+            { id: 'numbering', label: 'Numbering' },
+            { id: 'company', label: 'Company' },
+          ].map(({ id, label }) => (
+            <div key={id} className={`rtab ${activeRibbonTab === id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveRibbonTab(id);
+                if (id === 'layout') setActivePanel('sections');
+                if (id === 'design') setActivePanel('styling');
+                if (id === 'numbering') setActivePanel('numbering');
+                if (id === 'company') setActivePanel('company');
+              }}>
+              {label}
+            </div>
+          ))}
+        </div>
+        <div className="ribbon-tools">
+          {ribbonContent[activeRibbonTab] || ribbonContent['home']}
+        </div>
+      </div>
+
+      {/* ── WORKSPACE ── */}
+      <div className="workspace">
+        {/* Panel */}
+        <div className="panel">
+          {renderPanel()}
+        </div>
+
+        {/* Preview */}
+        <div className="preview-area">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, maxWidth: 680, margin: '0 auto 16px' }}>
+            <div style={{ display: 'flex', align: 'center', gap: 8 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--slate)' }}>
+                <EyeIcon />
+                Live Preview
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--slate)', background: 'var(--white)', border: '1px solid var(--line)', padding: '3px 10px', borderRadius: 5 }}>
+                {invoiceLayoutConfig.styling.fontFamily}
+              </span>
+              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--slate)', background: 'var(--white)', border: '1px solid var(--line)', padding: '3px 10px', borderRadius: 5 }}>
+                {previewNumber}
+              </span>
+            </div>
+          </div>
+
+          <div className="preview-paper" style={{ fontFamily: invoiceLayoutConfig.styling.fontFamily, fontSize: `${invoiceLayoutConfig.styling.fontSize}px` }}>
+            {/* Color bar accent */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${invoiceLayoutConfig.styling.primaryColor}, ${invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'})`, borderRadius: '4px 4px 0 0' }} />
+            {getSortedSections().map(k => renderPreviewSection(k))}
+          </div>
+
+          <div style={{ maxWidth: 680, margin: '16px auto 0', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button onClick={saveAll} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', background: saving ? '#E2E8F0' : 'var(--blue)', color: saving ? 'var(--slate)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', fontFamily: 'DM Sans, sans-serif', transition: 'all .15s' }}>
+              {saving ? <div className="loader" /> : <SaveIcon />}
+              {saving ? 'Saving...' : 'Save All Changes'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TOAST ── */}
+      {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
     </div>
   );
 }

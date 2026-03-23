@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PO Layout Setup — Operix</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
+  .field-chip { cursor: grab; user-select: none; }
+  .field-chip:active { cursor: grabbing; }
+  .canvas-field { position: absolute; cursor: move; user-select: none; }
+  .canvas-field:hover .field-controls { display: flex; }
+  .field-controls { display: none; }
+  .a4-canvas { width: 794px; height: 1123px; position: relative; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ─── SOURCE LEGEND ────────────────────────────────────────────────────────────
+// [PO]       → stored directly on the purchaseOrders Firestore document
+// [USER]     → loaded from users/{adminId} at render time (buyer/company info)
+// [SUPPLIER] → loaded from suppliers/{supplierId} at render time
+// ─────────────────────────────────────────────────────────────────────────────
+const FIELD_GROUPS = [
+  {
+    group: '📄 PO Header',
+    fields: [
+      { id: 'po_number',    label: 'PO Number',          defaultWidth: 200, source: 'PO' },
+      { id: 'po_date',      label: 'PO Date',            defaultWidth: 150, source: 'PO' },
+      { id: 'status',       label: 'PO Status',          defaultWidth: 120, source: 'PO' },
+      { id: 'priority',     label: 'Priority',           defaultWidth: 110, source: 'PO' },
+      { id: 'revision',     label: 'Revision Number',    defaultWidth: 130, source: 'PO' },
+      { id: 'supplier_ref', label: 'Supplier Reference', defaultWidth: 180, source: 'PO' },
+      { id: 'currency',     label: 'Currency',           defaultWidth: 100, source: 'PO' },
+    ]
+  },
+  {
+    // All fields here come from the admin's user document (set by Master Admin)
+    group: '🏢 Buyer (Your Company)',
+    fields: [
+      { id: 'company_name',    label: 'Buyer Company Name',    defaultWidth: 280, source: 'USER' },
+      { id: 'company_address', label: 'Buyer Company Address', defaultWidth: 300, source: 'USER' },
+      { id: 'company_tin',     label: 'Buyer TIN',             defaultWidth: 200, source: 'USER' },
+      { id: 'company_phone',   label: 'Buyer Phone',           defaultWidth: 180, source: 'USER' },
+      { id: 'prepared_by',     label: 'Prepared By',           defaultWidth: 180, source: 'PO'   },
+      { id: 'prepared_by_role',label: 'Preparer Role / Title', defaultWidth: 180, source: 'USER' },
+    ]
+  },
+  {
+    // All fields here come from the suppliers Firestore document
+    group: '🏭 Supplier Details',
+    fields: [
+      { id: 'supplier_name',    label: 'Supplier Name',           defaultWidth: 250, source: 'PO'       },
+      { id: 'supplier_email',   label: 'Supplier Email',          defaultWidth: 220, source: 'PO'       },
+      { id: 'supplier_address', label: 'Supplier Address',        defaultWidth: 280, source: 'SUPPLIER' },
+      { id: 'supplier_contact', label: 'Supplier Contact Person', defaultWidth: 200, source: 'SUPPLIER' },
+      { id: 'supplier_phone',   label: 'Supplier Phone',          defaultWidth: 180, source: 'SUPPLIER' },
+      { id: 'supplier_tax_id',  label: 'Supplier TIN / Tax ID',  defaultWidth: 200, source: 'PO'       },
+      { id: 'supplier_vat',     label: 'Supplier VAT Reg. No.',   defaultWidth: 200, source: 'PO'       },
+    ]
+  },
+  {
+    group: '🚚 Delivery & Terms',
+    fields: [
+      { id: 'delivery_address',  label: 'Delivery Address',       defaultWidth: 300, source: 'PO' },
+      { id: 'expected_delivery', label: 'Expected Delivery Date', defaultWidth: 180, source: 'PO' },
+      { id: 'delivery_notes',    label: 'Delivery Notes',         defaultWidth: 300, source: 'PO' },
+      { id: 'payment_terms',     label: 'Payment Terms',          defaultWidth: 180, source: 'PO' },
+    ]
+  },
+  {
+    group: '💰 Financials',
+    fields: [
+      { id: 'subtotal',    label: 'Subtotal',      defaultWidth: 150, source: 'PO' },
+      { id: 'discount',    label: 'Discount',      defaultWidth: 120, source: 'PO' },
+      { id: 'shipping',    label: 'Shipping Cost', defaultWidth: 150, source: 'PO' },
+      { id: 'tax_rate',    label: 'Tax Rate (%)',  defaultWidth: 130, source: 'PO' },
+      { id: 'vat_amount',  label: 'VAT / Tax Amt', defaultWidth: 150, source: 'PO' },
+      { id: 'grand_total', label: 'Grand Total',   defaultWidth: 180, source: 'PO' },
+    ]
+  },
+  {
+    group: '📋 Items & Notes',
+    fields: [
+      { id: 'items_table',    label: '📋 Items Table', defaultWidth: 700, source: 'PO' },
+      { id: 'internal_notes', label: 'Internal Notes', defaultWidth: 300, source: 'PO' },
+    ]
+  },
+  {
+    group: '✅ Approval',
+    fields: [
+      { id: 'approval_status', label: 'Approval Status', defaultWidth: 160, source: 'PO' },
+      { id: 'approved_by',     label: 'Approved By',     defaultWidth: 180, source: 'PO' },
+    ]
+  },
+];
+
+// Flat list for canvas logic
+const FIELD_DEFINITIONS = FIELD_GROUPS.flatMap(g => g.fields);
+
+// Maps each field id → exact Firestore field name where its value lives at render time.
+// [PO] fields → purchaseOrders doc fields (camelCase as saved by create-po.html submitPO)
+// [USER] fields → users/{adminId} doc fields (set by Master Admin dashboard)
+// [SUPPLIER] fields → suppliers/{supplierId} doc fields (set by supplier-setup.html)
+const PO_VAR_MAP = {
+  // ── PO Header ──────────────────────────────────────────────────────────────
+  po_number:        'poNumber',            // [PO] e.g. "PO-20240601-4821"
+  po_date:          'createdAt',           // [PO] Firestore Timestamp
+  status:           'status',             // [PO] "draft" | "submitted" | "approved"
+  priority:         'priority',           // [PO] "normal" | "high" | "urgent"
+  revision:         'revision',           // [PO] integer, starts at 0
+  supplier_ref:     'supplierRef',        // [PO] free-text reference from buyer
+  currency:         'currency',           // [PO] e.g. "PHP" | "USD"
+
+  // ── Buyer / Company (from users doc via Master Admin) ──────────────────────
+  company_name:     'companyName',        // [USER] admin's companyName field
+  company_address:  'address',            // [USER] admin's address field
+  company_tin:      'tinNumber',          // [USER] admin's tinNumber field
+  company_phone:    'phoneNumber',        // [USER] admin's phoneNumber field
+  prepared_by:      'createdByName',      // [PO]  admin's fullName at time of creation
+  prepared_by_role: 'assignedRoleName',   // [USER] admin's assignedRoleName field
+
+  // ── Supplier Details ───────────────────────────────────────────────────────
+  supplier_name:    'supplierName',       // [PO]       saved on PO at submit time
+  supplier_email:   'supplierEmail',      // [PO]       saved on PO at submit time
+  supplier_address: 'address',            // [SUPPLIER] suppliers doc → address
+  supplier_contact: 'contactPerson',      // [SUPPLIER] suppliers doc → contactPerson
+  supplier_phone:   'phoneNumber',        // [SUPPLIER] suppliers doc → phoneNumber
+  supplier_tax_id:  'supplierTaxId',      // [PO]       = supplier.taxId (encrypted, decrypted at render)
+  supplier_vat:     'vatNumber',          // [PO]       = supplier.vatNumber (encrypted, decrypted at render)
+
+  // ── Delivery & Terms ───────────────────────────────────────────────────────
+  delivery_address:  'deliveryAddress',       // [PO] auto-filled from admin's address
+  expected_delivery: 'expectedDeliveryDate',  // [PO] date string
+  delivery_notes:    'deliveryNotes',         // [PO] optional delivery instructions
+  payment_terms:     'paymentTerms',          // [PO] e.g. "Net 30"
+
+  // ── Financials ─────────────────────────────────────────────────────────────
+  subtotal:    'subtotal',    // [PO] numeric
+  discount:    'discount',    // [PO] numeric
+  shipping:    'shipping',    // [PO] numeric
+  tax_rate:    'taxRate',     // [PO] numeric (%)
+  vat_amount:  'tax',         // [PO] computed tax amount
+  grand_total: 'grandTotal',  // [PO] numeric
+
+  // ── Items & Notes ──────────────────────────────────────────────────────────
+  items_table:    'items',          // [PO] array of line item objects
+  internal_notes: 'internalNotes', // [PO] private notes
+
+  // ── Approval ───────────────────────────────────────────────────────────────
+  approval_status: 'approvalStatus',        // [PO] "pending_approval" | "approved" | null
+  approved_by:     'assignedApproverName',  // [PO] approver's fullName
+};
+
+const FONT_OPTIONS = [
+  'Inter', 'Arial', 'Times New Roman', 'Georgia', 'Courier New',
+  'Helvetica', 'Trebuchet MS', 'Verdana', 'Tahoma'
+];
+
+function POLayoutSetup() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [backgroundUrl, setBackgroundUrl] = useState('');
+  const [uploadingBg, setUploadingBg] = useState(false);
+  const [placedFields, setPlacedFields] = useState([]);
+  const [selectedField, setSelectedField] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [layoutName, setLayoutName] = useState('Custom PO Layout');
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [draggingId, setDraggingId] = useState(null);
+  const canvasRef = useRef(null);
+  const nextTextId = useRef(1);
+  const [customTexts, setCustomTexts] = useState([]);
+  const [selectedText, setSelectedText] = useState(null);
+
+  // PO Number Series
+  const [poSeriesInput, setPoSeriesInput] = useState('');
+  const [poSeriesSaved, setPoSeriesSaved] = useState('');
+  const [poSeriesLoading, setPoSeriesLoading] = useState(false);
+  const [poSeriesSavedMsg, setPoSeriesSavedMsg] = useState(false);
+  const [currentPoCounter, setCurrentPoCounter] = useState(null);
+
+  useEffect(() => {
+    const firebaseConfig = {
+      apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+      authDomain: "operix-c8a8c.firebaseapp.com",
+      projectId: "operix-c8a8c",
+      storageBucket: "operix-c8a8c.firebasestorage.app",
+      messagingSenderId: "794223223499",
+      appId: "1:794223223499:web:f059007b909cc15766f14e"
+    };
+    const interval = setInterval(() => {
+      if (window.firebase) {
+        clearInterval(interval);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        firebase.auth().onAuthStateChanged(async (u) => {
+          if (!u) { window.location.href = 'login.html'; return; }
+          const db = firebase.firestore();
+          const userDoc = await db.collection('users').doc(u.uid).get();
+          if (!userDoc.exists || userDoc.data().role !== 'admin') {
+            window.location.href = 'login.html'; return;
+          }
+          const userData = userDoc.data();
+          setUser({ uid: u.uid, ...userData });
+
+          // ── Load layout: own UID first, then fall back to any company admin's layout ──
+          let layoutData = null;
+          const ownLayoutDoc = await db.collection('purchaseOrderLayouts').doc(u.uid).get();
+          if (ownLayoutDoc.exists) {
+            layoutData = ownLayoutDoc.data();
+          } else {
+            // Try to find the company-shared layout from another admin in the same company
+            const myCompany = userData.companyName || '';
+            if (myCompany) {
+              try {
+                const coAdminsSnap = await db.collection('users')
+                  .where('role', '==', 'admin')
+                  .where('companyName', '==', myCompany)
+                  .get();
+                for (const adminDoc of coAdminsSnap.docs) {
+                  if (adminDoc.id === u.uid) continue; // skip self
+                  const sharedLayout = await db.collection('purchaseOrderLayouts').doc(adminDoc.id).get();
+                  if (sharedLayout.exists) {
+                    layoutData = sharedLayout.data();
+                    console.log('Loaded shared PO layout from company admin:', adminDoc.data().fullName);
+                    break;
+                  }
+                }
+              } catch(e) { console.warn('Could not load shared company layout:', e); }
+            }
+          }
+          if (layoutData) {
+            setBackgroundUrl(layoutData.backgroundUrl || '');
+            setPlacedFields(layoutData.fields || []);
+            setLayoutName(layoutData.layoutName || 'Custom PO Layout');
+            setCustomTexts(layoutData.customTexts || []);
+          }
+
+          // ── Load PO number series: own first, then company-shared fallback ──
+          try {
+            let seriesDoc = await db.collection('poNumberSeries').doc(u.uid).get();
+            if (!seriesDoc.exists) {
+              const myCompany = userData.companyName || '';
+              if (myCompany) {
+                const coAdminsSnap = await db.collection('users')
+                  .where('role', '==', 'admin')
+                  .where('companyName', '==', myCompany)
+                  .get();
+                for (const adminDoc of coAdminsSnap.docs) {
+                  if (adminDoc.id === u.uid) continue;
+                  const sharedSeries = await db.collection('poNumberSeries').doc(adminDoc.id).get();
+                  if (sharedSeries.exists) { seriesDoc = sharedSeries; break; }
+                }
+              }
+            }
+            if (seriesDoc.exists) {
+              const sd = seriesDoc.data();
+              setPoSeriesSaved(sd.seriesStart || '');
+              setPoSeriesInput(sd.seriesStart || '');
+              setCurrentPoCounter(sd.currentCounter !== undefined ? sd.currentCounter : null);
+            }
+          } catch(e) { console.warn('Could not load PO series:', e); }
+          setLoading(false);
+        });
+      }
+    }, 100);
+  }, []);
+
+  const uploadBackground = (file) => {
+    if (!file || !file.type.startsWith('image/')) { alert('Please upload an image file (PNG, JPG)'); return; }
+    setUploadingBg(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'operix_products');
+    formData.append('folder', 'operix-po-layouts');
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        setBackgroundUrl(res.secure_url);
+      } else { alert('Upload failed. Please try again.'); }
+      setUploadingBg(false);
+    });
+    xhr.addEventListener('error', () => { alert('Upload error.'); setUploadingBg(false); });
+    xhr.open('POST', 'https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
+    xhr.send(formData);
+  };
+
+  const addFieldToCanvas = (fieldDef) => {
+    if (placedFields.find(f => f.id === fieldDef.id)) { alert('This field is already on the canvas.'); return; }
+setPlacedFields(prev => [...prev, {
+  id: fieldDef.id, label: fieldDef.label,
+  x: 50, y: Math.max(20, 50 + prev.length * 30),
+  width: fieldDef.defaultWidth,
+  fontSize: 11, color: '#111827', bold: false,
+  showLabel: false,
+  labelPosition: 'above',
+  maxChars: 0,
+  fontFamily: 'Inter'
+}]);
+  };
+
+  const removeFieldFromCanvas = (fieldId) => {
+    setPlacedFields(prev => prev.filter(f => f.id !== fieldId));
+    if (selectedField === fieldId) setSelectedField(null);
+  };
+
+  const updateField = (fieldId, updates) => {
+    setPlacedFields(prev => prev.map(f => f.id === fieldId ? { ...f, ...updates } : f));
+  };
+
+  const handleCanvasMouseDown = (e, fieldId) => {
+    e.preventDefault();
+    const canvas = canvasRef.current.getBoundingClientRect();
+    const field = placedFields.find(f => f.id === fieldId);
+    setDraggingId(fieldId);
+    setSelectedField(fieldId);
+    setDragOffset({ x: e.clientX - canvas.left - field.x, y: e.clientY - canvas.top - field.y });
+  };
+
+const handleCanvasMouseMove = (e) => {
+  if (!draggingId) return;
+  const canvas = canvasRef.current.getBoundingClientRect();
+  const newX = Math.max(0, Math.min(e.clientX - canvas.left - dragOffset.x, 794 - 50));
+  const newY = Math.max(0, Math.min(e.clientY - canvas.top - dragOffset.y, 1123 - 20));
+  if (draggingId.startsWith('txt_')) {
+    updateCustomText(draggingId.replace('txt_', ''), { x: newX, y: newY });
+  } else {
+    updateField(draggingId, { x: newX, y: newY });
+  }
+};
+
+  const handleCanvasMouseUp = () => setDraggingId(null);
+
+  const saveLayout = async () => {
+    if (!backgroundUrl) { alert('Please upload a background image first.'); return; }
+    setSaving(true);
+    try {
+      const db = firebase.firestore();
+await db.collection('purchaseOrderLayouts').doc(user.uid).set({
+  backgroundUrl, fields: placedFields, layoutName, customTexts,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: user.uid
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) { alert('Save failed: ' + e.message); }
+    setSaving(false);
+  };
+
+  const clearLayout = async () => {
+    if (!confirm('Clear this layout? This will remove all field placements and background.')) return;
+    try {
+      const db = firebase.firestore();
+      await db.collection('purchaseOrderLayouts').doc(user.uid).delete();
+      setBackgroundUrl(''); setPlacedFields([]); setSelectedField(null);
+      alert('Layout cleared. Dashboard will now use the default Operix PO layout.');
+    } catch (e) { alert('Error clearing layout.'); }
+  };
+
+
+const savePOSeries = async () => {
+  const val = poSeriesInput.trim();
+  if (!val) { alert('Please enter a PO number series (e.g. 10090681).'); return; }
+  if (!/^\d+$/.test(val)) { alert('PO series must be numeric digits only (e.g. 10090681).'); return; }
+  setPoSeriesLoading(true);
+  try {
+    const db = firebase.firestore();
+    // Check if the series number already exists in purchaseOrders
+    const existingSnap = await db.collection('purchaseOrders')
+      .where('createdBy', '==', user.uid)
+      .get();
+    const allPONumbers = existingSnap.docs.map(d => d.data().poNumber || '');
+    // Find the highest number in use that starts with this series prefix or equals it
+    let highestUsed = BigInt(val) - BigInt(1); // start at one below so first will be val itself
+    for (const pn of allPONumbers) {
+      if (/^\d+$/.test(pn)) {
+        const n = BigInt(pn);
+        if (n >= BigInt(val)) { // If any existing PO number is >= our series start, track max
+          if (n > highestUsed) highestUsed = n;
+        }
+      }
+    }
+    // currentCounter = the highest number used so far (next will be highestUsed + 1)
+    // Store currentCounter as-is (plain number string); padLen is derived from seriesStart at read time
+    const currentCounter = highestUsed.toString();
+    await db.collection('poNumberSeries').doc(user.uid).set({
+      seriesStart: val, // stored exactly as typed e.g. "0034042"
+      currentCounter,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: user.uid
+    });
+    setPoSeriesSaved(val);
+    setCurrentPoCounter(currentCounter);
+    setPoSeriesSavedMsg(true);
+    setTimeout(() => setPoSeriesSavedMsg(false), 3000);
+  } catch(e) { alert('Error saving PO series: ' + e.message); }
+  setPoSeriesLoading(false);
+};
+
+const addCustomText = () => {
+  const id = 'custom_' + nextTextId.current++;
+  setCustomTexts(prev => [...prev, {
+    id, text: 'Custom Text', x: 60, y: 60 + prev.length * 30,
+    fontSize: 11, color: '#111827', bold: false, fontFamily: 'Inter', width: 200
+  }]);
+  setSelectedText(id);
+  setSelectedField(null);
+};
+
+const updateCustomText = (id, updates) => {
+  setCustomTexts(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+};
+
+const removeCustomText = (id) => {
+  setCustomTexts(prev => prev.filter(t => t.id !== id));
+  if (selectedText === id) setSelectedText(null);
+};
+
+const handleTextMouseDown = (e, id) => {
+  e.preventDefault();
+  const canvas = canvasRef.current.getBoundingClientRect();
+  const txt = customTexts.find(t => t.id === id);
+  setDraggingId('txt_' + id);
+  setSelectedText(id);
+  setSelectedField(null);
+  setDragOffset({ x: e.clientX - canvas.left - txt.x, y: e.clientY - canvas.top - txt.y });
+};
+
+
+  const selectedFieldData = placedFields.find(f => f.id === selectedField);
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-gray-600">Loading PO Layout Setup...</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-700 to-purple-700 text-white px-8 py-5 shadow-xl">
+        <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
+          <div className="flex items-center gap-4">
+            <button onClick={() => window.location.href = 'dashboard.html'}
+              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Purchase Order Layout Setup</h1>
+              <p className="text-indigo-200 text-sm">Upload your BIR-approved PO template and position data fields</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="text" value={layoutName} onChange={(e) => setLayoutName(e.target.value)}
+              placeholder="Layout Name" className="px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-indigo-300 text-sm outline-none focus:bg-opacity-30" />
+            {saved && <span className="px-3 py-2 bg-green-500 rounded-lg text-sm font-semibold animate-pulse">✓ Saved!</span>}
+            <button onClick={clearLayout} className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-semibold transition-all">Clear Layout</button>
+            <button onClick={saveLayout} disabled={saving || !backgroundUrl}
+              className="px-6 py-2 bg-white text-indigo-700 hover:bg-indigo-50 rounded-lg font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2">
+              {saving ? <><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>Saving...</> : '💾 Save Layout'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-0 max-w-screen-2xl mx-auto p-6">
+        {/* Left Panel — Field Library */}
+        <div className="w-72 flex-shrink-0 mr-6 space-y-4">
+          {/* Upload Background */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+              Upload PO Background
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">Upload your BIR-approved PO template as PNG or JPG (A4 size recommended: 794×1123px)</p>
+            <input type="file" id="bgUpload" accept="image/*" className="hidden"
+              onChange={(e) => { if (e.target.files[0]) uploadBackground(e.target.files[0]); }} />
+            <button onClick={() => document.getElementById('bgUpload').click()} disabled={uploadingBg}
+              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              {uploadingBg ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Uploading...</> : '📁 Upload Background Image'}
+            </button>
+            {backgroundUrl && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><span>✓</span> Background uploaded successfully</p>}
+          </div>
+
+          {/* PO Number Series */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 border border-amber-200">
+            <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <span className="w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">#</span>
+              PO Number Series
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Set the starting number for your PO sequence. New POs will auto-increment from this number.
+              If the number already exists, it will use the next available one.
+            </p>
+            {poSeriesSaved && (
+              <div className="mb-3 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">Active Series</p>
+                  <p className="text-sm font-bold text-amber-900 font-mono">{poSeriesSaved}</p>
+                  {currentPoCounter && BigInt(currentPoCounter) >= BigInt(poSeriesSaved) && (
+                    <p className="text-xs text-amber-600 mt-0.5">Next PO will be: <strong className="font-mono">{(BigInt(currentPoCounter) + BigInt(1)).toString().padStart(poSeriesSaved.length, '0')}</strong></p>
+                  )}
+                  {(!currentPoCounter || BigInt(currentPoCounter) < BigInt(poSeriesSaved)) && (
+                    <p className="text-xs text-amber-600 mt-0.5">Next PO will be: <strong className="font-mono">{poSeriesSaved}</strong></p>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={poSeriesInput}
+                  onChange={e => setPoSeriesInput(e.target.value.replace(/\D/g,''))}
+                  placeholder="e.g. 10090681"
+                  maxLength={20}
+                  className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm font-mono outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50 placeholder-amber-300"
+                />
+              </div>
+              <button
+                onClick={savePOSeries}
+                disabled={poSeriesLoading || !poSeriesInput.trim()}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
+              >
+                {poSeriesLoading ? <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div></> : poSeriesSavedMsg ? '✓ Saved!' : '💾 Set Series'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Digits only. Example: entering <span className="font-mono font-bold">10090681</span> means the first PO will be <span className="font-mono font-bold">10090681</span>, next will be <span className="font-mono font-bold">10090682</span>, and so on.</p>
+          </div>
+
+          {/* Field Library — grouped */}
+          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+            <h3 className="font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+              Available Fields
+            </h3>
+            <p className="text-xs text-gray-500 mb-2">Click a field to add it to the canvas, then drag to position it.</p>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              <span className="text-xs font-bold text-white bg-indigo-600 px-2 py-0.5 rounded">PO</span>
+              <span className="text-xs text-gray-500">Purchase Order doc</span>
+              <span className="text-xs font-bold text-white bg-cyan-600 px-2 py-0.5 rounded ml-2">USER</span>
+              <span className="text-xs text-gray-500">Master Admin / company</span>
+              <span className="text-xs font-bold text-white bg-purple-600 px-2 py-0.5 rounded ml-2">SUPPLIER</span>
+              <span className="text-xs text-gray-500">Supplier setup doc</span>
+            </div>
+            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+              {FIELD_GROUPS.map(group => (
+                <div key={group.group}>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1">{group.group}</p>
+                  <div className="space-y-1">
+                    {group.fields.map(f => {
+                      const placed = placedFields.find(p => p.id === f.id);
+                      const srcColor = f.source === 'USER' ? 'text-cyan-600' : f.source === 'SUPPLIER' ? 'text-purple-600' : 'text-indigo-500';
+                      return (
+                        <button key={f.id} onClick={() => !placed && addFieldToCanvas(f)}
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all flex items-center justify-between gap-1 ${
+                            placed
+                              ? 'bg-green-50 border border-green-300 text-green-700 cursor-default'
+                              : 'bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 border border-gray-200 cursor-pointer'
+                          }`}>
+                          <span className="font-medium flex-1">{f.label}</span>
+                          <span className={`text-xs font-bold ${placed ? 'text-green-600' : srcColor} flex-shrink-0`}>
+                            {placed ? '✓' : f.source || 'PO'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
+
+{/* Add Custom Text */}
+<div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+  <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+    <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">✏</span>
+    Custom Text
+  </h3>
+  <p className="text-xs text-gray-500 mb-3">Add free-form text anywhere on your layout (headers, labels, static notes).</p>
+  <button onClick={addCustomText}
+    className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
+    + Add Text Block
+  </button>
+</div>
+
+
+
+{/* Field Properties — Data Fields */}
+{selectedFieldData && (
+  <div className="bg-white rounded-2xl shadow-lg p-5 border border-indigo-200">
+    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+      <span className="w-6 h-6 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+      Field Properties
+    </h3>
+    <p className="text-xs font-semibold text-indigo-600 mb-1 uppercase tracking-wide">{selectedFieldData.label}</p>
+    <div className="flex items-center gap-2 mb-3">
+      <span className="font-mono text-xs text-gray-500">.{PO_VAR_MAP[selectedFieldData.id] || selectedFieldData.id}</span>
+      {(() => {
+        const src = FIELD_DEFINITIONS.find(f => f.id === selectedFieldData.id)?.source || 'PO';
+        const srcColor = src === 'USER' ? 'bg-cyan-600' : src === 'SUPPLIER' ? 'bg-purple-600' : 'bg-indigo-600';
+        const srcHint = src === 'USER' ? 'from Master Admin / users doc' : src === 'SUPPLIER' ? 'from supplier-setup doc' : 'from PO document';
+        return <span title={srcHint} className={`text-white text-xs font-bold px-2 py-0.5 rounded ${srcColor}`}>{src}</span>;
+      })()}
+    </div>
+    <div className="space-y-3">
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Position X</label>
+        <input type="number" value={Math.round(selectedFieldData.x)} onChange={(e) => updateField(selectedField, { x: parseInt(e.target.value) || 0 })}
+          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Position Y</label>
+        <input type="number" value={Math.round(selectedFieldData.y)} onChange={(e) => updateField(selectedField, { y: parseInt(e.target.value) || 0 })}
+          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Width (px)</label>
+        <input type="number" value={selectedFieldData.width} onChange={(e) => updateField(selectedField, { width: parseInt(e.target.value) || 100 })}
+          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Font Size (px)</label>
+        <div className="flex items-center gap-2 mt-1">
+          <button onClick={() => updateField(selectedField, { fontSize: Math.max(6, selectedFieldData.fontSize - 1) })}
+            className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">−</button>
+          <input type="number" value={selectedFieldData.fontSize} min="6" max="72" onChange={(e) => updateField(selectedField, { fontSize: parseInt(e.target.value) || 10 })}
+            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 text-center" />
+          <button onClick={() => updateField(selectedField, { fontSize: Math.min(72, selectedFieldData.fontSize + 1) })}
+            className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">+</button>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Max Characters Before Wrap</label>
+        <div className="flex items-center gap-2 mt-1">
+          <input type="number" value={selectedFieldData.maxChars || 0} min="0" max="500"
+            onChange={(e) => updateField(selectedField, { maxChars: parseInt(e.target.value) || 0 })}
+            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 text-center" />
+        </div>
+        <p className="text-xs text-gray-400 mt-1">0 = no limit. The field will wrap at the set width.</p>
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Font Family</label>
+        <select value={selectedFieldData.fontFamily || 'Inter'} onChange={(e) => updateField(selectedField, { fontFamily: e.target.value })}
+          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+          {FONT_OPTIONS.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="text-xs text-gray-500 font-medium">Text Color</label>
+        <input type="color" value={selectedFieldData.color} onChange={(e) => updateField(selectedField, { color: e.target.value })}
+          className="w-full mt-1 h-9 border border-gray-200 rounded-lg cursor-pointer" />
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" id="boldCheck" checked={selectedFieldData.bold} onChange={(e) => updateField(selectedField, { bold: e.target.checked })}
+          className="w-4 h-4 text-indigo-600 rounded" />
+        <label htmlFor="boldCheck" className="text-sm text-gray-700 font-medium">Bold Text</label>
+      </div>
+
+      {/* Show Label toggle + position */}
+      <div className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50">
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="showLabelCheck" checked={selectedFieldData.showLabel || false}
+            onChange={(e) => updateField(selectedField, { showLabel: e.target.checked })}
+            className="w-4 h-4 text-indigo-600 rounded" />
+          <label htmlFor="showLabelCheck" className="text-sm text-gray-700 font-medium">Show Field Title</label>
+          <span className="text-xs text-gray-400">(e.g. "PO Number:")</span>
+        </div>
+        {selectedFieldData.showLabel && (
+          <div>
+            <label className="text-xs text-gray-500 font-medium block mb-1">Title Position</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => updateField(selectedField, { labelPosition: 'above' })}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  (selectedFieldData.labelPosition || 'above') === 'above'
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-indigo-50'
+                }`}>
+                ↕ Above
+              </button>
+              <button
+                onClick={() => updateField(selectedField, { labelPosition: 'inline' })}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                  selectedFieldData.labelPosition === 'inline'
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-indigo-50'
+                }`}>
+                ↔ Inline
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              {(selectedFieldData.labelPosition || 'above') === 'above'
+                ? 'Title appears above the value on its own line.'
+                : 'Title appears to the left of the value on the same line.'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <button onClick={() => removeFieldFromCanvas(selectedField)}
+        className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold border border-red-200 transition-all">
+        🗑 Remove Field
+      </button>
+    </div>
+  </div>
+)}
+
+{/* Custom Text Properties */}
+{selectedText && !selectedField && (() => {
+  const txt = customTexts.find(t => t.id === selectedText);
+  if (!txt) return null;
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-5 border border-green-200">
+      <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+        <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">✏</span>
+        Custom Text Properties
+      </h3>
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Text Content</label>
+          <input type="text" value={txt.text} onChange={(e) => updateCustomText(selectedText, { text: e.target.value })}
+            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Position X</label>
+          <input type="number" value={Math.round(txt.x)} onChange={(e) => updateCustomText(selectedText, { x: parseInt(e.target.value) || 0 })}
+            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Position Y</label>
+          <input type="number" value={Math.round(txt.y)} onChange={(e) => updateCustomText(selectedText, { y: parseInt(e.target.value) || 0 })}
+            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Width (px)</label>
+          <input type="number" value={txt.width} onChange={(e) => updateCustomText(selectedText, { width: parseInt(e.target.value) || 100 })}
+            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Font Size (px)</label>
+          <div className="flex items-center gap-2 mt-1">
+            <button onClick={() => updateCustomText(selectedText, { fontSize: Math.max(6, txt.fontSize - 1) })}
+              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">−</button>
+            <input type="number" value={txt.fontSize} min="6" max="72" onChange={(e) => updateCustomText(selectedText, { fontSize: parseInt(e.target.value) || 10 })}
+              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400 text-center" />
+            <button onClick={() => updateCustomText(selectedText, { fontSize: Math.min(72, txt.fontSize + 1) })}
+              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">+</button>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Font Family</label>
+          <select value={txt.fontFamily || 'Inter'} onChange={(e) => updateCustomText(selectedText, { fontFamily: e.target.value })}
+            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400 bg-white">
+            {FONT_OPTIONS.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 font-medium">Text Color</label>
+          <input type="color" value={txt.color} onChange={(e) => updateCustomText(selectedText, { color: e.target.value })}
+            className="w-full mt-1 h-9 border border-gray-200 rounded-lg cursor-pointer" />
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="checkbox" id="txtBoldCheck" checked={txt.bold} onChange={(e) => updateCustomText(selectedText, { bold: e.target.checked })}
+            className="w-4 h-4 text-green-600 rounded" />
+          <label htmlFor="txtBoldCheck" className="text-sm text-gray-700 font-medium">Bold Text</label>
+        </div>
+        <button onClick={() => removeCustomText(selectedText)}
+          className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold border border-red-200 transition-all">
+          🗑 Remove Text
+        </button>
+      </div>
+    </div>
+  );
+})()}
+
+          {/* Instructions */}
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-200">
+            <h4 className="font-bold text-indigo-800 text-sm mb-2">How It Works</h4>
+            <ol className="text-xs text-indigo-700 space-y-1.5">
+              <li>1. Upload your PO background image</li>
+              <li>2. Click fields from the library to add them</li>
+              <li>3. Drag fields to position them on your template</li>
+              <li>4. Click a field to adjust size, font, color</li>
+              <li>5. Save — your dashboard will use this layout</li>
+            </ol>
+          </div>
+        </div>
+
+        {/* A4 Canvas */}
+        <div className="flex-1 overflow-auto">
+          <div className="mb-3 flex items-center gap-4">
+            <p className="text-sm text-gray-600 font-medium">A4 Canvas (794 × 1123px)</p>
+            <span className="text-xs text-gray-400">{placedFields.length} field(s) placed</span>
+            {!backgroundUrl && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">Upload a background to start</span>}
+          </div>
+          <div style={{ width: '794px', minHeight: '1123px' }}>
+            <div
+              ref={canvasRef}
+              className="a4-canvas border-2 border-dashed border-gray-300 bg-white shadow-2xl relative"
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' }}
+            >
+              {!backgroundUrl && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-5xl mb-4">📄</p>
+                    <p className="text-gray-400 font-medium">Upload a background image to begin</p>
+                    <p className="text-gray-300 text-sm mt-1">Your BIR-approved PO template goes here</p>
+                  </div>
+                </div>
+              )}
+{placedFields.map(field => {
+  const varName = PO_VAR_MAP[field.id] || field.id;
+  const fieldDef = FIELD_DEFINITIONS.find(f => f.id === field.id);
+  const source = fieldDef?.source || 'PO';
+  const sourceColor = source === 'USER' ? '#0891b2' : source === 'SUPPLIER' ? '#7c3aed' : '#4f46e5';
+  // maxChars → use ch units for width so label+value both wrap at that character count
+  const fieldWidth = (field.maxChars && field.maxChars > 0) ? `${field.maxChars}ch` : field.width;
+  const previewVal = varName; // no truncation — let CSS wrap naturally
+  const isInline = field.showLabel && field.labelPosition === 'inline';
+  return (
+  <div
+    key={field.id}
+    className="canvas-field"
+    style={{
+      position: 'absolute', left: field.x, top: field.y, width: fieldWidth,
+      border: selectedField === field.id ? '2px solid #6366f1' : '1.5px dashed rgba(99,102,241,0.6)',
+      background: selectedField === field.id ? 'rgba(238,242,255,0.97)' : 'rgba(255,255,255,0.85)',
+      borderRadius: '3px',
+      padding: 0, margin: 0,
+      fontSize: field.fontSize, color: field.color,
+      fontWeight: field.bold ? '700' : '400',
+      fontFamily: field.fontFamily || 'Inter',
+      lineHeight: 1.4,
+      zIndex: selectedField === field.id ? 10 : 5,
+      boxSizing: 'border-box',
+      wordWrap: 'break-word', whiteSpace: 'normal', overflowWrap: 'break-word',
+      overflow: 'visible',
+      boxShadow: selectedField === field.id ? '0 0 0 3px rgba(99,102,241,0.2)' : '0 1px 3px rgba(0,0,0,0.08)'
+    }}
+    onMouseDown={(e) => handleCanvasMouseDown(e, field.id)}
+  >
+    {/* tiny designer tag — zero margin/padding, sits flush above content */}
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 3,
+      padding: '1px 3px', margin: 0,
+      borderBottom: `1px solid ${sourceColor}22`,
+      background: `${sourceColor}11`,
+      lineHeight: 1
+    }}>
+      <span style={{
+        fontSize: 6, color: sourceColor, fontWeight: 800,
+        letterSpacing: '0.05em', textTransform: 'uppercase',
+        fontFamily: 'Inter', flexShrink: 0, opacity: 0.9
+      }}>{field.label}</span>
+      <span style={{
+        fontSize: 6, fontWeight: 900, color: '#fff',
+        background: sourceColor, borderRadius: 2, padding: '0 2px',
+        letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0
+      }}>{source}</span>
+      <span style={{
+        fontSize: 6, color: sourceColor, opacity: 0.55,
+        fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+      }}>.{PO_VAR_MAP[field.id] || field.id}</span>
+      {field.maxChars > 0 && (
+        <span style={{
+          fontSize: 6, color: '#fff', background: '#f59e0b', borderRadius: 2,
+          padding: '0 2px', fontWeight: 700, flexShrink: 0
+        }}>{field.maxChars}ch</span>
+      )}
+    </div>
+
+    {/* ── Actual field content — mirrors exactly what prints ── */}
+    <div style={{ padding: 0, margin: 0, lineHeight: 1.4 }}>
+      {isInline ? (
+        /* INLINE: label and value on the same line */
+        <span style={{
+          display: 'inline', fontSize: field.fontSize, color: field.color,
+          fontFamily: field.fontFamily || 'Inter', lineHeight: 1.4,
+          wordBreak: 'break-word'
+        }}>
+          <span style={{ fontWeight: 700 }}>{field.label}: </span>
+          <span style={{ fontWeight: field.bold ? '700' : '400', opacity: 0.55, fontStyle: 'italic' }}>{previewVal}</span>
+        </span>
+      ) : (
+        /* ABOVE (default): label block on top, value block below */
+        <>
+          {field.showLabel && (
+            <div style={{
+              display: 'block', fontSize: field.fontSize, color: field.color,
+              fontWeight: 700, fontFamily: field.fontFamily || 'Inter',
+              lineHeight: 1.4, margin: 0, padding: 0,
+              wordBreak: 'break-word', whiteSpace: 'normal'
+            }}>{field.label}:</div>
+          )}
+          <div style={{
+            display: 'block', opacity: 0.55, fontSize: field.fontSize,
+            fontFamily: field.fontFamily || 'Inter', fontStyle: 'italic',
+            lineHeight: 1.4, margin: 0, padding: 0,
+            wordBreak: 'break-word', whiteSpace: 'normal',
+            fontWeight: field.bold ? '700' : '400'
+          }}>{previewVal}</div>
+        </>
+      )}
+    </div>
+
+    {selectedField === field.id && (
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => removeFieldFromCanvas(field.id)}
+        style={{ position: 'absolute', top: -9, right: -9, width: 18, height: 18, background: '#ef4444', color: 'white', border: '2px solid white', borderRadius: '50%', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20, lineHeight: 1 }}
+      >×</button>
+    )}
+  </div>
+  );
+})}
+
+{/* Custom Text Blocks */}
+{customTexts.map(txt => (
+  <div
+    key={txt.id}
+    style={{
+      position: 'absolute', left: txt.x, top: txt.y, width: txt.width,
+      border: selectedText === txt.id ? '2px solid #16a34a' : '1.5px dashed rgba(22,163,74,0.55)',
+      background: selectedText === txt.id ? 'rgba(240,253,244,0.97)' : 'rgba(255,255,255,0.82)',
+      borderRadius: '4px', padding: '3px 6px',
+      fontSize: txt.fontSize, color: txt.color,
+      fontWeight: txt.bold ? '700' : '400',
+      fontFamily: txt.fontFamily || 'Inter',
+      zIndex: selectedText === txt.id ? 10 : 5,
+      boxSizing: 'border-box', cursor: 'move',
+      boxShadow: selectedText === txt.id ? '0 0 0 3px rgba(22,163,74,0.18)' : '0 1px 3px rgba(0,0,0,0.08)'
+    }}
+    onMouseDown={(e) => handleTextMouseDown(e, txt.id)}
+  >
+    <span style={{
+      fontSize: 8, color: '#16a34a', fontWeight: 700, display: 'block',
+      lineHeight: '1', marginBottom: 2, letterSpacing: '0.04em',
+      textTransform: 'uppercase', fontFamily: 'Inter'
+    }}>Custom Text</span>
+    <span style={{ display: 'block', lineHeight: '1.3' }}>{txt.text}</span>
+    {selectedText === txt.id && (
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => removeCustomText(txt.id)}
+        style={{ position: 'absolute', top: -9, right: -9, width: 18, height: 18, background: '#ef4444', color: 'white', border: '2px solid white', borderRadius: '50%', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20, lineHeight: 1 }}
+      >×</button>
+    )}
+  </div>
+))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<POLayoutSetup />, document.getElementById('root'));
+</script>
+</body>
+</html>
