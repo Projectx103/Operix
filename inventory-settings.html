@@ -11,6 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   body { 
@@ -223,8 +224,8 @@ function InventorySettings() {
   const [inventorySettings, setInventorySettings] = useState({
     codePrefix: 'PRD',
     startingNumber: 1,
-    categoryOptions: ['Electronics', 'Clothing', 'Food', 'Furniture', 'Tools'],
-    unitOptions: ['pieces', 'kg', 'liters', 'boxes', 'packs', 'meters'],
+    categoryOptions: [],
+    unitOptions: [],
     defaultThreshold: 10
   });
 
@@ -287,17 +288,22 @@ function InventorySettings() {
 
   const loadInventorySettings = async (db, userId) => {
     try {
-      const settingsDoc = await db.collection('inventorySettings').doc(userId).get();
-      if (settingsDoc.exists) {
-        const data = settingsDoc.data();
-        setInventorySettings({
-          codePrefix: data.codePrefix || 'PRD',
-          startingNumber: data.startingNumber || 1,
-          categoryOptions: data.categoryOptions || ['Electronics', 'Clothing', 'Food', 'Furniture', 'Tools'],
-          unitOptions: data.unitOptions || ['pieces', 'kg', 'liters', 'boxes', 'packs', 'meters'],
-          defaultThreshold: data.defaultThreshold || 10
-        });
-      }
+      // Use onSnapshot so the Categories and Units sections update in real-time
+      // as soon as the CSV auto-sync writes to Firestore
+      db.collection('inventorySettings').doc(userId).onSnapshot(settingsDoc => {
+        if (settingsDoc.exists) {
+          const data = settingsDoc.data();
+          setInventorySettings({
+            codePrefix: data.codePrefix ?? 'PRD',
+            startingNumber: data.startingNumber ?? 1,
+            defaultThreshold: data.defaultThreshold ?? 10,
+            categoryOptions: Array.isArray(data.categoryOptions) ? data.categoryOptions : [],
+            unitOptions: Array.isArray(data.unitOptions) ? data.unitOptions : [],
+          });
+        }
+      }, error => {
+        console.error('inventorySettings snapshot error:', error);
+      });
     } catch (error) {
       console.error('Error loading inventory settings:', error);
     }
@@ -427,58 +433,69 @@ const handleFileUpload = async (e) => {
   if (!file) return;
 
   const fileType = file.name.split('.').pop().toLowerCase();
-  if (fileType !== 'csv' && fileType !== 'xlsx') {
-    alert('Please upload a CSV or Excel file');
+  if (!['csv','xlsx','xls'].includes(fileType)) {
+    alert('Please upload a CSV or Excel file (.csv, .xlsx, .xls)');
     return;
   }
 
   setUploading(true);
 
-  try {
-    const reader = new FileReader();
-    
-    reader.onload = async (event) => {
-      const text = event.target.result;
-      
-      // Parse CSV properly handling quoted fields with newlines
-      const rows = [];
-      let currentRow = [];
-      let currentField = '';
-      let inQuotes = false;
-      
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const nextChar = text[i + 1];
-        
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') {
-            currentField += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          currentRow.push(currentField.trim());
-          currentField = '';
-        } else if ((char === '\n' || char === '\r') && !inQuotes) {
-          if (char === '\r' && nextChar === '\n') {
-            i++;
-          }
-          if (currentField || currentRow.length > 0) {
-            currentRow.push(currentField.trim());
-            rows.push(currentRow);
-            currentRow = [];
-            currentField = '';
-          }
-        } else {
-          currentField += char;
+  // ── Parse CSV text into rows ──
+  const parseCSVText = (text) => {
+    const rows = [];
+    let currentRow = [], currentField = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i], nextChar = text[i+1];
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') { currentField += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        currentRow.push(currentField.trim()); currentField = '';
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') i++;
+        if (currentField || currentRow.length > 0) {
+          currentRow.push(currentField.trim()); rows.push(currentRow);
+          currentRow = []; currentField = '';
         }
+      } else currentField += char;
+    }
+    if (currentField || currentRow.length > 0) { currentRow.push(currentField.trim()); rows.push(currentRow); }
+    return rows;
+  };
+
+  // ── Read file and return rows (supports CSV + Excel) ──
+  const getRows = () => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    if (fileType === 'csv') {
+      reader.onload = ev => { try { resolve(parseCSVText(ev.target.result)); } catch(err) { reject(err); } };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    } else {
+      if (typeof XLSX === 'undefined') {
+        reject(new Error('SheetJS not loaded — please use a CSV file for now.')); return;
       }
+      reader.onload = ev => {
+        try {
+          const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          resolve(data.map(r => r.map(c => String(c ?? '').trim())));
+        } catch(err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    }
+  });
+
+  try {
+    const rawRows = await getRows();
+
+    // ── Shim: make the existing inner processing work with rawRows ──
+    const processImport = async () => {
+      // Build text-compatible parse output from rawRows
+      const rows = rawRows;
+      const text = ''; // not used below
       
-      if (currentField || currentRow.length > 0) {
-        currentRow.push(currentField.trim());
-        rows.push(currentRow);
-      }
       
       const headers = rows[0].map(h => h.toLowerCase().replace(/\s+/g, ''));
       const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim()));
@@ -650,6 +667,10 @@ const existingProduct = existingProductsMap[duplicateKey];
               moq: productData.moq || '',
               leadTime: productData.leadtime || '',
               currency: detectedCurrency,
+              weight_kg: productData.weight_kg ? parseFloat(productData.weight_kg) || '' : '',
+              length_cm: productData.length_cm ? parseFloat(productData.length_cm) || '' : '',
+              width_cm: productData.width_cm ? parseFloat(productData.width_cm) || '' : '',
+              height_cm: productData.height_cm ? parseFloat(productData.height_cm) || '' : '',
               createdBy: user.uid,
               importedFrom: 'bulk_upload',
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -679,6 +700,62 @@ const existingProduct = existingProductsMap[duplicateKey];
         await batch.commit();
       }
       
+      // ── Auto-sync categories & units from CSV into inventorySettings ──
+      // Always write ALL unique category/unit values found in the CSV,
+      // merging with whatever is already saved (respecting existing ones too).
+      // This runs regardless of successCount so even skipped/updated rows contribute.
+      try {
+        const csvCategories = [];
+        const csvUnits = [];
+        dataRows.forEach(row => {
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = (row[i] || '').trim(); });
+          if (obj.category) csvCategories.push(obj.category);
+          if (obj.unit) csvUnits.push(obj.unit);
+        });
+
+        const uniqueCsvCategories = [...new Set(csvCategories)].filter(Boolean);
+        const uniqueCsvUnits = [...new Set(csvUnits)].filter(Boolean);
+
+        if (uniqueCsvCategories.length > 0 || uniqueCsvUnits.length > 0) {
+          const settingsRef = db.collection('inventorySettings').doc(user.uid);
+          const settingsSnap = await settingsRef.get();
+          const existing = settingsSnap.exists ? settingsSnap.data() : {};
+
+          // Safely get existing arrays — never treat [] as falsy
+          const existingCategories = Array.isArray(existing.categoryOptions) ? existing.categoryOptions : [];
+          const existingUnits = Array.isArray(existing.unitOptions) ? existing.unitOptions : [];
+
+          // Merge: existing + CSV values, deduplicated and sorted
+          const mergedCategories = [...new Set([...existingCategories, ...uniqueCsvCategories])].sort();
+          const mergedUnits = [...new Set([...existingUnits, ...uniqueCsvUnits])].sort();
+
+          // Always write — even if no "new" ones, this ensures Firestore is in sync
+          await settingsRef.set({
+            codePrefix: existing.codePrefix || 'PRD',
+            startingNumber: existing.startingNumber || 1,
+            defaultThreshold: existing.defaultThreshold || 10,
+            ...existing,
+            categoryOptions: mergedCategories,
+            unitOptions: mergedUnits,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+
+          // Update local React state immediately so the UI shows the new values right away
+          setInventorySettings(prev => ({
+            ...prev,
+            categoryOptions: mergedCategories,
+            unitOptions: mergedUnits
+          }));
+
+          console.log(`✅ Inventory Settings synced — ${mergedCategories.length} categories, ${mergedUnits.length} units.`);
+        }
+      } catch (syncErr) {
+        console.error('Auto-sync categories/units error:', syncErr);
+        // Non-critical — products were still imported, just notify
+        alert('⚠️ Products imported but failed to auto-sync categories/units into settings: ' + syncErr.message);
+      }
+
       setUploading(false);
       
       // Generate detailed report
@@ -764,10 +841,12 @@ your Supplier Management list.
       
       alert(reportMessage);
       
+
       e.target.value = '';
     };
-    
-    reader.readAsText(file);
+
+    await processImport();
+
   } catch (error) {
     console.error('Error uploading file:', error);
     alert('Error importing products: ' + error.message);
@@ -778,7 +857,8 @@ your Supplier Management list.
 const downloadTemplate = () => {
   const headers = [
     'Name', 'SKU', 'Category', 'Price', 'Stock', 'Threshold', 'Unit', 
-    'Description', 'ImageURL', 'Supplier', 'MOQ', 'LeadTime'
+    'Description', 'ImageURL', 'Supplier', 'MOQ', 'LeadTime',
+    'Weight_kg', 'Length_cm', 'Width_cm', 'Height_cm'
   ];
   
   const exampleRow = [
@@ -793,6 +873,10 @@ const downloadTemplate = () => {
     '', 
     'JH PRECISION PHILIPPINES INC. - USD', 
     '', 
+    '',
+    '',
+    '',
+    '',
     ''
   ];
   
@@ -987,6 +1071,11 @@ const downloadTemplate = () => {
     <p>• Name, SKU, Supplier (must match existing supplier in system)</p>
   </div>
   <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">📦 Optional Fields (leave blank if not available):</p>
+    <p>• Category, Price, Stock, Threshold, Unit, Description, ImageURL, MOQ, LeadTime</p>
+    <p className="mt-1">• <strong>Weight_kg, Length_cm, Width_cm, Height_cm</strong> — physical dimensions</p>
+  </div>
+  <div className="p-2 bg-white rounded border border-blue-200">
     <p className="font-semibold mb-1">🏭 Supplier Matching Rules:</p>
     <p>• Supplier name must match EXACTLY (case-insensitive)</p>
     <p>• Example: "MARIVELES TRADING AND HARDWARE CORP." or "JH PRECISION PHILIPPINES INC. - USD"</p>
@@ -996,6 +1085,11 @@ const downloadTemplate = () => {
     <p className="font-semibold mb-1">💱 Currency Auto-Detection:</p>
     <p>• System looks up supplier's currency from Supplier Management</p>
     <p>• Applies it to the product automatically (PHP, USD, EUR, etc.)</p>
+  </div>
+  <div className="p-2 bg-white rounded border border-blue-200">
+    <p className="font-semibold mb-1">🔄 Auto-Sync Categories &amp; Units:</p>
+    <p>• Any new Category or Unit values found in your CSV are <strong>automatically added</strong> to Product Categories and Units of Measurement in settings</p>
+    <p>• They will immediately appear in the Add New Product dropdowns in the Dashboard</p>
   </div>
   <div className="p-2 bg-white rounded border border-blue-200">
     <p className="font-semibold mb-1">📊 Import Report:</p>

@@ -131,6 +131,8 @@ const STEPS=[{id:1,label:'Supplier'},{id:2,label:'Line Items'},{id:3,label:'Deli
 function CreatePOApp(){
   const [loading,setLoading]=useState(true);
   const [adminUser,setAdminUser]=useState(null);
+  const [activeGlPeriod,setActiveGlPeriod]=useState(null);   // Open glPeriod covering today
+  const [glPeriodChecked,setGlPeriodChecked]=useState(false); // true once check is done
   const [step,setStep]=useState(1);
   const [toasts,setToasts]=useState([]);
   const [submitting,setSubmitting]=useState(false);
@@ -178,8 +180,22 @@ function CreatePOApp(){
 
   const loadVAT=async(s)=>{
     if(!s){setVatInfo(null);return;}
-    const rate=s.taxExempt?0:(parseFloat(s.taxRate)||12);
-    setVatInfo({rate,number:s.vatNumber||s.taxId||'',exempt:s.taxExempt||false,discountRate:parseFloat(s.discountRate)||0});
+    // Use structured taxInfo if present (new suppliers), fall back to flat fields (legacy)
+    const ti=s.taxInfo;
+    const rate   = ti ? Math.round(ti.rate*100)    : (s.taxExempt?0:(parseFloat(s.taxRate)||12));
+    const type   = ti ? ti.type                    : null;
+    const code   = ti ? ti.code                    : (s.taxExempt?'EXEMPT':s.vatTreatment==='inclusive'?'VAT12-IN':'VAT12-EX');
+    const isExempt = ti ? ti.type==='VAT_EXEMPT'   : (s.taxExempt||false);
+    const treatment= ti ? (ti.type==='VAT_INCLUSIVE'?'inclusive':ti.type==='VAT_EXEMPT'?'exempt':'exclusive')
+                        : (s.taxExempt?'exempt':(s.vatTreatment||'exclusive'));
+    // label shown in UI
+    const codeLabel= ti ? (() => {
+      const labels={'VAT12-EX':'VAT 12% (Exclusive)','VAT12-IN':'VAT 12% (Inclusive)',
+                    'VAT0-ZERO':'Zero-Rated 0%','NONVAT':'Non-VAT (3% PT)',
+                    'EXEMPT':'Tax Exempt','GOVT':'Government (RA 9184)'};
+      return labels[ti.code]||ti.code;
+    })() : (isExempt?'Tax Exempt':`VAT ${rate}% (${treatment})`);
+    setVatInfo({rate,type,code,treatment,codeLabel,number:s.vatNumber||s.taxId||'',exempt:isExempt,discountRate:parseFloat(s.discountRate)||0});
     setTaxRate(String(rate));
     if(s.discountRate)setDiscount(String(s.discountRate));
   };
@@ -292,6 +308,22 @@ function CreatePOApp(){
         }catch(e){console.warn('Could not pre-load PO series:',e.message);}
 
         agRef.current={agList,companyAdmins,myRoleName,myCompany,myRoleId:adminData0.assignedRole||'',companyAdminIds,seriesOwnerUid,seriesData};
+
+        // ── Check GL Period: block PO creation if no Open period covers today ──
+        try {
+          const today=new Date().toISOString().split('T')[0];
+          let glDocs=[];
+          const glSnap=await db.collection('glPeriods').where('adminId','==',cu.uid).where('status','==','Open').get();
+          glDocs=glSnap.docs;
+          if(glDocs.length===0&&myCompany){
+            const glSnap2=await db.collection('glPeriods').where('companyName','==',myCompany).where('status','==','Open').get();
+            glDocs=glSnap2.docs;
+          }
+          const openPeriods=glDocs.map(d=>({id:d.id,...d.data()}));
+          const covering=openPeriods.find(p=>{const s=p.startDate||'';const e=p.endDate||'';return(!s||today>=s)&&(!e||today<=e);});
+          setActiveGlPeriod(covering||null);
+        } catch(e){console.warn('GL period check failed:',e.message);}
+        setGlPeriodChecked(true);
         const params=new URLSearchParams(window.location.search);
         const isLocked=params.get('locked')==='1';
         const preSuppId=params.get('supplierId');
@@ -384,8 +416,34 @@ function CreatePOApp(){
   const discAmt=discount?parseFloat(discount):0;
   const shipAmt=shipping?parseFloat(shipping):0;
   const taxable=Math.max(subtotal-discAmt,0)+shipAmt;
-  const taxAmt=taxable*(parseFloat(taxRate)||0)/100;
-  const grand=taxable+taxAmt;
+  const _rate=parseFloat(taxRate)||0;
+  const _treatment=vatInfo?.treatment||'exclusive';
+  // Tax-Exempt: no tax. VAT-Inclusive: tax is already embedded in price, extracted for display only. VAT-Exclusive: tax added on top.
+  const taxAmt=vatInfo?.exempt?0:_treatment==='inclusive'?taxable-taxable/(1+_rate/100):taxable*_rate/100;
+  const grand=_treatment==='inclusive'?taxable:taxable+taxAmt;
+
+  // ── Per-line VAT helpers ─────────────────────────────────────
+  // For each item, compute: grossLine, netLine, vatAmtLine
+  // VAT-INCLUSIVE: gross = qty*unitCost (price already has VAT in it)
+  //                net   = gross / (1 + rate/100)
+  //                vatAmt= gross - net
+  // VAT-EXCLUSIVE: net   = qty*unitCost
+  //                vatAmt= net * rate/100
+  //                gross = net + vatAmt
+  // ZERO / NON-VAT / EXEMPT / GOVT: vatAmt = 0, net = gross = qty*unitCost
+  const lineCalc=(it)=>{
+    const gross=it.qty*it.unitCost;
+    if(!vatInfo||vatInfo.exempt||vatInfo.rate===0){
+      return{gross,net:gross,vatAmt:0};
+    }
+    if(vatInfo.treatment==='inclusive'){
+      const net=gross/(1+vatInfo.rate/100);
+      return{gross,net,vatAmt:gross-net};
+    }
+    // exclusive
+    const vatAmt=gross*vatInfo.rate/100;
+    return{gross,net:gross,vatAmt};
+  };
 
   const filtSupp=suppliers.filter(s=>{
     const q=suppQ.toLowerCase();
@@ -592,6 +650,11 @@ function CreatePOApp(){
   };
 
   const submitPO=async(asDraft=false)=>{
+    // ── GL Period gate: block actual submission (not drafts) if no open period covers today ──
+    if(!asDraft&&!activeGlPeriod){
+      toast('⛔ GL Period is not open for today. Open the current period in Accounting Setup before submitting a PO.','err');
+      return;
+    }
     setSubmitting(true);
     try{
       const db=dbRef.current;
@@ -638,8 +701,22 @@ function CreatePOApp(){
         supplierId:supplier.id,supplierName:supplier.name,supplierEmail:supplier.email||'',
         supplierTaxId:supplier.taxId||supplier.vatNumber||'',vatNumber:vatInfo?.number||'',
         supplierRef:suppRef,currency,paymentTerms:payTerms,priority,
-        items:items.map(it=>({productId:it.product.id,productName:it.product.name,sku:it.product.sku||'',unit:it.product.unit||it.product.uom||'',quantity:it.qty,unitCost:it.unitCost,lineTotal:it.qty*it.unitCost,notes:it.notes||''})),
-        subtotal,discount:discAmt,shipping:shipAmt,taxRate:parseFloat(taxRate)||0,tax:taxAmt,grandTotal:grand,
+        items:items.map(it=>{
+          const lc=lineCalc(it);
+          return{
+            productId:it.product.id,productName:it.product.name,sku:it.product.sku||'',
+            unit:it.product.unit||it.product.uom||'',quantity:it.qty,unitCost:it.unitCost,
+            netAmount:parseFloat(lc.net.toFixed(4)),
+            vatCode:vatInfo?.code||'',vatAmount:parseFloat(lc.vatAmt.toFixed(4)),
+            lineTotal:parseFloat(lc.gross.toFixed(4)),
+            notes:it.notes||''
+          };
+        }),
+        subtotal,discount:discAmt,shipping:shipAmt,
+        taxRate:parseFloat(taxRate)||0,tax:parseFloat(taxAmt.toFixed(4)),grandTotal:parseFloat(grand.toFixed(4)),
+        // taxInfo.rate saved as decimal (0.12) to match supplier-setup.html taxInfo format
+        taxInfo:vatInfo?{code:vatInfo.code,rate:vatInfo.rate/100,type:vatInfo.type,treatment:vatInfo.treatment}:null,
+        vatCode:vatInfo?.code||'',vatTreatment:vatInfo?.treatment||'exclusive',
         deliveryAddress:delivAddr,expectedDeliveryDate:delivDate,deliveryNotes:delivNotes,internalNotes:intNotes,
         fromAlert:lockedMode,createdBy:adminRef.current,createdByName:adminUser?.fullName||'',
         updatedAt:firebase.firestore.FieldValue.serverTimestamp(),revision:0,
@@ -810,8 +887,9 @@ function CreatePOApp(){
                   )}
                   {vatInfo&&(
                     <div className="vat-strip">
-                      {vatInfo.exempt?<><span className="vat-tag" style={{color:'#6B7280',background:'#F3F4F6'}}>TAX EXEMPT</span><span style={{fontSize:12,color:'#6B7280',fontWeight:600}}>VAT set to 0%</span></>:
-                      <><span className="vat-tag">VAT {vatInfo.rate}%</span><span style={{fontSize:12,color:'var(--green)',fontWeight:600}}>Auto-loaded from supplier</span></>}
+                      {vatInfo.exempt
+                        ?<><span className="vat-tag" style={{color:'#6B7280',background:'#F3F4F6'}}>TAX EXEMPT</span><span style={{fontSize:12,color:'#6B7280',fontWeight:600}}>VAT set to 0%</span></>
+                        :<><span className="vat-tag" style={{background:vatInfo.treatment==='inclusive'?'#DBEAFE':'#D1FAE5',color:vatInfo.treatment==='inclusive'?'#1D4ED8':'var(--green)'}}>{vatInfo.code||`VAT${vatInfo.rate}%`}</span><span style={{fontSize:11,color:'var(--ink3)',fontWeight:700}}>{vatInfo.codeLabel}</span><span style={{fontSize:11,color:'var(--muted)',marginLeft:'auto'}}>Auto-loaded from supplier</span></>}
                     </div>
                   )}
                 </div>
@@ -920,10 +998,20 @@ function CreatePOApp(){
                   ):(
                     <div style={{overflowX:'auto'}}>
                       <table className="tbl">
-                        <thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Qty</th><th>Unit Cost ({sym(currency)})</th><th>Line Total</th><th>Notes</th><th></th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Product</th><th>SKU</th><th>Stock</th><th>Qty</th>
+                            <th>Unit Cost ({sym(currency)}){vatInfo&&vatInfo.treatment==='inclusive'&&<span style={{fontSize:9,fontWeight:600,color:'var(--muted)',marginLeft:4,background:'#DBEAFE',color:'#1D4ED8',padding:'1px 5px',borderRadius:3}}>incl. VAT</span>}</th>
+                            <th>Line Total</th>
+                            {vatInfo&&!vatInfo.exempt&&<th style={{whiteSpace:'nowrap',color:'var(--blue2)'}}>VAT Code</th>}
+                            {vatInfo&&!vatInfo.exempt&&<th style={{whiteSpace:'nowrap',color:'var(--blue2)'}}>VAT Amt</th>}
+                            <th>Notes</th><th></th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {items.map((it,idx)=>{
-                            const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id); // only cost locked, qty editable
+                            const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id);
+                            const lc=lineCalc(it);
                             return(
                               <tr key={idx} style={isCostLocked?{background:'#FAFBFF'}:{}}>
                                 <td>
@@ -937,17 +1025,50 @@ function CreatePOApp(){
                                 <td><input type="number" min="1" className="qty-in" value={it.qty} onChange={e=>updItem(idx,'qty',Math.max(1,parseInt(e.target.value)||1))}/></td>
                                 <td>
                                   {isCostLocked?(
-                                    <div style={{fontFamily:'JetBrains Mono',fontSize:12,fontWeight:700,color:'var(--ink3)',display:'flex',alignItems:'center',gap:4}}>
-                                      <Ico d={I.lock} size={10} color="var(--muted2)"/>{sym(currency)}{it.unitCost.toFixed(2)}
+                                    <div style={{fontFamily:'JetBrains Mono',fontSize:12,fontWeight:700,color:'var(--ink3)'}}>
+                                      <div style={{display:'flex',alignItems:'center',gap:4}}>
+                                        <Ico d={I.lock} size={10} color="var(--muted2)"/>{sym(currency)}{it.unitCost.toFixed(2)}
+                                      </div>
+                                      {vatInfo&&vatInfo.treatment==='inclusive'&&it.unitCost>0&&(
+                                        <div style={{fontSize:9,color:'#1D4ED8',marginTop:1,fontFamily:'JetBrains Mono'}}>net: {sym(currency)}{(it.unitCost/(1+vatInfo.rate/100)).toFixed(2)}</div>
+                                      )}
                                     </div>
                                   ):(
-                                    <div style={{position:'relative'}}>
-                                      <span style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',fontSize:11,color:'var(--muted)',fontWeight:600}}>{sym(currency)}</span>
-                                      <input type="number" min="0" step="0.01" value={it.unitCost} onChange={e=>updItem(idx,'unitCost',parseFloat(e.target.value)||0)} style={{width:100,padding:'5px 8px',paddingLeft:sym(currency).length>1?24:18,border:'1.5px solid var(--line)',borderRadius:6,fontSize:12,fontFamily:'JetBrains Mono',outline:'none'}}/>
+                                    <div>
+                                      <div style={{position:'relative'}}>
+                                        <span style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',fontSize:11,color:'var(--muted)',fontWeight:600}}>{sym(currency)}</span>
+                                        <input type="number" min="0" step="0.01" value={it.unitCost} onChange={e=>updItem(idx,'unitCost',parseFloat(e.target.value)||0)} style={{width:100,padding:'5px 8px',paddingLeft:sym(currency).length>1?24:18,border:'1.5px solid var(--line)',borderRadius:6,fontSize:12,fontFamily:'JetBrains Mono',outline:'none'}}/>
+                                      </div>
+                                      {vatInfo&&vatInfo.treatment==='inclusive'&&it.unitCost>0&&(
+                                        <div style={{fontSize:9,color:'#1D4ED8',marginTop:2,fontFamily:'JetBrains Mono'}}>net: {sym(currency)}{(it.unitCost/(1+vatInfo.rate/100)).toFixed(2)}</div>
+                                      )}
                                     </div>
                                   )}
                                 </td>
-                                <td><span className="mono" style={{fontSize:12,fontWeight:700,color:'var(--blue2)'}}>{sym(currency)}{(it.qty*it.unitCost).toFixed(2)}</span></td>
+                                <td>
+                                  <span className="mono" style={{fontSize:12,fontWeight:700,color:'var(--blue2)'}}>{sym(currency)}{lc.gross.toFixed(2)}</span>
+                                  {vatInfo&&vatInfo.treatment==='exclusive'&&lc.vatAmt>0&&(
+                                    <div style={{fontSize:9,color:'var(--muted)',fontFamily:'JetBrains Mono',marginTop:1}}>+VAT: {sym(currency)}{lc.vatAmt.toFixed(2)}</div>
+                                  )}
+                                </td>
+                                {vatInfo&&!vatInfo.exempt&&(
+                                  <td>
+                                    <span style={{
+                                      fontSize:9,fontWeight:800,letterSpacing:'.04em',padding:'2px 6px',borderRadius:4,
+                                      background:vatInfo.treatment==='inclusive'?'#DBEAFE':vatInfo.code==='VAT0-ZERO'?'#F0F9FF':vatInfo.code==='NONVAT'?'#F0FDF4':'#D1FAE5',
+                                      color:vatInfo.treatment==='inclusive'?'#1D4ED8':vatInfo.code==='VAT0-ZERO'?'#0369A1':vatInfo.code==='NONVAT'?'#065F46':'var(--green)',
+                                    }}>{vatInfo.code||'VAT'}</span>
+                                  </td>
+                                )}
+                                {vatInfo&&!vatInfo.exempt&&(
+                                  <td>
+                                    <span className="mono" style={{fontSize:11,fontWeight:700,color:vatInfo.treatment==='inclusive'?'#1D4ED8':'var(--ink3)'}}>
+                                      {lc.vatAmt>0?`${sym(currency)}${lc.vatAmt.toFixed(2)}`:'—'}
+                                    </span>
+                                    {vatInfo.treatment==='inclusive'&&lc.vatAmt>0&&<div style={{fontSize:9,color:'var(--muted)',marginTop:1}}>embedded</div>}
+                                    {vatInfo.treatment==='exclusive'&&lc.vatAmt>0&&<div style={{fontSize:9,color:'var(--muted)',marginTop:1}}>added on top</div>}
+                                  </td>
+                                )}
                                 <td><input className="input" style={{width:130,padding:'5px 8px',fontSize:11}} placeholder="Optional note..." value={it.notes} onChange={e=>updItem(idx,'notes',e.target.value)}/></td>
                                 <td>{!isCostLocked&&<button className="remove-btn" onClick={()=>delItem(idx)}><Ico d={I.trash} size={12}/></button>}</td>
                               </tr>
@@ -1031,7 +1152,8 @@ function CreatePOApp(){
                       {label:'Supplier',val:supplier?.name},
                       {label:'Currency',val:currency},
                       {label:'Payment',val:payTerms},
-                      {label:'VAT Rate',val:vatInfo?`${taxRate}% ${vatInfo.exempt?'(Exempt)':''}`:taxRate+'%'},
+                      {label:'Tax Code',val:vatInfo?.codeLabel||`${taxRate}%`},
+                      {label:'VAT Treatment',val:vatInfo?.treatment?vatInfo.treatment.charAt(0).toUpperCase()+vatInfo.treatment.slice(1):'—'},
                       {label:'Priority',val:<span style={{textTransform:'capitalize',color:priority==='urgent'?'var(--red)':priority==='high'?'var(--amber)':'var(--ink)'}}>{priority}</span>},
                       {label:'Delivery To',val:delivAddr,span:2},
                       {label:'Delivery By',val:delivDate},
@@ -1049,18 +1171,52 @@ function CreatePOApp(){
                 <div className="card-hd"><div className="card-hd-icon" style={{background:'var(--line2)',color:'var(--ink3)'}}><Ico d={I.doc} size={15}/></div><div><div className="card-hd-title">Line Items ({items.length})</div></div></div>
                 <div style={{overflowX:'auto'}}>
                   <table className="tbl">
-                    <thead><tr><th>#</th><th>Product</th><th>SKU</th><th>Qty</th><th>Unit Cost</th><th>Line Total</th><th>Status</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>#</th><th>Product</th><th>SKU</th><th>Qty</th>
+                        <th>Unit Cost{vatInfo&&vatInfo.treatment==='inclusive'&&<span style={{fontSize:9,marginLeft:4,background:'#DBEAFE',color:'#1D4ED8',padding:'1px 5px',borderRadius:3,fontWeight:700}}>incl. VAT</span>}</th>
+                        <th>Net Amount</th>
+                        <th>VAT Code</th>
+                        <th>VAT Amt</th>
+                        <th>Line Total</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {items.map((it,idx)=>{
-                        const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id); // only cost locked, qty editable
+                        const isCostLocked=it.costLocked||lockedItemIds.includes(it.product.id);
+                        const lc=lineCalc(it);
                         return(
                           <tr key={idx}>
                             <td style={{color:'var(--muted)',fontWeight:600}}>{idx+1}</td>
-                            <td><div style={{fontWeight:700,color:'var(--ink)'}}>{it.product.name}</div>{it.notes&&<div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>{it.notes}</div>}</td>
+                            <td>
+                              <div style={{fontWeight:700,color:'var(--ink)'}}>{it.product.name}</div>
+                              {it.notes&&<div style={{fontSize:11,color:'var(--muted)',marginTop:1}}>{it.notes}</div>}
+                            </td>
                             <td><span className="mono" style={{fontSize:11,color:'var(--muted)'}}>{it.product.sku||'—'}</span></td>
                             <td className="mono" style={{fontWeight:600}}>{it.qty}</td>
-                            <td className="mono" style={{fontWeight:600}}>{sym(currency)}{it.unitCost.toFixed(2)}</td>
-                            <td className="mono" style={{fontWeight:800,color:'var(--blue2)'}}>{sym(currency)}{(it.qty*it.unitCost).toFixed(2)}</td>
+                            <td>
+                              <div className="mono" style={{fontWeight:600}}>{sym(currency)}{it.unitCost.toFixed(2)}</div>
+                              {vatInfo&&vatInfo.treatment==='inclusive'&&<div style={{fontSize:9,color:'#1D4ED8',marginTop:1,fontFamily:'JetBrains Mono'}}>net: {sym(currency)}{lc.net.toFixed(2)}</div>}
+                            </td>
+                            {/* Net Amount (ex-VAT) */}
+                            <td className="mono" style={{fontWeight:600,color:'var(--ink3)'}}>{sym(currency)}{lc.net.toFixed(2)}</td>
+                            {/* VAT Code */}
+                            <td>
+                              {vatInfo&&!vatInfo.exempt?(
+                                <span style={{
+                                  fontSize:9,fontWeight:800,letterSpacing:'.04em',padding:'2px 6px',borderRadius:4,
+                                  background:vatInfo.treatment==='inclusive'?'#DBEAFE':vatInfo.code==='VAT0-ZERO'?'#F0F9FF':vatInfo.code==='NONVAT'?'#F0FDF4':'#D1FAE5',
+                                  color:vatInfo.treatment==='inclusive'?'#1D4ED8':vatInfo.code==='VAT0-ZERO'?'#0369A1':vatInfo.code==='NONVAT'?'#065F46':'var(--green)',
+                                }}>{vatInfo.code||'VAT'}</span>
+                              ):<span style={{fontSize:10,color:'var(--muted2)'}}>EXEMPT</span>}
+                            </td>
+                            {/* VAT Amount */}
+                            <td className="mono" style={{fontWeight:700,color:vatInfo?.treatment==='inclusive'?'#1D4ED8':'var(--ink3)'}}>
+                              {lc.vatAmt>0?`${sym(currency)}${lc.vatAmt.toFixed(2)}`:'—'}
+                            </td>
+                            {/* Line Total (gross) */}
+                            <td className="mono" style={{fontWeight:800,color:'var(--blue2)'}}>{sym(currency)}{lc.gross.toFixed(2)}</td>
                             <td>{isCostLocked?<span style={{fontSize:10,fontWeight:700,color:'#92400E',background:'#FFF7ED',border:'1px solid #FED7AA',padding:'2px 7px',borderRadius:4}}>COST LOCKED</span>:<span style={{fontSize:10,color:'var(--muted2)'}}>—</span>}</td>
                           </tr>
                         );
@@ -1079,7 +1235,7 @@ function CreatePOApp(){
           <div className="side-hd"><Ico d={I.doc} size={14} color="var(--muted)"/> Order Summary</div>
           <div className="side-sec">
             <div className="side-lbl">Supplier</div>
-            {supplier?<><div style={{fontWeight:700,fontSize:13,color:'var(--ink)'}}>{supplier.name}</div>{supplier.email&&<div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{supplier.email}</div>}{vatInfo&&<div style={{fontSize:10,marginTop:4,color:vatInfo.exempt?'#6B7280':'var(--green)',fontWeight:700}}>{vatInfo.exempt?'Tax Exempt':`VAT ${vatInfo.rate}%`}</div>}</>:<div style={{fontSize:12,color:'var(--muted2)',fontStyle:'italic'}}>Not selected</div>}
+            {supplier?<><div style={{fontWeight:700,fontSize:13,color:'var(--ink)'}}>{supplier.name}</div>{supplier.email&&<div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{supplier.email}</div>}{vatInfo&&<div style={{fontSize:10,marginTop:4,fontWeight:700,color:vatInfo.exempt?'#6B7280':vatInfo.treatment==='inclusive'?'#1D4ED8':'var(--green)'}}>{vatInfo.codeLabel||`VAT ${vatInfo.rate}%`}</div>}</>:<div style={{fontSize:12,color:'var(--muted2)',fontStyle:'italic'}}>Not selected</div>}
           </div>
           <div className="side-sec" style={{flex:1,overflowY:'auto'}}>
             <div className="side-lbl">Items ({items.length})</div>
@@ -1100,13 +1256,28 @@ function CreatePOApp(){
             <div className="side-row"><span className="side-row-lbl">Subtotal</span><span className="side-row-val">{sym(currency)}{subtotal.toFixed(2)}</span></div>
             {discAmt>0&&<div className="side-row"><span className="side-row-lbl" style={{color:'var(--green)'}}>Discount</span><span className="side-row-val" style={{color:'var(--green)'}}>−{sym(currency)}{discAmt.toFixed(2)}</span></div>}
             {shipAmt>0&&<div className="side-row"><span className="side-row-lbl">Shipping</span><span className="side-row-val">+{sym(currency)}{shipAmt.toFixed(2)}</span></div>}
-            <div className="side-row"><span className="side-row-lbl">VAT ({taxRate}%){vatInfo?' ●':''}</span><span className="side-row-val">+{sym(currency)}{taxAmt.toFixed(2)}</span></div>
+            <div className="side-row">
+              <span className="side-row-lbl">
+                {vatInfo?.exempt?`Tax Exempt (0%)`:vatInfo?.treatment==='inclusive'?`VAT incl. (${taxRate}%)`:vatInfo?.treatment==='exclusive'?`VAT excl. (${taxRate}%)`:taxRate?`VAT (${taxRate}%)`:'VAT'}{vatInfo?' ●':''}
+              </span>
+              <span className="side-row-val" style={{color:vatInfo?.exempt?'var(--muted)':vatInfo?.treatment==='inclusive'?'var(--ink3)':'inherit'}}>
+                {vatInfo?.exempt?'—':vatInfo?.treatment==='inclusive'?`(incl. ${sym(currency)}${taxAmt.toFixed(2)})`:`+${sym(currency)}${taxAmt.toFixed(2)}`}
+              </span>
+            </div>
             <div className="side-grand"><span className="side-grand-lbl">GRAND TOTAL</span><span className="side-grand-val">{sym(currency)}{grand.toFixed(2)}</span></div>
           </div>
         </div>
       </div>
 
       {/* ACTION BAR */}
+      {/* ── GL Period Blocked Banner ── */}
+      {glPeriodChecked&&!activeGlPeriod&&(
+        <div style={{margin:'0 24px 0',padding:'12px 16px',background:'#FEF2F2',border:'1.5px solid #FECACA',borderRadius:10,display:'flex',alignItems:'center',gap:12,fontSize:12,color:'#991B1B',fontWeight:600}}>
+          <svg width="18" height="18" fill="none" stroke="#DC2626" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="#DC2626"/></svg>
+          <span><strong>GL Period Not Open:</strong> No accounting period is open for today's date. Submitting POs is blocked until the current period is opened in <strong>Accounting Setup → GL Periods</strong>. You may still save as a Draft.</span>
+        </div>
+      )}
+
       <div className="action-bar">
         <button className="btn btn-ghost" onClick={()=>step>1?setStep(step-1):window.location.href='Dashboard.html'}>
           <Ico d={I.back} size={12}/>{step>1?'Back':'Cancel'}
@@ -1115,7 +1286,20 @@ function CreatePOApp(){
           <button className="btn btn-ghost" onClick={()=>submitPO(true)} disabled={items.length===0||!supplier||submitting}>
             <Ico d={I.draft} size={12}/>Save as Draft
           </button>
-          {step<4?<button className="btn btn-solid" onClick={()=>canProceed()?setStep(step+1):toast('Please complete required fields','warn')} disabled={!canProceed()}>Continue <Ico d="M9 18l6-6-6-6" size={12}/></button>:<button className="btn btn-green" onClick={()=>submitPO(false)} disabled={submitting}>{submitting?<><div className="spinner" style={{width:14,height:14,borderWidth:2}}/> Submitting...</>:<><Ico d={I.send} size={12}/>Submit PO</>}</button>}
+          {step<4
+            ?<button className="btn btn-solid" onClick={()=>canProceed()?setStep(step+1):toast('Please complete required fields','warn')} disabled={!canProceed()}>Continue <Ico d="M9 18l6-6-6-6" size={12}/></button>
+            :<button className="btn btn-green"
+               onClick={()=>{
+                 if(!activeGlPeriod){toast('GL Period is not open for today. Please open the current period in Accounting Setup before submitting a PO.','err');return;}
+                 submitPO(false);
+               }}
+               disabled={submitting||(!activeGlPeriod&&glPeriodChecked)}
+               title={(!activeGlPeriod&&glPeriodChecked)?'No open GL period for today — open the period in Accounting Setup first':''}>
+               {submitting?<><div className="spinner" style={{width:14,height:14,borderWidth:2}}/> Submitting...</>
+                :(!activeGlPeriod&&glPeriodChecked)?<>🔒 Submit PO (Period Closed)</>
+                :<><Ico d={I.send} size={12}/>Submit PO</>}
+             </button>
+          }
         </div>
       </div>
 

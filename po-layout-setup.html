@@ -11,15 +11,100 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
-  .field-chip { cursor: grab; user-select: none; }
-  .field-chip:active { cursor: grabbing; }
-  .canvas-field { position: absolute; cursor: move; user-select: none; }
-  .canvas-field:hover .field-controls { display: flex; }
-  .field-controls { display: none; }
-  .a4-canvas { width: 794px; height: 1123px; position: relative; overflow: hidden; }
+:root {
+  --ink:#0C1220; --ink2:#1E2D45; --slate:#64748B; --line:#E4EAF2;
+  --surf:#F4F7FB; --white:#ffffff; --blue:#050C9C; --blue-mid:#1a24b8;
+  --blue-lt:#3B4FD8; --blue-bg:#EEF0FF; --green:#059669; --green-bg:#ECFDF5;
+  --amber:#D97706; --red:#DC2626; --accent:#F59E0B;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh;}
+
+/* TITLEBAR */
+.titlebar{height:38px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:200;}
+.titlebar-brand{display:flex;align-items:center;gap:10px;}
+.titlebar-brand span{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.titlebar-brand small{font-size:9px;color:#64748B;font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+.titlebar-actions{display:flex;align-items:center;gap:8px;}
+.tb-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;text-decoration:none;}
+.tb-pill:hover{color:#fff;background:rgba(255,255,255,.12);}
+.tb-pill.danger{color:#FCA5A5;}
+.tb-pill.danger:hover{background:rgba(220,38,38,.2);color:#fff;}
+
+/* RIBBON */
+.ribbon{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:38px;z-index:190;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.ribbon-tabs{display:flex;padding:0 12px;border-bottom:1px solid var(--line);}
+.rtab{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--slate);padding:8px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.rtab:hover{color:var(--ink);background:var(--surf);}
+.rtab.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-bg);}
+.ribbon-tools{display:flex;align-items:stretch;padding:4px 12px;gap:2px;min-height:62px;overflow-x:auto;}
+.rtool-group{display:flex;align-items:stretch;gap:1px;padding:0 6px;border-right:1px solid var(--line);position:relative;}
+.rtool-group:last-child{border-right:none;}
+.rtool-group-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);white-space:nowrap;}
+.rtool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;transition:all .14s;min-width:48px;}
+.rtool:hover{background:var(--surf);border-color:var(--line);}
+.rtool.active{background:var(--blue-bg);border-color:#c7ccf5;color:var(--blue);}
+.rtool.success{background:#ECFDF5;border-color:#A7F3D0;}
+.rtool.success:hover{background:var(--green);color:#fff;}
+.rtool.success:hover .rtool-icon,.rtool.success:hover .rtool-label{color:#fff!important;}
+.rtool-icon{color:var(--slate);transition:color .14s;}
+.rtool-icon svg{display:block;}
+.rtool-label{font-size:10px;font-weight:700;color:var(--slate);white-space:nowrap;transition:color .14s;text-align:center;}
+.rtool-separator{width:1px;background:var(--line);margin:4px 4px;align-self:stretch;}
+.ribbon-groups-row{display:flex;align-items:center;padding:6px 12px 24px;gap:0;overflow-x:auto;}
+
+/* WORKSPACE */
+.workspace{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 140px);}
+
+/* PANEL */
+.panel{background:var(--white);border-right:1px solid var(--line);overflow-y:auto;max-height:calc(100vh - 140px);position:sticky;top:140px;}
+.panel-section{border-bottom:1px solid var(--line);padding:14px 16px;}
+.panel-section-title{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.panel-section-title::after{content:'';flex:1;height:1px;background:var(--line);}
+.form-group{margin-bottom:10px;}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:4px;letter-spacing:.02em;}
+.form-input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surf);transition:all .15s;outline:none;}
+.form-input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(5,12,156,.08);}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+
+/* FIELD CHIP in panel */
+.field-chip{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1.5px solid var(--line);border-radius:7px;background:var(--surf);cursor:pointer;transition:all .15s;margin-bottom:5px;}
+.field-chip:hover{border-color:var(--blue-lt);background:var(--blue-bg);}
+.field-chip.placed{background:#F0FDF4;border-color:#A7F3D0;}
+.field-chip.placed:hover{background:#DCFCE7;border-color:#059669;}
+
+/* CANVAS */
+.canvas-area{background:#CBD5E1;padding:32px;overflow:auto;min-height:calc(100vh - 140px);display:flex;flex-direction:column;align-items:center;}
+.po-canvas{background:#fff;width:794px;min-height:1123px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08);border-radius:2px;flex-shrink:0;overflow:visible;}
+.canvas-grid-hint{background-image:linear-gradient(rgba(5,12,156,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(5,12,156,.04) 1px,transparent 1px);background-size:20px 20px;}
+
+/* TOGGLE */
+.toggle{width:28px;height:16px;border-radius:8px;background:#E2E8F0;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle.on::after{transform:translateX(12px);}
+
+/* COLOR SWATCH */
+.color-row{display:flex;gap:6px;align-items:center;}
+.color-swatch{width:32px;height:32px;border-radius:6px;border:2px solid var(--line);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0;}
+.color-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;opacity:0;}
+.color-swatch-preview{position:absolute;inset:0;border-radius:4px;pointer-events:none;}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surf);}
+.upload-zone:hover{border-color:var(--blue);background:var(--blue-bg);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;animation:toastIn .2s ease;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+@keyframes toastIn{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.loader{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px;}
 </style>
 </head>
 <body>
@@ -27,959 +112,1318 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
-// ─── SOURCE LEGEND ────────────────────────────────────────────────────────────
-// [PO]       → stored directly on the purchaseOrders Firestore document
-// [USER]     → loaded from users/{adminId} at render time (buyer/company info)
-// [SUPPLIER] → loaded from suppliers/{supplierId} at render time
-// ─────────────────────────────────────────────────────────────────────────────
+/* ── ICONS ── */
+const Ic = ({ d, size=16, sw=2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {typeof d==='string'?<path d={d}/>:d}
+  </svg>
+);
+const SaveIcon    = () => <Ic size={18} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/>;
+const UploadIcon  = () => <Ic size={18} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>;
+const LayoutIcon  = () => <Ic size={18} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5zM14 11a1 1 0 011-1h4a1 1 0 011 1v8a1 1 0 01-1 1h-4a1 1 0 01-1-1v-8z"/>;
+const HashIcon    = () => <Ic size={18} d={[<line key="1" x1="4" y1="9" x2="20" y2="9"/>,<line key="2" x1="4" y1="15" x2="20" y2="15"/>,<line key="3" x1="10" y1="3" x2="8" y2="21"/>,<line key="4" x1="16" y1="3" x2="14" y2="21"/>]}/>;
+const TypeIcon    = () => <Ic size={18} d="M4 7V4h16v3M9 20h6M12 4v16"/>;
+const CheckIcon   = () => <Ic size={16} sw={2.5} d="M20 6L9 17l-5-5"/>;
+const XIcon       = () => <Ic size={16} sw={2.5} d="M18 6L6 18M6 6l12 12"/>;
+const GridIcon    = () => <Ic size={16} d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>;
+const ResetIcon   = () => <Ic size={16} d="M3 12a9 9 0 109-9M3 3v9h9" sw={2}/>;
+const PlusIcon    = () => <Ic size={16} d="M12 5v14M5 12h14"/>;
+const TextIcon    = () => <Ic size={16} d="M4 6h16M4 12h10M4 18h14"/>;
+const HomeIcon    = () => <Ic size={16} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10"/>;
+const LogoutIcon  = () => <Ic size={14} d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>;
+const RefreshIcon = () => <Ic size={18} d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>;
+
+const OperixLogo = () => (
+  <svg width="26" height="26" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="8" fill="#050C9C"/>
+    <path d="M20 10 C25 10 28 13 28 18 C28 23 25 26 20 26 C15 26 12 23 12 18 C12 13 15 10 20 10 Z M20 14 C17 14 16 15.5 16 18 C16 20.5 17 22 20 22 C23 22 24 20.5 24 18 C24 15.5 23 14 20 14 Z" fill="white"/>
+    <rect x="18" y="26" width="4" height="4" fill="white"/>
+  </svg>
+);
+
+function Toast({ message, type='success', onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
+  return <div className={`toast ${type}`}>{type==='success'?<CheckIcon/>:<XIcon/>}{message}</div>;
+}
+
+/* ══════════════════════════════════════════════════
+   FIELD DEFINITIONS
+══════════════════════════════════════════════════ */
 const FIELD_GROUPS = [
   {
     group: '📄 PO Header',
     fields: [
-      { id: 'po_number',    label: 'PO Number',          defaultWidth: 200, source: 'PO' },
-      { id: 'po_date',      label: 'PO Date',            defaultWidth: 150, source: 'PO' },
-      { id: 'status',       label: 'PO Status',          defaultWidth: 120, source: 'PO' },
-      { id: 'priority',     label: 'Priority',           defaultWidth: 110, source: 'PO' },
-      { id: 'revision',     label: 'Revision Number',    defaultWidth: 130, source: 'PO' },
-      { id: 'supplier_ref', label: 'Supplier Reference', defaultWidth: 180, source: 'PO' },
-      { id: 'currency',     label: 'Currency',           defaultWidth: 100, source: 'PO' },
+      { id:'po_number',     label:'PO Number',          defaultWidth:200, source:'PO' },
+      { id:'po_date',       label:'PO Date',            defaultWidth:150, source:'PO' },
+      { id:'status',        label:'PO Status',          defaultWidth:120, source:'PO' },
+      { id:'priority',      label:'Priority',           defaultWidth:110, source:'PO' },
+      { id:'revision',      label:'Revision Number',    defaultWidth:130, source:'PO' },
+      { id:'supplier_ref',  label:'Supplier Reference', defaultWidth:180, source:'PO' },
+      { id:'currency',      label:'Currency',           defaultWidth:100, source:'PO' },
     ]
   },
   {
-    // All fields here come from the admin's user document (set by Master Admin)
     group: '🏢 Buyer (Your Company)',
     fields: [
-      { id: 'company_name',    label: 'Buyer Company Name',    defaultWidth: 280, source: 'USER' },
-      { id: 'company_address', label: 'Buyer Company Address', defaultWidth: 300, source: 'USER' },
-      { id: 'company_tin',     label: 'Buyer TIN',             defaultWidth: 200, source: 'USER' },
-      { id: 'company_phone',   label: 'Buyer Phone',           defaultWidth: 180, source: 'USER' },
-      { id: 'prepared_by',     label: 'Prepared By',           defaultWidth: 180, source: 'PO'   },
-      { id: 'prepared_by_role',label: 'Preparer Role / Title', defaultWidth: 180, source: 'USER' },
+      { id:'company_name',     label:'Buyer Company Name',    defaultWidth:280, source:'USER' },
+      { id:'company_address',  label:'Buyer Company Address', defaultWidth:300, source:'USER' },
+      { id:'company_tin',      label:'Buyer TIN',             defaultWidth:200, source:'USER' },
+      { id:'company_phone',    label:'Buyer Phone',           defaultWidth:180, source:'USER' },
+      { id:'prepared_by',      label:'Prepared By',           defaultWidth:180, source:'PO'   },
+      { id:'prepared_by_role', label:'Preparer Role / Title', defaultWidth:180, source:'USER' },
     ]
   },
   {
-    // All fields here come from the suppliers Firestore document
     group: '🏭 Supplier Details',
     fields: [
-      { id: 'supplier_name',    label: 'Supplier Name',           defaultWidth: 250, source: 'PO'       },
-      { id: 'supplier_email',   label: 'Supplier Email',          defaultWidth: 220, source: 'PO'       },
-      { id: 'supplier_address', label: 'Supplier Address',        defaultWidth: 280, source: 'SUPPLIER' },
-      { id: 'supplier_contact', label: 'Supplier Contact Person', defaultWidth: 200, source: 'SUPPLIER' },
-      { id: 'supplier_phone',   label: 'Supplier Phone',          defaultWidth: 180, source: 'SUPPLIER' },
-      { id: 'supplier_tax_id',  label: 'Supplier TIN / Tax ID',  defaultWidth: 200, source: 'PO'       },
-      { id: 'supplier_vat',     label: 'Supplier VAT Reg. No.',   defaultWidth: 200, source: 'PO'       },
+      { id:'supplier_name',    label:'Supplier Name',           defaultWidth:250, source:'PO'       },
+      { id:'supplier_email',   label:'Supplier Email',          defaultWidth:220, source:'PO'       },
+      { id:'supplier_address', label:'Supplier Address',        defaultWidth:280, source:'SUPPLIER' },
+      { id:'supplier_contact', label:'Supplier Contact Person', defaultWidth:200, source:'SUPPLIER' },
+      { id:'supplier_phone',   label:'Supplier Phone',          defaultWidth:180, source:'SUPPLIER' },
+      { id:'supplier_tax_id',  label:'Supplier TIN / Tax ID',  defaultWidth:200, source:'PO'       },
+      { id:'supplier_vat',     label:'Supplier VAT Reg. No.',  defaultWidth:200, source:'PO'       },
     ]
   },
   {
     group: '🚚 Delivery & Terms',
     fields: [
-      { id: 'delivery_address',  label: 'Delivery Address',       defaultWidth: 300, source: 'PO' },
-      { id: 'expected_delivery', label: 'Expected Delivery Date', defaultWidth: 180, source: 'PO' },
-      { id: 'delivery_notes',    label: 'Delivery Notes',         defaultWidth: 300, source: 'PO' },
-      { id: 'payment_terms',     label: 'Payment Terms',          defaultWidth: 180, source: 'PO' },
+      { id:'delivery_address',  label:'Delivery Address',       defaultWidth:300, source:'PO' },
+      { id:'expected_delivery', label:'Expected Delivery Date', defaultWidth:180, source:'PO' },
+      { id:'delivery_notes',    label:'Delivery Notes',         defaultWidth:300, source:'PO' },
+      { id:'payment_terms',     label:'Payment Terms',          defaultWidth:180, source:'PO' },
     ]
   },
   {
     group: '💰 Financials',
     fields: [
-      { id: 'subtotal',    label: 'Subtotal',      defaultWidth: 150, source: 'PO' },
-      { id: 'discount',    label: 'Discount',      defaultWidth: 120, source: 'PO' },
-      { id: 'shipping',    label: 'Shipping Cost', defaultWidth: 150, source: 'PO' },
-      { id: 'tax_rate',    label: 'Tax Rate (%)',  defaultWidth: 130, source: 'PO' },
-      { id: 'vat_amount',  label: 'VAT / Tax Amt', defaultWidth: 150, source: 'PO' },
-      { id: 'grand_total', label: 'Grand Total',   defaultWidth: 180, source: 'PO' },
+      { id:'subtotal',    label:'Subtotal',      defaultWidth:150, source:'PO' },
+      { id:'discount',    label:'Discount',      defaultWidth:120, source:'PO' },
+      { id:'shipping',    label:'Shipping Cost', defaultWidth:150, source:'PO' },
+      { id:'tax_rate',    label:'Tax Rate (%)',  defaultWidth:130, source:'PO' },
+      { id:'vat_amount',  label:'VAT / Tax Amt', defaultWidth:150, source:'PO' },
+      { id:'grand_total', label:'Grand Total',   defaultWidth:180, source:'PO' },
     ]
   },
   {
     group: '📋 Items & Notes',
     fields: [
-      { id: 'items_table',    label: '📋 Items Table', defaultWidth: 700, source: 'PO' },
-      { id: 'internal_notes', label: 'Internal Notes', defaultWidth: 300, source: 'PO' },
+      { id:'items_table',    label:'Items Table',   defaultWidth:700, source:'PO' },
+      { id:'internal_notes', label:'Internal Notes',defaultWidth:300, source:'PO' },
     ]
   },
   {
     group: '✅ Approval',
     fields: [
-      { id: 'approval_status', label: 'Approval Status', defaultWidth: 160, source: 'PO' },
-      { id: 'approved_by',     label: 'Approved By',     defaultWidth: 180, source: 'PO' },
+      { id:'approval_status', label:'Approval Status', defaultWidth:160, source:'PO' },
+      { id:'approved_by',     label:'Approved By',     defaultWidth:180, source:'PO' },
     ]
   },
 ];
 
-// Flat list for canvas logic
-const FIELD_DEFINITIONS = FIELD_GROUPS.flatMap(g => g.fields);
+const FIELD_DEFS = FIELD_GROUPS.flatMap(g => g.fields);
+const SOURCE_COLOR = { PO:'#050C9C', USER:'#0891b2', SUPPLIER:'#7c3aed', SIG:'#be185d' };
 
-// Maps each field id → exact Firestore field name where its value lives at render time.
-// [PO] fields → purchaseOrders doc fields (camelCase as saved by create-po.html submitPO)
-// [USER] fields → users/{adminId} doc fields (set by Master Admin dashboard)
-// [SUPPLIER] fields → suppliers/{supplierId} doc fields (set by supplier-setup.html)
 const PO_VAR_MAP = {
-  // ── PO Header ──────────────────────────────────────────────────────────────
-  po_number:        'poNumber',            // [PO] e.g. "PO-20240601-4821"
-  po_date:          'createdAt',           // [PO] Firestore Timestamp
-  status:           'status',             // [PO] "draft" | "submitted" | "approved"
-  priority:         'priority',           // [PO] "normal" | "high" | "urgent"
-  revision:         'revision',           // [PO] integer, starts at 0
-  supplier_ref:     'supplierRef',        // [PO] free-text reference from buyer
-  currency:         'currency',           // [PO] e.g. "PHP" | "USD"
-
-  // ── Buyer / Company (from users doc via Master Admin) ──────────────────────
-  company_name:     'companyName',        // [USER] admin's companyName field
-  company_address:  'address',            // [USER] admin's address field
-  company_tin:      'tinNumber',          // [USER] admin's tinNumber field
-  company_phone:    'phoneNumber',        // [USER] admin's phoneNumber field
-  prepared_by:      'createdByName',      // [PO]  admin's fullName at time of creation
-  prepared_by_role: 'assignedRoleName',   // [USER] admin's assignedRoleName field
-
-  // ── Supplier Details ───────────────────────────────────────────────────────
-  supplier_name:    'supplierName',       // [PO]       saved on PO at submit time
-  supplier_email:   'supplierEmail',      // [PO]       saved on PO at submit time
-  supplier_address: 'address',            // [SUPPLIER] suppliers doc → address
-  supplier_contact: 'contactPerson',      // [SUPPLIER] suppliers doc → contactPerson
-  supplier_phone:   'phoneNumber',        // [SUPPLIER] suppliers doc → phoneNumber
-  supplier_tax_id:  'supplierTaxId',      // [PO]       = supplier.taxId (encrypted, decrypted at render)
-  supplier_vat:     'vatNumber',          // [PO]       = supplier.vatNumber (encrypted, decrypted at render)
-
-  // ── Delivery & Terms ───────────────────────────────────────────────────────
-  delivery_address:  'deliveryAddress',       // [PO] auto-filled from admin's address
-  expected_delivery: 'expectedDeliveryDate',  // [PO] date string
-  delivery_notes:    'deliveryNotes',         // [PO] optional delivery instructions
-  payment_terms:     'paymentTerms',          // [PO] e.g. "Net 30"
-
-  // ── Financials ─────────────────────────────────────────────────────────────
-  subtotal:    'subtotal',    // [PO] numeric
-  discount:    'discount',    // [PO] numeric
-  shipping:    'shipping',    // [PO] numeric
-  tax_rate:    'taxRate',     // [PO] numeric (%)
-  vat_amount:  'tax',         // [PO] computed tax amount
-  grand_total: 'grandTotal',  // [PO] numeric
-
-  // ── Items & Notes ──────────────────────────────────────────────────────────
-  items_table:    'items',          // [PO] array of line item objects
-  internal_notes: 'internalNotes', // [PO] private notes
-
-  // ── Approval ───────────────────────────────────────────────────────────────
-  approval_status: 'approvalStatus',        // [PO] "pending_approval" | "approved" | null
-  approved_by:     'assignedApproverName',  // [PO] approver's fullName
+  po_number:'poNumber', po_date:'createdAt', status:'status', priority:'priority',
+  revision:'revision', supplier_ref:'supplierRef', currency:'currency',
+  company_name:'companyName', company_address:'address', company_tin:'tinNumber',
+  company_phone:'phoneNumber', prepared_by:'createdByName', prepared_by_role:'assignedRoleName',
+  supplier_name:'supplierName', supplier_email:'supplierEmail', supplier_address:'address',
+  supplier_contact:'contactPerson', supplier_phone:'phoneNumber', supplier_tax_id:'supplierTaxId',
+  supplier_vat:'vatNumber', delivery_address:'deliveryAddress', expected_delivery:'expectedDeliveryDate',
+  delivery_notes:'deliveryNotes', payment_terms:'paymentTerms',
+  subtotal:'subtotal', discount:'discount', shipping:'shipping', tax_rate:'taxRate',
+  vat_amount:'tax', grand_total:'grandTotal', items_table:'items', internal_notes:'internalNotes',
+  approval_status:'approvalStatus', approved_by:'assignedApproverName',
+  sig_slot_1:'sigSlot1', sig_slot_2:'sigSlot2', sig_slot_3:'sigSlot3', sig_slot_4:'sigSlot4',
 };
 
-const FONT_OPTIONS = [
-  'Inter', 'Arial', 'Times New Roman', 'Georgia', 'Courier New',
-  'Helvetica', 'Trebuchet MS', 'Verdana', 'Tahoma'
-];
+const FONT_OPTIONS = ['Arial','Times New Roman','Helvetica','Courier New','Georgia','Verdana','Tahoma','Inter'];
 
+/* ══════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════ */
 function POLayoutSetup() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [backgroundUrl, setBackgroundUrl] = useState('');
-  const [uploadingBg, setUploadingBg] = useState(false);
-  const [placedFields, setPlacedFields] = useState([]);
-  const [selectedField, setSelectedField] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [layoutName, setLayoutName] = useState('Custom PO Layout');
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [draggingId, setDraggingId] = useState(null);
-  const canvasRef = useRef(null);
-  const nextTextId = useRef(1);
-  const [customTexts, setCustomTexts] = useState([]);
-  const [selectedText, setSelectedText] = useState(null);
+  const [user, setUser]                   = useState(null);
+  const [loading, setLoading]             = useState(true);
+  const [saving, setSaving]               = useState(false);
+  const [toast, setToast]                 = useState(null);
+  const [activeRibbonTab, setActiveRibbonTab] = useState('home');
+  const [activePanel, setActivePanel]     = useState('fields');
+  const [selectedFieldId, setSelectedFieldId] = useState(null);
+  const [showGrid, setShowGrid]           = useState(true);
+  const [customTextInput, setCustomTextInput] = useState('');
+  const [layoutName, setLayoutName]       = useState('Custom PO Layout');
+  const [poApprovalGroups, setPoApprovalGroups] = useState([]);
+  const [sigFieldDefs, setSigFieldDefs]         = useState([]);
+
+
+  // Layout state — mirrors invoice manager shape
+  const [layout, setLayout] = useState({
+    placedFields: [],   // unified: data fields + custom texts all in one array
+    backgroundUrl: '',
+  });
 
   // PO Number Series
-  const [poSeriesInput, setPoSeriesInput] = useState('');
-  const [poSeriesSaved, setPoSeriesSaved] = useState('');
-  const [poSeriesLoading, setPoSeriesLoading] = useState(false);
+  const [poSeriesInput, setPoSeriesInput]       = useState('');
+  const [poSeriesSaved, setPoSeriesSaved]       = useState('');
+  const [poSeriesLoading, setPoSeriesLoading]   = useState(false);
   const [poSeriesSavedMsg, setPoSeriesSavedMsg] = useState(false);
   const [currentPoCounter, setCurrentPoCounter] = useState(null);
 
+  // Drag — use refs like invoice manager (no re-render during drag)
+  const draggingId  = useRef(null);
+  const dragOffset  = useRef({ x:0, y:0 });
+  const canvasRef   = useRef(null);
+  const nextCustomId = useRef(1);
+
+  const showToast = (msg, type='success') => setToast({ msg, type });
+
+  /* ── Firebase ── */
   useEffect(() => {
-    const firebaseConfig = {
-      apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
-      authDomain: "operix-c8a8c.firebaseapp.com",
-      projectId: "operix-c8a8c",
-      storageBucket: "operix-c8a8c.firebasestorage.app",
-      messagingSenderId: "794223223499",
-      appId: "1:794223223499:web:f059007b909cc15766f14e"
+    const cfg = {
+      apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+      authDomain:"operix-c8a8c.firebaseapp.com",
+      projectId:"operix-c8a8c",
+      storageBucket:"operix-c8a8c.firebasestorage.app",
+      messagingSenderId:"794223223499",
+      appId:"1:794223223499:web:f059007b909cc15766f14e"
     };
     const interval = setInterval(() => {
-      if (window.firebase) {
-        clearInterval(interval);
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        firebase.auth().onAuthStateChanged(async (u) => {
-          if (!u) { window.location.href = 'login.html'; return; }
-          const db = firebase.firestore();
-          const userDoc = await db.collection('users').doc(u.uid).get();
-          if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            window.location.href = 'login.html'; return;
-          }
-          const userData = userDoc.data();
-          setUser({ uid: u.uid, ...userData });
-
-          // ── Load layout: own UID first, then fall back to any company admin's layout ──
-          let layoutData = null;
-          const ownLayoutDoc = await db.collection('purchaseOrderLayouts').doc(u.uid).get();
-          if (ownLayoutDoc.exists) {
-            layoutData = ownLayoutDoc.data();
-          } else {
-            // Try to find the company-shared layout from another admin in the same company
-            const myCompany = userData.companyName || '';
-            if (myCompany) {
-              try {
-                const coAdminsSnap = await db.collection('users')
-                  .where('role', '==', 'admin')
-                  .where('companyName', '==', myCompany)
-                  .get();
-                for (const adminDoc of coAdminsSnap.docs) {
-                  if (adminDoc.id === u.uid) continue; // skip self
-                  const sharedLayout = await db.collection('purchaseOrderLayouts').doc(adminDoc.id).get();
-                  if (sharedLayout.exists) {
-                    layoutData = sharedLayout.data();
-                    console.log('Loaded shared PO layout from company admin:', adminDoc.data().fullName);
-                    break;
-                  }
-                }
-              } catch(e) { console.warn('Could not load shared company layout:', e); }
-            }
-          }
-          if (layoutData) {
-            setBackgroundUrl(layoutData.backgroundUrl || '');
-            setPlacedFields(layoutData.fields || []);
-            setLayoutName(layoutData.layoutName || 'Custom PO Layout');
-            setCustomTexts(layoutData.customTexts || []);
-          }
-
-          // ── Load PO number series: own first, then company-shared fallback ──
-          try {
-            let seriesDoc = await db.collection('poNumberSeries').doc(u.uid).get();
-            if (!seriesDoc.exists) {
-              const myCompany = userData.companyName || '';
-              if (myCompany) {
-                const coAdminsSnap = await db.collection('users')
-                  .where('role', '==', 'admin')
-                  .where('companyName', '==', myCompany)
-                  .get();
-                for (const adminDoc of coAdminsSnap.docs) {
-                  if (adminDoc.id === u.uid) continue;
-                  const sharedSeries = await db.collection('poNumberSeries').doc(adminDoc.id).get();
-                  if (sharedSeries.exists) { seriesDoc = sharedSeries; break; }
-                }
-              }
-            }
-            if (seriesDoc.exists) {
-              const sd = seriesDoc.data();
-              setPoSeriesSaved(sd.seriesStart || '');
-              setPoSeriesInput(sd.seriesStart || '');
-              setCurrentPoCounter(sd.currentCounter !== undefined ? sd.currentCounter : null);
-            }
-          } catch(e) { console.warn('Could not load PO series:', e); }
-          setLoading(false);
-        });
-      }
+      if (!window.firebase) return;
+      clearInterval(interval);
+      if (!firebase.apps.length) firebase.initializeApp(cfg);
+      firebase.auth().onAuthStateChanged(async u => {
+        if (!u) { window.location.href='login.html'; return; }
+        const db = firebase.firestore();
+        const ud = await db.collection('users').doc(u.uid).get();
+        if (!ud.exists || ud.data().role !== 'admin') { window.location.href='login.html'; return; }
+        setUser({ uid:u.uid, ...ud.data() });
+        await loadLayout(db, u.uid, ud.data());
+        await loadSeries(db, u.uid, ud.data());
+        await loadApprovalGroups(db, ud.data());
+        setLoading(false);
+      });
     }, 100);
   }, []);
 
-  const uploadBackground = (file) => {
-    if (!file || !file.type.startsWith('image/')) { alert('Please upload an image file (PNG, JPG)'); return; }
-    setUploadingBg(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'operix_products');
-    formData.append('folder', 'operix-po-layouts');
-    const xhr = new XMLHttpRequest();
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 200) {
-        const res = JSON.parse(xhr.responseText);
-        setBackgroundUrl(res.secure_url);
-      } else { alert('Upload failed. Please try again.'); }
-      setUploadingBg(false);
-    });
-    xhr.addEventListener('error', () => { alert('Upload error.'); setUploadingBg(false); });
-    xhr.open('POST', 'https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
-    xhr.send(formData);
+  const loadLayout = async (db, uid, userData) => {
+    let layoutData = null;
+    const own = await db.collection('purchaseOrderLayouts').doc(uid).get();
+    if (own.exists) { layoutData = own.data(); }
+    else {
+      const co = userData.companyName || '';
+      if (co) {
+        try {
+          const snap = await db.collection('users').where('role','==','admin').where('companyName','==',co).get();
+          for (const doc of snap.docs) {
+            if (doc.id === uid) continue;
+            const sh = await db.collection('purchaseOrderLayouts').doc(doc.id).get();
+            if (sh.exists) { layoutData = sh.data(); break; }
+          }
+        } catch(e) {}
+      }
+    }
+    if (layoutData) {
+      setLayoutName(layoutData.layoutName || 'Custom PO Layout');
+      // Support both old format (separate fields + customTexts) and new unified format
+      const dataFields = (layoutData.fields || []).map(f => ({ ...f, isCustom: false }));
+      const txtFields  = (layoutData.customTexts || []).map(t => ({
+        ...t, isCustom: true, source: 'CUSTOM',
+        label: t.text || 'Custom Text', visible: true,
+      }));
+      // New unified format stores everything in placedFields
+      const unified = layoutData.placedFields
+        ? layoutData.placedFields
+        : [...dataFields, ...txtFields];
+      setLayout({ placedFields: unified, backgroundUrl: layoutData.backgroundUrl || '' });
+    }
   };
 
-  const addFieldToCanvas = (fieldDef) => {
-    if (placedFields.find(f => f.id === fieldDef.id)) { alert('This field is already on the canvas.'); return; }
-setPlacedFields(prev => [...prev, {
-  id: fieldDef.id, label: fieldDef.label,
-  x: 50, y: Math.max(20, 50 + prev.length * 30),
-  width: fieldDef.defaultWidth,
-  fontSize: 11, color: '#111827', bold: false,
-  showLabel: false,
-  labelPosition: 'above',
-  maxChars: 0,
-  fontFamily: 'Inter'
-}]);
+  /* ── Load PO Approval Groups → build dynamic sig_slot field defs ── */
+  const loadApprovalGroups = async (db, userData) => {
+    try {
+      // Fetch all approval groups whose docType is 'PO' (or not Order/Quotation/FinanceAdjustment)
+      const snap = await db.collection('approvalGroups').get();
+      const groups = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(g => g.docType !== 'Order' && g.docType !== 'Quotation' && g.docType !== 'FinanceAdjustment' && g.active !== false);
+
+      setPoApprovalGroups(groups);
+
+      // Build a deduplicated set of sig_slot field defs from all groups' steps
+      // Each unique step position (1-based) gets one slot, labelled with the real approver name
+      // If multiple groups, use the one with the most steps so all slots are covered
+      const maxSteps = groups.reduce((max, g) => Math.max(max, (g.steps||[]).length), 0);
+
+      if (maxSteps === 0) {
+        setSigFieldDefs([]);
+        return;
+      }
+
+      // For labelling: use the first active group's step names
+      const primaryGroup = groups.find(g => (g.steps||[]).length === maxSteps) || groups[0];
+      const steps = primaryGroup?.steps || [];
+
+      const defs = steps.map((step, i) => ({
+        id: `sig_slot_${i+1}`,
+        label: `${step.approverName || step.approverRole || `Step ${i+1}`}`,
+        stepLabel: `Step ${i+1} — ${step.approverName || step.approverRole || `Approver ${i+1}`}`,
+        approverName: step.approverName || '',
+        approverRole: step.approverRole || '',
+        approverAdminId: step.approverAdminId || null,
+        defaultWidth: 160,
+        source: 'SIG',
+      }));
+
+      setSigFieldDefs(defs);
+    } catch(e) {
+      console.warn('Could not load approval groups:', e);
+      setSigFieldDefs([]);
+    }
   };
 
-  const removeFieldFromCanvas = (fieldId) => {
-    setPlacedFields(prev => prev.filter(f => f.id !== fieldId));
-    if (selectedField === fieldId) setSelectedField(null);
+
+  const loadSeries = async (db, uid, userData) => {
+    try {
+      let doc = await db.collection('poNumberSeries').doc(uid).get();
+      if (!doc.exists) {
+        const co = userData.companyName || '';
+        if (co) {
+          const snap = await db.collection('users').where('role','==','admin').where('companyName','==',co).get();
+          for (const ad of snap.docs) {
+            if (ad.id === uid) continue;
+            const sh = await db.collection('poNumberSeries').doc(ad.id).get();
+            if (sh.exists) { doc = sh; break; }
+          }
+        }
+      }
+      if (doc.exists) {
+        const sd = doc.data();
+        setPoSeriesSaved(sd.seriesStart || '');
+        setPoSeriesInput(sd.seriesStart || '');
+        setCurrentPoCounter(sd.currentCounter !== undefined ? sd.currentCounter : null);
+      }
+    } catch(e) {}
   };
 
-  const updateField = (fieldId, updates) => {
-    setPlacedFields(prev => prev.map(f => f.id === fieldId ? { ...f, ...updates } : f));
-  };
-
-  const handleCanvasMouseDown = (e, fieldId) => {
-    e.preventDefault();
-    const canvas = canvasRef.current.getBoundingClientRect();
-    const field = placedFields.find(f => f.id === fieldId);
-    setDraggingId(fieldId);
-    setSelectedField(fieldId);
-    setDragOffset({ x: e.clientX - canvas.left - field.x, y: e.clientY - canvas.top - field.y });
-  };
-
-const handleCanvasMouseMove = (e) => {
-  if (!draggingId) return;
-  const canvas = canvasRef.current.getBoundingClientRect();
-  const newX = Math.max(0, Math.min(e.clientX - canvas.left - dragOffset.x, 794 - 50));
-  const newY = Math.max(0, Math.min(e.clientY - canvas.top - dragOffset.y, 1123 - 20));
-  if (draggingId.startsWith('txt_')) {
-    updateCustomText(draggingId.replace('txt_', ''), { x: newX, y: newY });
-  } else {
-    updateField(draggingId, { x: newX, y: newY });
-  }
-};
-
-  const handleCanvasMouseUp = () => setDraggingId(null);
-
+  /* ── Save ── */
   const saveLayout = async () => {
-    if (!backgroundUrl) { alert('Please upload a background image first.'); return; }
+    if (!layout.backgroundUrl) { showToast('Upload a background image first','error'); return; }
     setSaving(true);
     try {
       const db = firebase.firestore();
-await db.collection('purchaseOrderLayouts').doc(user.uid).set({
-  backgroundUrl, fields: placedFields, layoutName, customTexts,
+      // Save in new unified format AND legacy format for Dashboard compatibility
+      const dataFields   = layout.placedFields.filter(f => !f.isCustom);
+      const customTexts  = layout.placedFields.filter(f => f.isCustom).map(f => ({
+        id: f.id, text: f.text||f.label, x: f.x, y: f.y, width: f.width||200,
+        fontSize: f.fontSize||11, color: f.color||'#111827', bold: f.bold||false,
+        fontFamily: f.fontFamily||'Arial'
+      }));
+      await db.collection('purchaseOrderLayouts').doc(user.uid).set({
+        backgroundUrl: layout.backgroundUrl,
+        placedFields:  layout.placedFields,   // new unified
+        fields:        dataFields,             // legacy compat for Dashboard
+        customTexts,                           // legacy compat for Dashboard
+        layoutName,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: user.uid
+        updatedBy: user.uid,
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) { alert('Save failed: ' + e.message); }
+      showToast('Layout saved!');
+    } catch(e) { showToast('Save failed: '+e.message,'error'); }
     setSaving(false);
   };
 
   const clearLayout = async () => {
-    if (!confirm('Clear this layout? This will remove all field placements and background.')) return;
+    if (!confirm('Clear this layout? This will remove all fields and background.')) return;
     try {
-      const db = firebase.firestore();
-      await db.collection('purchaseOrderLayouts').doc(user.uid).delete();
-      setBackgroundUrl(''); setPlacedFields([]); setSelectedField(null);
-      alert('Layout cleared. Dashboard will now use the default Operix PO layout.');
-    } catch (e) { alert('Error clearing layout.'); }
+      await firebase.firestore().collection('purchaseOrderLayouts').doc(user.uid).delete();
+      setLayout({ placedFields:[], backgroundUrl:'' });
+      setSelectedFieldId(null);
+      showToast('Layout cleared');
+    } catch(e) { showToast('Error clearing layout','error'); }
   };
 
-
-const savePOSeries = async () => {
-  const val = poSeriesInput.trim();
-  if (!val) { alert('Please enter a PO number series (e.g. 10090681).'); return; }
-  if (!/^\d+$/.test(val)) { alert('PO series must be numeric digits only (e.g. 10090681).'); return; }
-  setPoSeriesLoading(true);
-  try {
-    const db = firebase.firestore();
-    // Check if the series number already exists in purchaseOrders
-    const existingSnap = await db.collection('purchaseOrders')
-      .where('createdBy', '==', user.uid)
-      .get();
-    const allPONumbers = existingSnap.docs.map(d => d.data().poNumber || '');
-    // Find the highest number in use that starts with this series prefix or equals it
-    let highestUsed = BigInt(val) - BigInt(1); // start at one below so first will be val itself
-    for (const pn of allPONumbers) {
-      if (/^\d+$/.test(pn)) {
-        const n = BigInt(pn);
-        if (n >= BigInt(val)) { // If any existing PO number is >= our series start, track max
-          if (n > highestUsed) highestUsed = n;
+  /* ── PO Number Series ── */
+  const savePOSeries = async () => {
+    const val = poSeriesInput.trim();
+    if (!val) { showToast('Enter a PO number series','error'); return; }
+    if (!/^\d+$/.test(val)) { showToast('Digits only (e.g. 10090681)','error'); return; }
+    setPoSeriesLoading(true);
+    try {
+      const db = firebase.firestore();
+      const snap = await db.collection('purchaseOrders').where('createdBy','==',user.uid).get();
+      let highest = BigInt(val) - BigInt(1);
+      snap.docs.forEach(d => {
+        const pn = d.data().poNumber || '';
+        if (/^\d+$/.test(pn)) {
+          const n = BigInt(pn);
+          if (n >= BigInt(val) && n > highest) highest = n;
         }
-      }
-    }
-    // currentCounter = the highest number used so far (next will be highestUsed + 1)
-    // Store currentCounter as-is (plain number string); padLen is derived from seriesStart at read time
-    const currentCounter = highestUsed.toString();
-    await db.collection('poNumberSeries').doc(user.uid).set({
-      seriesStart: val, // stored exactly as typed e.g. "0034042"
-      currentCounter,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy: user.uid
-    });
-    setPoSeriesSaved(val);
-    setCurrentPoCounter(currentCounter);
-    setPoSeriesSavedMsg(true);
-    setTimeout(() => setPoSeriesSavedMsg(false), 3000);
-  } catch(e) { alert('Error saving PO series: ' + e.message); }
-  setPoSeriesLoading(false);
-};
+      });
+      await db.collection('poNumberSeries').doc(user.uid).set({
+        seriesStart: val, currentCounter: highest.toString(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: user.uid,
+      });
+      setPoSeriesSaved(val); setCurrentPoCounter(highest.toString());
+      setPoSeriesSavedMsg(true); setTimeout(() => setPoSeriesSavedMsg(false), 3000);
+      showToast('PO series saved!');
+    } catch(e) { showToast('Error: '+e.message,'error'); }
+    setPoSeriesLoading(false);
+  };
 
-const addCustomText = () => {
-  const id = 'custom_' + nextTextId.current++;
-  setCustomTexts(prev => [...prev, {
-    id, text: 'Custom Text', x: 60, y: 60 + prev.length * 30,
-    fontSize: 11, color: '#111827', bold: false, fontFamily: 'Inter', width: 200
-  }]);
-  setSelectedText(id);
-  setSelectedField(null);
-};
+  /* ── Field management ── */
+  const isPlaced = id => layout.placedFields.some(f => f.id === id);
 
-const updateCustomText = (id, updates) => {
-  setCustomTexts(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-};
+  const addField = (fieldDef) => {
+    if (isPlaced(fieldDef.id)) { showToast('Field already on canvas','error'); return; }
+    // items_table: initialise columnWidths and set width = sum so rectangle matches table
+    const DEFAULT_COL_WIDTHS = [40, 220, 120, 60, 110, 110];
+    const initColWidths = fieldDef.id === 'items_table' ? [...DEFAULT_COL_WIDTHS] : undefined;
+    const initWidth     = fieldDef.id === 'items_table'
+      ? DEFAULT_COL_WIDTHS.reduce((a,b)=>a+b,0)
+      : fieldDef.defaultWidth;
+    const f = {
+      id: fieldDef.id, label: fieldDef.label, source: fieldDef.source,
+      x: 40, y: 40 + layout.placedFields.length * 28,
+      width: initWidth,
+      fontSize: 11, color: '#111827', bold: false, fontFamily: 'Arial',
+      showLabel: false, labelPosition: 'above', maxChars: 0,
+      visible: true, isCustom: false,
+      ...(initColWidths && { columnWidths: initColWidths }),
+      ...(fieldDef.source === 'SIG' && {
+        sigHeight: 40,
+        approverName:    fieldDef.approverName    || '',
+        approverRole:    fieldDef.approverRole     || '',
+        approverAdminId: fieldDef.approverAdminId  || null,
+        stepLabel:       fieldDef.stepLabel        || fieldDef.label,
+      }),
+    };
+    setLayout(p => ({ ...p, placedFields: [...p.placedFields, f] }));
+    setSelectedFieldId(f.id);
+    setActivePanel('fieldstyle');
+    setActiveRibbonTab('layout');
+  };
 
-const removeCustomText = (id) => {
-  setCustomTexts(prev => prev.filter(t => t.id !== id));
-  if (selectedText === id) setSelectedText(null);
-};
+  const addCustomText = () => {
+    const txt = customTextInput.trim() || 'Custom Text';
+    const id  = 'custom_' + Date.now() + '_' + nextCustomId.current++;
+    const f   = {
+      id, label: txt, text: txt, source: 'CUSTOM',
+      x: 40, y: 40 + layout.placedFields.length * 28,
+      width: 200, fontSize: 11, color: '#111827', bold: false, fontFamily: 'Arial',
+      visible: true, isCustom: true,
+    };
+    setLayout(p => ({ ...p, placedFields: [...p.placedFields, f] }));
+    setCustomTextInput('');
+    setSelectedFieldId(id);
+    setActivePanel('fieldstyle');
+    setActiveRibbonTab('layout');
+  };
 
-const handleTextMouseDown = (e, id) => {
-  e.preventDefault();
-  const canvas = canvasRef.current.getBoundingClientRect();
-  const txt = customTexts.find(t => t.id === id);
-  setDraggingId('txt_' + id);
-  setSelectedText(id);
-  setSelectedField(null);
-  setDragOffset({ x: e.clientX - canvas.left - txt.x, y: e.clientY - canvas.top - txt.y });
-};
+  const removeField = id => {
+    setLayout(p => ({ ...p, placedFields: p.placedFields.filter(f => f.id !== id) }));
+    if (selectedFieldId === id) setSelectedFieldId(null);
+  };
 
+  const updateField = (id, props) => {
+    setLayout(p => ({
+      ...p,
+      placedFields: p.placedFields.map(f => {
+        if (f.id !== id) return f;
+        const merged = { ...f, ...props };
+        // Keep width in sync with sum of columnWidths for items_table
+        // so the outer dashed rectangle always matches the actual table width
+        if (id === 'items_table' && props.columnWidths) {
+          merged.width = props.columnWidths.reduce((a,b)=>a+b,0);
+        }
+        return merged;
+      })
+    }));
+  };
 
-  const selectedFieldData = placedFields.find(f => f.id === selectedField);
+  /* ── Background upload ── */
+  const uploadBackground = (file) => {
+    if (!file || !file.type.startsWith('image/')) { showToast('Please upload an image file','error'); return; }
+    const fd = new FormData();
+    fd.append('file', file); fd.append('upload_preset','operix_products'); fd.append('folder','operix-po-layouts');
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      if (xhr.status===200) { setLayout(p => ({...p, backgroundUrl: JSON.parse(xhr.responseText).secure_url})); showToast('Background uploaded!'); }
+      else showToast('Upload failed','error');
+    };
+    xhr.onerror = () => showToast('Upload error','error');
+    xhr.open('POST','https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
+    xhr.send(fd);
+  };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-gray-600">Loading PO Layout Setup...</p>
-      </div>
-    </div>
-  );
+  /* ── Drag (scroll-aware, uses refs — no re-render during drag) ── */
+  const handleMouseDown = (e, id) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect   = canvasRef.current.getBoundingClientRect();
+    const area   = canvasRef.current.closest('.canvas-area');
+    const scrollTop  = area ? area.scrollTop  : 0;
+    const scrollLeft = area ? area.scrollLeft : 0;
+    const field  = layout.placedFields.find(f => f.id===id);
+    if (!field) return;
+    draggingId.current  = id;
+    dragOffset.current  = { x: e.clientX - rect.left + scrollLeft - field.x, y: e.clientY - rect.top + scrollTop - field.y };
+    setSelectedFieldId(id);
+  };
 
-  return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-700 to-purple-700 text-white px-8 py-5 shadow-xl">
-        <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
-          <div className="flex items-center gap-4">
-            <button onClick={() => window.location.href = 'dashboard.html'}
-              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold">Purchase Order Layout Setup</h1>
-              <p className="text-indigo-200 text-sm">Upload your BIR-approved PO template and position data fields</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <input type="text" value={layoutName} onChange={(e) => setLayoutName(e.target.value)}
-              placeholder="Layout Name" className="px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-indigo-300 text-sm outline-none focus:bg-opacity-30" />
-            {saved && <span className="px-3 py-2 bg-green-500 rounded-lg text-sm font-semibold animate-pulse">✓ Saved!</span>}
-            <button onClick={clearLayout} className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-semibold transition-all">Clear Layout</button>
-            <button onClick={saveLayout} disabled={saving || !backgroundUrl}
-              className="px-6 py-2 bg-white text-indigo-700 hover:bg-indigo-50 rounded-lg font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2">
-              {saving ? <><div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>Saving...</> : '💾 Save Layout'}
-            </button>
-          </div>
+  useEffect(() => {
+    const onMove = e => {
+      if (!draggingId.current || !canvasRef.current) return;
+      const rect   = canvasRef.current.getBoundingClientRect();
+      const area   = canvasRef.current.closest('.canvas-area');
+      const scrollTop  = area ? area.scrollTop  : 0;
+      const scrollLeft = area ? area.scrollLeft : 0;
+      const newX = Math.max(0, e.clientX - rect.left + scrollLeft - dragOffset.current.x);
+      const newY = Math.max(0, e.clientY - rect.top  + scrollTop  - dragOffset.current.y);
+      updateField(draggingId.current, { x: newX, y: newY });
+    };
+    const onUp = () => { draggingId.current = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [layout.placedFields]);
+
+  /* ── Selected field shortcut ── */
+  const selectedField = layout.placedFields.find(f => f.id===selectedFieldId) || null;
+
+  /* ══════════════════════════════════════════════════
+     RIBBON
+  ══════════════════════════════════════════════════ */
+  const ribbonContent = {
+    home: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveLayout} disabled={saving}>
+            <span className="rtool-icon" style={{color:saving?'#9CA3AF':'#059669'}}>
+              {saving?<div className="loader" style={{borderTopColor:'#059669',borderColor:'rgba(5,150,105,.2)'}}/>:<SaveIcon/>}
+            </span>
+            <span className="rtool-label" style={{color:saving?'#9CA3AF':'#059669'}}>Save Layout</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool" onClick={()=>{setActiveRibbonTab('layout');setActivePanel('fields');}}>
+            <span className="rtool-icon"><LayoutIcon/></span><span className="rtool-label">Fields</span>
+          </button>
+          <button className="rtool" onClick={()=>{setActiveRibbonTab('layout');setActivePanel('background');}}>
+            <span className="rtool-icon"><UploadIcon/></span><span className="rtool-label">Background</span>
+          </button>
+          <button className="rtool" onClick={()=>{setActiveRibbonTab('numbering');setActivePanel('numbering');}}>
+            <span className="rtool-icon"><HashIcon/></span><span className="rtool-label">PO Series</span>
+          </button>
+          <span className="rtool-group-label">Configure</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool" onClick={()=>window.location.href='dashboard.html'}>
+            <span className="rtool-icon"><HomeIcon/></span><span className="rtool-label">Dashboard</span>
+          </button>
+          <button className="rtool" onClick={async()=>{await firebase.auth().signOut();window.location.href='login.html';}}>
+            <span className="rtool-icon"><LogoutIcon/></span><span className="rtool-label">Logout</span>
+          </button>
+          <span className="rtool-group-label">Navigate</span>
         </div>
       </div>
+    ),
+    layout: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel==='fields'?'active':''}`} onClick={()=>setActivePanel('fields')}>
+            <span className="rtool-icon"><LayoutIcon/></span><span className="rtool-label">Fields</span>
+          </button>
+          <button className={`rtool ${activePanel==='background'?'active':''}`} onClick={()=>setActivePanel('background')}>
+            <span className="rtool-icon"><UploadIcon/></span><span className="rtool-label">Background</span>
+          </button>
+          <button className={`rtool ${activePanel==='fieldstyle'?'active':''}`} onClick={()=>{setActivePanel('fieldstyle');if(!selectedFieldId&&layout.placedFields.length)setSelectedFieldId(layout.placedFields[0].id);}}>
+            <span className="rtool-icon"><TypeIcon/></span><span className="rtool-label">Style</span>
+          </button>
+          <span className="rtool-group-label">Layout</span>
+        </div>
+        <div className="rtool-group">
+          <button className={`rtool ${showGrid?'active':''}`} onClick={()=>setShowGrid(g=>!g)}>
+            <span className="rtool-icon"><GridIcon/></span><span className="rtool-label">Grid</span>
+          </button>
+          <button className="rtool" onClick={()=>{if(window.confirm('Clear all placed fields?')){setLayout(p=>({...p,placedFields:[]}));setSelectedFieldId(null);}}}>
+            <span className="rtool-icon" style={{color:'#DC2626'}}><ResetIcon/></span>
+            <span className="rtool-label" style={{color:'#DC2626'}}>Clear All</span>
+          </button>
+          <span className="rtool-group-label">Canvas</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveLayout}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+    numbering: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel==='numbering'?'active':''}`} onClick={()=>setActivePanel('numbering')}>
+            <span className="rtool-icon"><HashIcon/></span><span className="rtool-label">Series Config</span>
+          </button>
+          <span className="rtool-group-label">PO Number Series</span>
+        </div>
+        {poSeriesSaved && (
+          <div className="rtool-group">
+            <div style={{display:'flex',flexDirection:'column',justifyContent:'center',padding:'4px 12px'}}>
+              <div style={{fontSize:9,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--slate)',marginBottom:4}}>Active Series</div>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:15,fontWeight:500,color:'var(--blue)',letterSpacing:'.04em',background:'var(--blue-bg)',padding:'4px 12px',borderRadius:6,border:'1px solid #c7ccf5'}}>{poSeriesSaved}</div>
+            </div>
+          </div>
+        )}
+        <div className="rtool-group">
+          <button className="rtool success" onClick={savePOSeries} disabled={poSeriesLoading}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Series</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
+  };
 
-      <div className="flex gap-0 max-w-screen-2xl mx-auto p-6">
-        {/* Left Panel — Field Library */}
-        <div className="w-72 flex-shrink-0 mr-6 space-y-4">
-          {/* Upload Background */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-              Upload PO Background
-            </h3>
-            <p className="text-xs text-gray-500 mb-3">Upload your BIR-approved PO template as PNG or JPG (A4 size recommended: 794×1123px)</p>
-            <input type="file" id="bgUpload" accept="image/*" className="hidden"
-              onChange={(e) => { if (e.target.files[0]) uploadBackground(e.target.files[0]); }} />
-            <button onClick={() => document.getElementById('bgUpload').click()} disabled={uploadingBg}
-              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-              {uploadingBg ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Uploading...</> : '📁 Upload Background Image'}
+  /* ══════════════════════════════════════════════════
+     LEFT PANEL
+  ══════════════════════════════════════════════════ */
+  const renderPanel = () => {
+
+    /* ── FIELDS LIBRARY ── */
+    if (activePanel==='fields') return (
+      <div>
+        <div className="panel-section">
+          <div className="panel-section-title"><TextIcon/> Add Custom Text</div>
+          <div style={{display:'flex',gap:6}}>
+            <input className="form-input" style={{flex:1,fontSize:12}} placeholder="e.g. Prepared by:"
+              value={customTextInput} onChange={e=>setCustomTextInput(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&addCustomText()}/>
+            <button onClick={addCustomText}
+              style={{flexShrink:0,padding:'0 12px',background:'var(--blue)',color:'#fff',border:'none',borderRadius:7,cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:4}}>
+              <PlusIcon/> Add
             </button>
-            {backgroundUrl && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><span>✓</span> Background uploaded successfully</p>}
           </div>
+          <p style={{fontSize:10,color:'var(--slate)',marginTop:5}}>Type your text then click Add. It will appear on the canvas to drag.</p>
+        </div>
 
-          {/* PO Number Series */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-amber-200">
-            <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-              <span className="w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">#</span>
-              PO Number Series
-            </h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Set the starting number for your PO sequence. New POs will auto-increment from this number.
-              If the number already exists, it will use the next available one.
-            </p>
-            {poSeriesSaved && (
-              <div className="mb-3 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <div>
-                  <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">Active Series</p>
-                  <p className="text-sm font-bold text-amber-900 font-mono">{poSeriesSaved}</p>
-                  {currentPoCounter && BigInt(currentPoCounter) >= BigInt(poSeriesSaved) && (
-                    <p className="text-xs text-amber-600 mt-0.5">Next PO will be: <strong className="font-mono">{(BigInt(currentPoCounter) + BigInt(1)).toString().padStart(poSeriesSaved.length, '0')}</strong></p>
-                  )}
-                  {(!currentPoCounter || BigInt(currentPoCounter) < BigInt(poSeriesSaved)) && (
-                    <p className="text-xs text-amber-600 mt-0.5">Next PO will be: <strong className="font-mono">{poSeriesSaved}</strong></p>
-                  )}
+        {FIELD_GROUPS.map(g => (
+          <div className="panel-section" key={g.group}>
+            <div className="panel-section-title" style={{fontSize:9}}>{g.group}</div>
+            {g.fields.map(fd => {
+              const placed = isPlaced(fd.id);
+              const srcColor = SOURCE_COLOR[fd.source]||'#64748B';
+              return (
+                <div key={fd.id} className={`field-chip ${placed?'placed':''}`}
+                  onClick={()=>placed?null:addField(fd)}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:srcColor,flexShrink:0}}/>
+                  <span style={{flex:1,fontSize:11,fontWeight:700,color:'var(--ink)'}}>{fd.label}</span>
+                  <span style={{fontSize:8,fontWeight:900,color:'#fff',background:srcColor,borderRadius:3,padding:'1px 5px',letterSpacing:'.04em'}}>{fd.source}</span>
+                  {placed
+                    ? <span style={{fontSize:10,color:'var(--green)'}}>✓</span>
+                    : <span style={{fontSize:10,color:'var(--blue)',fontWeight:800}}>+</span>}
                 </div>
-              </div>
-            )}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={poSeriesInput}
-                  onChange={e => setPoSeriesInput(e.target.value.replace(/\D/g,''))}
-                  placeholder="e.g. 10090681"
-                  maxLength={20}
-                  className="w-full px-3 py-2 border border-amber-200 rounded-lg text-sm font-mono outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50 placeholder-amber-300"
-                />
-              </div>
-              <button
-                onClick={savePOSeries}
-                disabled={poSeriesLoading || !poSeriesInput.trim()}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 whitespace-nowrap"
-              >
-                {poSeriesLoading ? <><div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div></> : poSeriesSavedMsg ? '✓ Saved!' : '💾 Set Series'}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">Digits only. Example: entering <span className="font-mono font-bold">10090681</span> means the first PO will be <span className="font-mono font-bold">10090681</span>, next will be <span className="font-mono font-bold">10090682</span>, and so on.</p>
+              );
+            })}
           </div>
+        ))}
 
-          {/* Field Library — grouped */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-1 flex items-center gap-2">
-              <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-              Available Fields
-            </h3>
-            <p className="text-xs text-gray-500 mb-2">Click a field to add it to the canvas, then drag to position it.</p>
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              <span className="text-xs font-bold text-white bg-indigo-600 px-2 py-0.5 rounded">PO</span>
-              <span className="text-xs text-gray-500">Purchase Order doc</span>
-              <span className="text-xs font-bold text-white bg-cyan-600 px-2 py-0.5 rounded ml-2">USER</span>
-              <span className="text-xs text-gray-500">Master Admin / company</span>
-              <span className="text-xs font-bold text-white bg-purple-600 px-2 py-0.5 rounded ml-2">SUPPLIER</span>
-              <span className="text-xs text-gray-500">Supplier setup doc</span>
-            </div>
-            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-              {FIELD_GROUPS.map(group => (
-                <div key={group.group}>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1">{group.group}</p>
-                  <div className="space-y-1">
-                    {group.fields.map(f => {
-                      const placed = placedFields.find(p => p.id === f.id);
-                      const srcColor = f.source === 'USER' ? 'text-cyan-600' : f.source === 'SUPPLIER' ? 'text-purple-600' : 'text-indigo-500';
-                      return (
-                        <button key={f.id} onClick={() => !placed && addFieldToCanvas(f)}
-                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all flex items-center justify-between gap-1 ${
-                            placed
-                              ? 'bg-green-50 border border-green-300 text-green-700 cursor-default'
-                              : 'bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 border border-gray-200 cursor-pointer'
-                          }`}>
-                          <span className="font-medium flex-1">{f.label}</span>
-                          <span className={`text-xs font-bold ${placed ? 'text-green-600' : srcColor} flex-shrink-0`}>
-                            {placed ? '✓' : f.source || 'PO'}
-                          </span>
-                        </button>
-                      );
-                    })}
+        {/* ── Dynamic Approval Signature Slots ── */}
+        {sigFieldDefs.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title" style={{fontSize:9}}>✍️ Approval Signatures</div>
+            <p style={{fontSize:10,color:'var(--slate)',marginBottom:8,lineHeight:1.5}}>Based on your PO approval group — drag each slot to position the signature on the canvas.</p>
+            {sigFieldDefs.map(fd => {
+              const placed = isPlaced(fd.id);
+              return (
+                <div key={fd.id} className={`field-chip ${placed?'placed':''}`} onClick={()=>placed?null:addField(fd)}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:'#be185d',flexShrink:0}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{fd.stepLabel}</div>
+                    {fd.approverRole && <div style={{fontSize:9,color:'var(--slate)',marginTop:1}}>{fd.approverRole}</div>}
                   </div>
+                  <span style={{fontSize:8,fontWeight:900,color:'#fff',background:'#be185d',borderRadius:3,padding:'1px 5px',letterSpacing:'.04em',flexShrink:0}}>SIG</span>
+                  {placed ? <span style={{fontSize:10,color:'var(--green)'}}>✓</span> : <span style={{fontSize:10,color:'#be185d',fontWeight:800}}>+</span>}
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        )}
+        {sigFieldDefs.length === 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title" style={{fontSize:9}}>✍️ Approval Signatures</div>
+            <div style={{padding:'10px',background:'#FFF7ED',border:'1px solid #FED7AA',borderRadius:7,fontSize:11,color:'#92400E',lineHeight:1.5}}>
+              No PO approval groups found.<br/>Set up an approval group in the <strong>Master Dashboard</strong> first, then reload this page.
             </div>
           </div>
+        )}
 
-
-
-{/* Add Custom Text */}
-<div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-  <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
-    <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">✏</span>
-    Custom Text
-  </h3>
-  <p className="text-xs text-gray-500 mb-3">Add free-form text anywhere on your layout (headers, labels, static notes).</p>
-  <button onClick={addCustomText}
-    className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2">
-    + Add Text Block
-  </button>
-</div>
-
-
-
-{/* Field Properties — Data Fields */}
-{selectedFieldData && (
-  <div className="bg-white rounded-2xl shadow-lg p-5 border border-indigo-200">
-    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-      <span className="w-6 h-6 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-      Field Properties
-    </h3>
-    <p className="text-xs font-semibold text-indigo-600 mb-1 uppercase tracking-wide">{selectedFieldData.label}</p>
-    <div className="flex items-center gap-2 mb-3">
-      <span className="font-mono text-xs text-gray-500">.{PO_VAR_MAP[selectedFieldData.id] || selectedFieldData.id}</span>
-      {(() => {
-        const src = FIELD_DEFINITIONS.find(f => f.id === selectedFieldData.id)?.source || 'PO';
-        const srcColor = src === 'USER' ? 'bg-cyan-600' : src === 'SUPPLIER' ? 'bg-purple-600' : 'bg-indigo-600';
-        const srcHint = src === 'USER' ? 'from Master Admin / users doc' : src === 'SUPPLIER' ? 'from supplier-setup doc' : 'from PO document';
-        return <span title={srcHint} className={`text-white text-xs font-bold px-2 py-0.5 rounded ${srcColor}`}>{src}</span>;
-      })()}
-    </div>
-    <div className="space-y-3">
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Position X</label>
-        <input type="number" value={Math.round(selectedFieldData.x)} onChange={(e) => updateField(selectedField, { x: parseInt(e.target.value) || 0 })}
-          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Position Y</label>
-        <input type="number" value={Math.round(selectedFieldData.y)} onChange={(e) => updateField(selectedField, { y: parseInt(e.target.value) || 0 })}
-          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Width (px)</label>
-        <input type="number" value={selectedFieldData.width} onChange={(e) => updateField(selectedField, { width: parseInt(e.target.value) || 100 })}
-          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400" />
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Font Size (px)</label>
-        <div className="flex items-center gap-2 mt-1">
-          <button onClick={() => updateField(selectedField, { fontSize: Math.max(6, selectedFieldData.fontSize - 1) })}
-            className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">−</button>
-          <input type="number" value={selectedFieldData.fontSize} min="6" max="72" onChange={(e) => updateField(selectedField, { fontSize: parseInt(e.target.value) || 10 })}
-            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 text-center" />
-          <button onClick={() => updateField(selectedField, { fontSize: Math.min(72, selectedFieldData.fontSize + 1) })}
-            className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">+</button>
-        </div>
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Max Characters Before Wrap</label>
-        <div className="flex items-center gap-2 mt-1">
-          <input type="number" value={selectedFieldData.maxChars || 0} min="0" max="500"
-            onChange={(e) => updateField(selectedField, { maxChars: parseInt(e.target.value) || 0 })}
-            className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 text-center" />
-        </div>
-        <p className="text-xs text-gray-400 mt-1">0 = no limit. The field will wrap at the set width.</p>
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Font Family</label>
-        <select value={selectedFieldData.fontFamily || 'Inter'} onChange={(e) => updateField(selectedField, { fontFamily: e.target.value })}
-          className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
-          {FONT_OPTIONS.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
-        </select>
-      </div>
-      <div>
-        <label className="text-xs text-gray-500 font-medium">Text Color</label>
-        <input type="color" value={selectedFieldData.color} onChange={(e) => updateField(selectedField, { color: e.target.value })}
-          className="w-full mt-1 h-9 border border-gray-200 rounded-lg cursor-pointer" />
-      </div>
-      <div className="flex items-center gap-2">
-        <input type="checkbox" id="boldCheck" checked={selectedFieldData.bold} onChange={(e) => updateField(selectedField, { bold: e.target.checked })}
-          className="w-4 h-4 text-indigo-600 rounded" />
-        <label htmlFor="boldCheck" className="text-sm text-gray-700 font-medium">Bold Text</label>
-      </div>
-
-      {/* Show Label toggle + position */}
-      <div className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50">
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="showLabelCheck" checked={selectedFieldData.showLabel || false}
-            onChange={(e) => updateField(selectedField, { showLabel: e.target.checked })}
-            className="w-4 h-4 text-indigo-600 rounded" />
-          <label htmlFor="showLabelCheck" className="text-sm text-gray-700 font-medium">Show Field Title</label>
-          <span className="text-xs text-gray-400">(e.g. "PO Number:")</span>
-        </div>
-        {selectedFieldData.showLabel && (
-          <div>
-            <label className="text-xs text-gray-500 font-medium block mb-1">Title Position</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => updateField(selectedField, { labelPosition: 'above' })}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  (selectedFieldData.labelPosition || 'above') === 'above'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-indigo-50'
-                }`}>
-                ↕ Above
-              </button>
-              <button
-                onClick={() => updateField(selectedField, { labelPosition: 'inline' })}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  selectedFieldData.labelPosition === 'inline'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-indigo-50'
-                }`}>
-                ↔ Inline
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              {(selectedFieldData.labelPosition || 'above') === 'above'
-                ? 'Title appears above the value on its own line.'
-                : 'Title appears to the left of the value on the same line.'}
-            </p>
+        {layout.placedFields.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title">📌 On Canvas ({layout.placedFields.length})</div>
+            {layout.placedFields.map(f => (
+              <div key={f.id} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'1px solid var(--line)'}}>
+                <div style={{width:6,height:6,borderRadius:'50%',background:f.isCustom?'#059669':(SOURCE_COLOR[f.source]||'#64748B'),flexShrink:0}}/>
+                <span style={{flex:1,fontSize:11,fontWeight:600,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                <button onClick={()=>{setSelectedFieldId(f.id);setActivePanel('fieldstyle');}}
+                  style={{background:'none',border:'none',cursor:'pointer',color:'var(--blue)',fontSize:10,fontWeight:700}}>Edit</button>
+                <button onClick={()=>removeField(f.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#DC2626',fontSize:13,fontWeight:900,lineHeight:1}}>×</button>
+              </div>
+            ))}
           </div>
         )}
       </div>
+    );
 
-      <button onClick={() => removeFieldFromCanvas(selectedField)}
-        className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold border border-red-200 transition-all">
-        🗑 Remove Field
-      </button>
-    </div>
-  </div>
-)}
-
-{/* Custom Text Properties */}
-{selectedText && !selectedField && (() => {
-  const txt = customTexts.find(t => t.id === selectedText);
-  if (!txt) return null;
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-5 border border-green-200">
-      <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">✏</span>
-        Custom Text Properties
-      </h3>
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Text Content</label>
-          <input type="text" value={txt.text} onChange={(e) => updateCustomText(selectedText, { text: e.target.value })}
-            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Position X</label>
-          <input type="number" value={Math.round(txt.x)} onChange={(e) => updateCustomText(selectedText, { x: parseInt(e.target.value) || 0 })}
-            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Position Y</label>
-          <input type="number" value={Math.round(txt.y)} onChange={(e) => updateCustomText(selectedText, { y: parseInt(e.target.value) || 0 })}
-            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Width (px)</label>
-          <input type="number" value={txt.width} onChange={(e) => updateCustomText(selectedText, { width: parseInt(e.target.value) || 100 })}
-            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400" />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Font Size (px)</label>
-          <div className="flex items-center gap-2 mt-1">
-            <button onClick={() => updateCustomText(selectedText, { fontSize: Math.max(6, txt.fontSize - 1) })}
-              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">−</button>
-            <input type="number" value={txt.fontSize} min="6" max="72" onChange={(e) => updateCustomText(selectedText, { fontSize: parseInt(e.target.value) || 10 })}
-              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400 text-center" />
-            <button onClick={() => updateCustomText(selectedText, { fontSize: Math.min(72, txt.fontSize + 1) })}
-              className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold flex-shrink-0">+</button>
+    /* ── BACKGROUND ── */
+    if (activePanel==='background') return (
+      <div>
+        <div className="panel-section">
+          <div className="panel-section-title"><UploadIcon/> PO Background</div>
+          <p style={{fontSize:11,color:'var(--slate)',marginBottom:12,lineHeight:1.5}}>
+            Upload your BIR-approved PO template as PNG or JPG.<br/>
+            <strong>Recommended size: 794 × 1123 px</strong> (A4 portrait).
+          </p>
+          <div className="upload-zone" onClick={()=>document.getElementById('bgUpload').click()}>
+            <input type="file" id="bgUpload" accept="image/*" style={{display:'none'}}
+              onChange={e=>{if(e.target.files[0])uploadBackground(e.target.files[0]);e.target.value='';}}/>
+            <div style={{fontSize:28,marginBottom:6}}>📄</div>
+            <div style={{fontSize:12,fontWeight:700,color:'var(--ink2)'}}>
+              {layout.backgroundUrl ? 'Click to replace background' : 'Click to upload background'}
+            </div>
+            <div style={{fontSize:10,color:'var(--slate)',marginTop:3}}>PNG, JPG • 794 × 1123 px recommended</div>
           </div>
+          {layout.backgroundUrl && (
+            <div style={{marginTop:10,padding:'8px 10px',background:'var(--green-bg)',border:'1px solid #A7F3D0',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:11,fontWeight:700,color:'var(--green)'}}>✓ Background set</span>
+              <button onClick={()=>setLayout(p=>({...p,backgroundUrl:''}))}
+                style={{fontSize:10,color:'var(--red)',border:'none',background:'none',cursor:'pointer',fontWeight:700}}>✕ Remove</button>
+            </div>
+          )}
         </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Font Family</label>
-          <select value={txt.fontFamily || 'Inter'} onChange={(e) => updateCustomText(selectedText, { fontFamily: e.target.value })}
-            className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-400 bg-white">
-            {FONT_OPTIONS.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
-          </select>
+        <div className="panel-section">
+          <div className="panel-section-title">Layout Name</div>
+          <input className="form-input" value={layoutName} onChange={e=>setLayoutName(e.target.value)} placeholder="e.g. Official PO Template"/>
         </div>
-        <div>
-          <label className="text-xs text-gray-500 font-medium">Text Color</label>
-          <input type="color" value={txt.color} onChange={(e) => updateCustomText(selectedText, { color: e.target.value })}
-            className="w-full mt-1 h-9 border border-gray-200 rounded-lg cursor-pointer" />
+        <div className="panel-section">
+          <div className="panel-section-title" style={{color:'var(--red)'}}>Danger Zone</div>
+          <button onClick={clearLayout}
+            style={{width:'100%',padding:'8px',background:'#FEF2F2',border:'1.5px solid #FECACA',borderRadius:7,color:'var(--red)',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+            🗑 Clear Entire Layout
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="txtBoldCheck" checked={txt.bold} onChange={(e) => updateCustomText(selectedText, { bold: e.target.checked })}
-            className="w-4 h-4 text-green-600 rounded" />
-          <label htmlFor="txtBoldCheck" className="text-sm text-gray-700 font-medium">Bold Text</label>
-        </div>
-        <button onClick={() => removeCustomText(selectedText)}
-          className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold border border-red-200 transition-all">
-          🗑 Remove Text
-        </button>
       </div>
-    </div>
-  );
-})()}
+    );
 
-          {/* Instructions */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-200">
-            <h4 className="font-bold text-indigo-800 text-sm mb-2">How It Works</h4>
-            <ol className="text-xs text-indigo-700 space-y-1.5">
-              <li>1. Upload your PO background image</li>
-              <li>2. Click fields from the library to add them</li>
-              <li>3. Drag fields to position them on your template</li>
-              <li>4. Click a field to adjust size, font, color</li>
-              <li>5. Save — your dashboard will use this layout</li>
-            </ol>
-          </div>
+    /* ── FIELD STYLE ── */
+    if (activePanel==='fieldstyle') {
+      if (!selectedField) return (
+        <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+          <div style={{fontSize:24,marginBottom:8}}>👆</div>
+          <div style={{fontSize:13,fontWeight:600}}>Click a field on the canvas to style it</div>
+          <div style={{fontSize:11,marginTop:4}}>Or select one from the Fields panel</div>
         </div>
+      );
+      const f = selectedField;
+      const srcColor = f.isCustom ? '#059669' : (SOURCE_COLOR[f.source]||'#64748B');
+      return (
+        <div>
+          <div className="panel-section">
+            <div className="panel-section-title" style={{color:srcColor}}>
+              <div style={{width:7,height:7,borderRadius:'50%',background:srcColor,flexShrink:0}}/>
+              {f.label}
+              {!f.isCustom && <span style={{fontSize:8,fontWeight:900,color:'#fff',background:srcColor,borderRadius:3,padding:'1px 5px',marginLeft:4}}>{f.source}</span>}
+              {f.isCustom  && <span style={{fontSize:8,fontWeight:900,color:'#fff',background:'#059669',borderRadius:3,padding:'1px 5px',marginLeft:4}}>TXT</span>}
+            </div>
 
-        {/* A4 Canvas */}
-        <div className="flex-1 overflow-auto">
-          <div className="mb-3 flex items-center gap-4">
-            <p className="text-sm text-gray-600 font-medium">A4 Canvas (794 × 1123px)</p>
-            <span className="text-xs text-gray-400">{placedFields.length} field(s) placed</span>
-            {!backgroundUrl && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">Upload a background to start</span>}
-          </div>
-          <div style={{ width: '794px', minHeight: '1123px' }}>
-            <div
-              ref={canvasRef}
-              className="a4-canvas border-2 border-dashed border-gray-300 bg-white shadow-2xl relative"
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              onMouseLeave={handleCanvasMouseUp}
-              style={{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' }}
-            >
-              {!backgroundUrl && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-5xl mb-4">📄</p>
-                    <p className="text-gray-400 font-medium">Upload a background image to begin</p>
-                    <p className="text-gray-300 text-sm mt-1">Your BIR-approved PO template goes here</p>
+            {/* Custom text edit */}
+            {f.isCustom && (
+              <div className="form-group">
+                <label className="form-label">Text Content</label>
+                <input className="form-input" value={f.text||f.label}
+                  onChange={e=>updateField(f.id,{text:e.target.value,label:e.target.value})}/>
+              </div>
+            )}
+
+            {/* Position & size — X/Y/W grid */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10,padding:8,background:'var(--surf)',borderRadius:8,border:'1px solid var(--line)'}}>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>X (px)</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={Math.round(f.x)} onChange={e=>updateField(f.id,{x:+e.target.value})}/>
+              </div>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>Y (px)</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={Math.round(f.y)} onChange={e=>updateField(f.id,{y:+e.target.value})}/>
+              </div>
+              <div style={{gridColumn:'1/-1'}}>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>Width (px)</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={f.width||200} onChange={e=>updateField(f.id,{width:+e.target.value})}/>
+              </div>
+            </div>
+
+            {/* Show Field Title toggle (data fields only) */}
+            {!f.isCustom && (
+              <div className="form-group" style={{padding:'8px 10px',background:f.showLabel===true?'#EFF6FF':'var(--surf)',borderRadius:7,border:`1px solid ${f.showLabel===true?'#BFDBFE':'var(--line)'}`}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:f.showLabel===true?8:0}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:f.showLabel===true?'var(--blue)':'var(--slate)'}}>Show Field Title</div>
+                    <div style={{fontSize:10,color:'var(--slate)',marginTop:1}}>
+                      {f.showLabel===true ? `"${f.label}:" label shows` : 'Value only, no label'}
+                    </div>
+                  </div>
+                  <div className={`toggle ${f.showLabel===true?'on':''}`}
+                    onClick={()=>updateField(f.id,{showLabel: f.showLabel===true ? false : true})}/>
+                </div>
+                {f.showLabel===true && !(f.id && f.id.startsWith('sig_slot_')) && f.id !== 'items_table' && (
+                  <div>
+                    <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Title Position</div>
+                    <div style={{display:'flex',gap:6}}>
+                      {['above','inline'].map(pos=>(
+                        <button key={pos} onClick={()=>updateField(f.id,{labelPosition:pos})}
+                          style={{flex:1,padding:'5px',borderRadius:6,border:`1.5px solid ${(f.labelPosition||'above')===pos?'var(--blue)':'var(--line)'}`,background:(f.labelPosition||'above')===pos?'var(--blue-bg)':'var(--surf)',color:(f.labelPosition||'above')===pos?'var(--blue)':'var(--slate)',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                          {pos==='above'?'↕ Above':'↔ Inline'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Items table: header colour + column widths ── */}
+                {f.showLabel===true && f.id==='items_table' && (() => {
+                  const colLabels = ['#','Product','SKU','Qty','Unit Cost','Amount'];
+                  const DEFAULT_CW = [40,220,120,60,110,110];
+                  const curW   = f.columnWidths || DEFAULT_CW;
+                  const hdrBg  = f.headerBgColor || '#050C9C';
+                  const noFill = hdrBg === 'transparent';
+                  return (
+                    <div>
+                      <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:6}}>Header Row Style</div>
+                      <div style={{display:'flex',gap:6,marginBottom:8}}>
+                        <button onClick={()=>updateField(f.id,{headerBgColor:'transparent',headerTextColor:f.color||'#111827'})}
+                          style={{flex:1,padding:'5px 4px',borderRadius:6,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif',
+                            border:`1.5px solid ${noFill?'var(--blue)':'var(--line)'}`,background:noFill?'var(--blue-bg)':'var(--surf)',color:noFill?'var(--blue)':'var(--slate)'}}>No Fill</button>
+                        <button onClick={()=>updateField(f.id,{headerBgColor:(!noFill&&hdrBg)?hdrBg:'#050C9C',headerTextColor:f.headerTextColor||'#ffffff'})}
+                          style={{flex:1,padding:'5px 4px',borderRadius:6,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif',
+                            border:`1.5px solid ${!noFill?'var(--blue)':'var(--line)'}`,background:!noFill?'var(--blue-bg)':'var(--surf)',color:!noFill?'var(--blue)':'var(--slate)'}}>Filled</button>
+                      </div>
+                      {!noFill && (
+                        <div style={{marginBottom:8}}>
+                          <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>Header Background</div>
+                          <div className="color-row" style={{marginBottom:6}}>
+                            <div className="color-swatch"><div className="color-swatch-preview" style={{background:hdrBg}}/><input type="color" value={hdrBg} onChange={e=>updateField(f.id,{headerBgColor:e.target.value})}/></div>
+                            <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}} value={hdrBg} onChange={e=>updateField(f.id,{headerBgColor:e.target.value})}/>
+                          </div>
+                          <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>Header Text Color</div>
+                          <div className="color-row">
+                            <div className="color-swatch"><div className="color-swatch-preview" style={{background:f.headerTextColor||'#ffffff'}}/><input type="color" value={f.headerTextColor||'#ffffff'} onChange={e=>updateField(f.id,{headerTextColor:e.target.value})}/></div>
+                            <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}} value={f.headerTextColor||'#ffffff'} onChange={e=>updateField(f.id,{headerTextColor:e.target.value})}/>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{borderTop:'1px solid var(--line)',paddingTop:8,marginTop:4}}>
+                        <div style={{fontSize:11,fontWeight:700,color:'var(--ink2)',marginBottom:4,display:'flex',alignItems:'center',gap:5}}>
+                          <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                          Column Widths (px)
+                        </div>
+                        <div style={{fontSize:9,color:'var(--slate)',marginBottom:8,lineHeight:1.4}}>💡 Drag the resize handles on the table header, or type widths below</div>
+                        {colLabels.map((col,i) => (
+                          <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                            <span style={{fontSize:10,fontWeight:600,color:'var(--ink2)',width:72,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{col}</span>
+                            <input type="number" className="form-input" min="20" max="600"
+                              style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'4px 6px',flex:1}}
+                              value={Math.round(curW[i]||DEFAULT_CW[i])}
+                              onChange={e=>{const nw=[...curW];nw[i]=Math.max(20,+e.target.value);updateField(f.id,{columnWidths:nw});}}/>
+                            <span style={{fontSize:10,color:'var(--slate)',flexShrink:0}}>px</span>
+                          </div>
+                        ))}
+                        <button onClick={()=>updateField(f.id,{columnWidths:[...DEFAULT_CW]})}
+                          style={{fontSize:10,fontWeight:700,color:'var(--slate)',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:5,padding:'4px 10px',cursor:'pointer',fontFamily:'DM Sans,sans-serif',marginTop:2,width:'100%'}}>
+                          ↺ Reset Column Widths
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Signature slot info + height (sig slots only) */}
+            {f.id && f.id.startsWith('sig_slot_') && (
+              <div style={{marginTop:8}}>
+                <div style={{padding:'8px 10px',background:'#FDF2F8',border:'1px solid #FBCFE8',borderRadius:7,marginBottom:8}}>
+                  <div style={{fontSize:9,fontWeight:800,textTransform:'uppercase',letterSpacing:'.06em',color:'#9D174D',marginBottom:4}}>Approver</div>
+                  <div style={{fontSize:12,fontWeight:700,color:'#111827'}}>{f.approverName || f.label}</div>
+                  {f.approverRole && <div style={{fontSize:10,color:'#6B7280',marginTop:1}}>{f.approverRole}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Signature Image Height (px)</label>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input type="range" min="20" max="120" value={f.sigHeight||40} style={{flex:1}}
+                      onChange={e=>updateField(f.id,{sigHeight:+e.target.value})}/>
+                    <span style={{fontSize:11,color:'var(--slate)',fontFamily:'DM Mono,monospace',minWidth:28}}>{f.sigHeight||40}</span>
                   </div>
                 </div>
-              )}
-{placedFields.map(field => {
-  const varName = PO_VAR_MAP[field.id] || field.id;
-  const fieldDef = FIELD_DEFINITIONS.find(f => f.id === field.id);
-  const source = fieldDef?.source || 'PO';
-  const sourceColor = source === 'USER' ? '#0891b2' : source === 'SUPPLIER' ? '#7c3aed' : '#4f46e5';
-  // maxChars → use ch units for width so label+value both wrap at that character count
-  const fieldWidth = (field.maxChars && field.maxChars > 0) ? `${field.maxChars}ch` : field.width;
-  const previewVal = varName; // no truncation — let CSS wrap naturally
-  const isInline = field.showLabel && field.labelPosition === 'inline';
-  return (
-  <div
-    key={field.id}
-    className="canvas-field"
-    style={{
-      position: 'absolute', left: field.x, top: field.y, width: fieldWidth,
-      border: selectedField === field.id ? '2px solid #6366f1' : '1.5px dashed rgba(99,102,241,0.6)',
-      background: selectedField === field.id ? 'rgba(238,242,255,0.97)' : 'rgba(255,255,255,0.85)',
-      borderRadius: '3px',
-      padding: 0, margin: 0,
-      fontSize: field.fontSize, color: field.color,
-      fontWeight: field.bold ? '700' : '400',
-      fontFamily: field.fontFamily || 'Inter',
-      lineHeight: 1.4,
-      zIndex: selectedField === field.id ? 10 : 5,
-      boxSizing: 'border-box',
-      wordWrap: 'break-word', whiteSpace: 'normal', overflowWrap: 'break-word',
-      overflow: 'visible',
-      boxShadow: selectedField === field.id ? '0 0 0 3px rgba(99,102,241,0.2)' : '0 1px 3px rgba(0,0,0,0.08)'
-    }}
-    onMouseDown={(e) => handleCanvasMouseDown(e, field.id)}
-  >
-    {/* tiny designer tag — zero margin/padding, sits flush above content */}
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 3,
-      padding: '1px 3px', margin: 0,
-      borderBottom: `1px solid ${sourceColor}22`,
-      background: `${sourceColor}11`,
-      lineHeight: 1
-    }}>
-      <span style={{
-        fontSize: 6, color: sourceColor, fontWeight: 800,
-        letterSpacing: '0.05em', textTransform: 'uppercase',
-        fontFamily: 'Inter', flexShrink: 0, opacity: 0.9
-      }}>{field.label}</span>
-      <span style={{
-        fontSize: 6, fontWeight: 900, color: '#fff',
-        background: sourceColor, borderRadius: 2, padding: '0 2px',
-        letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0
-      }}>{source}</span>
-      <span style={{
-        fontSize: 6, color: sourceColor, opacity: 0.55,
-        fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-      }}>.{PO_VAR_MAP[field.id] || field.id}</span>
-      {field.maxChars > 0 && (
-        <span style={{
-          fontSize: 6, color: '#fff', background: '#f59e0b', borderRadius: 2,
-          padding: '0 2px', fontWeight: 700, flexShrink: 0
-        }}>{field.maxChars}ch</span>
-      )}
-    </div>
+              </div>
+            )}
 
-    {/* ── Actual field content — mirrors exactly what prints ── */}
-    <div style={{ padding: 0, margin: 0, lineHeight: 1.4 }}>
-      {isInline ? (
-        /* INLINE: label and value on the same line */
-        <span style={{
-          display: 'inline', fontSize: field.fontSize, color: field.color,
-          fontFamily: field.fontFamily || 'Inter', lineHeight: 1.4,
-          wordBreak: 'break-word'
-        }}>
-          <span style={{ fontWeight: 700 }}>{field.label}: </span>
-          <span style={{ fontWeight: field.bold ? '700' : '400', opacity: 0.55, fontStyle: 'italic' }}>{previewVal}</span>
-        </span>
-      ) : (
-        /* ABOVE (default): label block on top, value block below */
-        <>
-          {field.showLabel && (
-            <div style={{
-              display: 'block', fontSize: field.fontSize, color: field.color,
-              fontWeight: 700, fontFamily: field.fontFamily || 'Inter',
-              lineHeight: 1.4, margin: 0, padding: 0,
-              wordBreak: 'break-word', whiteSpace: 'normal'
-            }}>{field.label}:</div>
-          )}
-          <div style={{
-            display: 'block', opacity: 0.55, fontSize: field.fontSize,
-            fontFamily: field.fontFamily || 'Inter', fontStyle: 'italic',
-            lineHeight: 1.4, margin: 0, padding: 0,
-            wordBreak: 'break-word', whiteSpace: 'normal',
-            fontWeight: field.bold ? '700' : '400'
-          }}>{previewVal}</div>
-        </>
-      )}
-    </div>
+            {/* ── Signature slot: approver info + height ── */}
+            {f.id && f.id.startsWith('sig_slot_') && (
+              <div style={{marginTop:8}}>
+                <div style={{padding:'8px 10px',background:'#FDF2F8',border:'1px solid #FBCFE8',borderRadius:7,marginBottom:8}}>
+                  <div style={{fontSize:9,fontWeight:800,textTransform:'uppercase',letterSpacing:'.06em',color:'#9D174D',marginBottom:4}}>Approver</div>
+                  <div style={{fontSize:12,fontWeight:700,color:'#111827'}}>{f.approverName || f.label}</div>
+                  {f.approverRole && <div style={{fontSize:10,color:'#6B7280',marginTop:1}}>{f.approverRole}</div>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Signature Image Height (px)</label>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input type="range" min="20" max="120" value={f.sigHeight||40} style={{flex:1}}
+                      onChange={e=>updateField(f.id,{sigHeight:+e.target.value})}/>
+                    <span style={{fontSize:11,color:'var(--slate)',fontFamily:'DM Mono,monospace',minWidth:28}}>{f.sigHeight||40}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
-    {selectedField === field.id && (
-      <button
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={() => removeFieldFromCanvas(field.id)}
-        style={{ position: 'absolute', top: -9, right: -9, width: 18, height: 18, background: '#ef4444', color: 'white', border: '2px solid white', borderRadius: '50%', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20, lineHeight: 1 }}
-      >×</button>
-    )}
-  </div>
-  );
-})}
+            {/* Max chars (data fields only, not items_table) */}
+            {!f.isCustom && f.id !== 'items_table' && (
+              <div className="form-group" style={{marginTop:8}}>
+                <label className="form-label">Max Chars Before Wrap <span style={{color:'var(--slate)',fontWeight:400}}>(0 = off)</span></label>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}} min="0" max="500"
+                  value={f.maxChars||0} onChange={e=>updateField(f.id,{maxChars:+e.target.value})}/>
+              </div>
+            )}
 
-{/* Custom Text Blocks */}
-{customTexts.map(txt => (
-  <div
-    key={txt.id}
-    style={{
-      position: 'absolute', left: txt.x, top: txt.y, width: txt.width,
-      border: selectedText === txt.id ? '2px solid #16a34a' : '1.5px dashed rgba(22,163,74,0.55)',
-      background: selectedText === txt.id ? 'rgba(240,253,244,0.97)' : 'rgba(255,255,255,0.82)',
-      borderRadius: '4px', padding: '3px 6px',
-      fontSize: txt.fontSize, color: txt.color,
-      fontWeight: txt.bold ? '700' : '400',
-      fontFamily: txt.fontFamily || 'Inter',
-      zIndex: selectedText === txt.id ? 10 : 5,
-      boxSizing: 'border-box', cursor: 'move',
-      boxShadow: selectedText === txt.id ? '0 0 0 3px rgba(22,163,74,0.18)' : '0 1px 3px rgba(0,0,0,0.08)'
-    }}
-    onMouseDown={(e) => handleTextMouseDown(e, txt.id)}
-  >
-    <span style={{
-      fontSize: 8, color: '#16a34a', fontWeight: 700, display: 'block',
-      lineHeight: '1', marginBottom: 2, letterSpacing: '0.04em',
-      textTransform: 'uppercase', fontFamily: 'Inter'
-    }}>Custom Text</span>
-    <span style={{ display: 'block', lineHeight: '1.3' }}>{txt.text}</span>
-    {selectedText === txt.id && (
-      <button
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={() => removeCustomText(txt.id)}
-        style={{ position: 'absolute', top: -9, right: -9, width: 18, height: 18, background: '#ef4444', color: 'white', border: '2px solid white', borderRadius: '50%', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20, lineHeight: 1 }}
-      >×</button>
-    )}
-  </div>
-))}
+            {/* Typography */}
+            <div className="form-group" style={{marginTop:6}}>
+              <label className="form-label">Font Size (px)</label>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <input type="range" min="7" max="72" value={f.fontSize||11} style={{flex:1}}
+                  onChange={e=>updateField(f.id,{fontSize:+e.target.value})}/>
+                <span style={{fontSize:11,color:'var(--slate)',fontFamily:'DM Mono,monospace',minWidth:28}}>{f.fontSize||11}</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Color</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:f.color||'#111827'}}/>
+                  <input type="color" value={f.color||'#111827'} onChange={e=>updateField(f.id,{color:e.target.value})}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={f.color||'#111827'} onChange={e=>updateField(f.id,{color:e.target.value})}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Font Family</label>
+              <select className="form-input form-select" value={f.fontFamily||'Arial'}
+                onChange={e=>updateField(f.id,{fontFamily:e.target.value})}>
+                {FONT_OPTIONS.map(fn=><option key={fn} value={fn}>{fn}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Weight</label>
+              <select className="form-input form-select" value={f.bold?'bold':'normal'}
+                onChange={e=>updateField(f.id,{bold:e.target.value==='bold'})}>
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+              </select>
+            </div>
+
+            <div style={{display:'flex',gap:6,marginTop:4}}>
+              <button className="rtool success" style={{flex:1,flexDirection:'row',gap:6,height:34,borderRadius:7,justifyContent:'center'}} onClick={saveLayout}>
+                <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+                <span className="rtool-label" style={{color:'#059669',fontSize:11}}>Save Layout</span>
+              </button>
+              <button onClick={()=>removeField(f.id)}
+                style={{padding:'0 12px',height:34,borderRadius:7,border:'1.5px solid #FECACA',background:'#FEF2F2',color:'#DC2626',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                Remove
+              </button>
             </div>
           </div>
         </div>
+      );
+    }
+
+    /* ── PO NUMBER SERIES ── */
+    if (activePanel==='numbering') return (
+      <div>
+        <div className="panel-section">
+          <div className="panel-section-title"><HashIcon/> PO Number Series</div>
+          <p style={{fontSize:11,color:'var(--slate)',marginBottom:12,lineHeight:1.5}}>
+            Set the starting number for your PO sequence. New POs will auto-increment from this number.
+          </p>
+          {poSeriesSaved && (
+            <div style={{marginBottom:12,padding:'10px 12px',background:'var(--blue-bg)',border:'1px solid #c7ccf5',borderRadius:8}}>
+              <div style={{fontSize:9,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--slate)',marginBottom:4}}>Active Series</div>
+              <div style={{fontFamily:'DM Mono,monospace',fontSize:20,fontWeight:500,color:'var(--blue)'}}>{poSeriesSaved}</div>
+              {currentPoCounter && BigInt(currentPoCounter) >= BigInt(poSeriesSaved)
+                ? <div style={{fontSize:10,color:'var(--slate)',marginTop:3}}>Next PO → <strong style={{fontFamily:'DM Mono,monospace',color:'var(--blue)'}}>{(BigInt(currentPoCounter)+BigInt(1)).toString().padStart(poSeriesSaved.length,'0')}</strong></div>
+                : <div style={{fontSize:10,color:'var(--slate)',marginTop:3}}>Next PO → <strong style={{fontFamily:'DM Mono,monospace',color:'var(--blue)'}}>{poSeriesSaved}</strong></div>
+              }
+            </div>
+          )}
+          <div className="form-group">
+            <label className="form-label">New Series Start</label>
+            <input className="form-input" style={{fontFamily:'DM Mono,monospace'}}
+              value={poSeriesInput} onChange={e=>setPoSeriesInput(e.target.value.replace(/\D/g,''))}
+              placeholder="e.g. 10090681" maxLength={20}/>
+            <p style={{fontSize:10,color:'var(--slate)',marginTop:4}}>Digits only. Example: <code>10090681</code> → first PO is <code>10090681</code>, next is <code>10090682</code>.</p>
+          </div>
+          <button onClick={savePOSeries} disabled={poSeriesLoading||!poSeriesInput.trim()}
+            style={{width:'100%',padding:'9px',background:poSeriesLoading||!poSeriesInput.trim()?'#94A3B8':'var(--blue)',color:'#fff',border:'none',borderRadius:7,fontWeight:700,fontSize:12,cursor:poSeriesLoading||!poSeriesInput.trim()?'not-allowed':'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+            {poSeriesLoading?<div className="loader"/>:<SaveIcon/>}
+            {poSeriesSavedMsg?'✓ Saved!':poSeriesLoading?'Saving...':'Save PO Series'}
+          </button>
+        </div>
       </div>
+    );
+
+    return null;
+  };
+
+  /* ══════════════════════════════════════════════════
+     CANVAS FIELD RENDERING
+  ══════════════════════════════════════════════════ */
+  const renderFieldPreview = (f) => {
+    if (f.isCustom) {
+      return (
+        <div style={{fontSize:f.fontSize||11,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827',fontWeight:f.bold?'700':'400',lineHeight:1.4,wordBreak:'break-word',whiteSpace:'pre-wrap'}}>
+          {f.text||f.label}
+        </div>
+      );
+    }
+    const varName = PO_VAR_MAP[f.id] || f.id;
+    const isInline = f.showLabel===true && f.labelPosition==='inline';
+    // ── Signature slot preview ──
+    if (f.id && f.id.startsWith('sig_slot_')) {
+      const stepNum    = f.id.replace('sig_slot_','');
+      const sigH       = f.sigHeight || 40;
+      const dispName   = f.approverName || f.label || `Step ${stepNum}`;
+      const dispRole   = f.approverRole || '';
+      return (
+        <div style={{textAlign:'center', width:'100%'}}>
+          <div style={{
+            width:'100%', height:sigH,
+            border:'1.5px dashed #be185d44',
+            borderRadius:3, background:'rgba(190,24,93,0.04)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            marginBottom:2,
+          }}>
+            <span style={{fontSize:8,color:'#be185d',fontWeight:700,opacity:.7,fontFamily:'DM Sans,sans-serif',letterSpacing:'.04em'}}>✍ STEP {stepNum}</span>
+          </div>
+          <div style={{borderTop:`1px solid ${f.color||'#374151'}`,width:'100%',marginBottom:2}}/>
+          {f.showLabel !== false && (
+            <>
+              <div style={{fontSize:f.fontSize||9,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827',fontWeight:'700',textAlign:'center'}}>{dispName}</div>
+              {dispRole && <div style={{fontSize:Math.max((f.fontSize||9)-1,7),fontFamily:f.fontFamily||'Arial',color:f.color||'#6B7280',opacity:.7,textAlign:'center'}}>{dispRole}</div>}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // ── Signature slot preview ──────────────────────────────────────────────
+    if (f.id && f.id.startsWith('sig_slot_')) {
+      const stepNum  = f.id.replace('sig_slot_','');
+      const sigH     = f.sigHeight || 40;
+      const dispName = f.approverName || f.label || `Step ${stepNum}`;
+      const dispRole = f.approverRole || '';
+      return (
+        <div style={{textAlign:'center',width:'100%'}}>
+          <div style={{width:'100%',height:sigH,border:'1.5px dashed #be185d44',borderRadius:3,
+            background:'rgba(190,24,93,0.04)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:2}}>
+            <span style={{fontSize:8,color:'#be185d',fontWeight:700,opacity:.7,fontFamily:'DM Sans,sans-serif',letterSpacing:'.04em'}}>✍ STEP {stepNum}</span>
+          </div>
+          <div style={{borderTop:`1px solid ${f.color||'#374151'}`,width:'100%',marginBottom:2}}/>
+          {f.showLabel !== false && (
+            <>
+              <div style={{fontSize:f.fontSize||9,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827',fontWeight:'700',textAlign:'center'}}>{dispName}</div>
+              {dispRole && <div style={{fontSize:Math.max((f.fontSize||9)-1,7),fontFamily:f.fontFamily||'Arial',color:f.color||'#6B7280',opacity:.7,textAlign:'center'}}>{dispRole}</div>}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    if (f.id==='items_table') {
+      const colLabels  = ['#','Product','SKU','Qty','Unit Cost','Amount'];
+      const colAligns  = ['left','left','left','center','right','right'];
+      const DEFAULT_CW = [40,220,120,60,110,110];
+      const cols       = f.columnWidths || DEFAULT_CW;
+      const showHdr    = f.showLabel === true;
+      const hdrBg      = f.headerBgColor  || '#050C9C';
+      const hdrTxt     = f.headerTextColor || '#ffffff';
+      const noFill     = hdrBg === 'transparent';
+      const sampleRows = [
+        ['01','Product Name A','SKU-001','2','1,500.00','3,000.00'],
+        ['02','Product Name B','SKU-002','1',  '850.00',  '850.00'],
+        ['03','Product Name C','SKU-003','5',  '200.00','1,000.00'],
+      ];
+
+      const handleColResize = (colIdx, e) => {
+        e.preventDefault(); e.stopPropagation();
+        const startX = e.clientX;
+        const startW = cols[colIdx];
+        const onMove = (mv) => {
+          const newW    = Math.max(20, startW + (mv.clientX - startX));
+          const newCols = [...cols];
+          newCols[colIdx] = newW;
+          // updateField syncs f.width = sum(newCols) automatically
+          updateField(f.id, { columnWidths: newCols });
+        };
+        const onUp = () => {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      };
+
+      return (
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:f.fontSize||9,fontFamily:f.fontFamily||'Arial',tableLayout:'fixed',background:'transparent'}}>
+          <colgroup>{cols.map((w,i)=><col key={i} style={{width:w}}/>)}</colgroup>
+          {showHdr && (
+            <thead>
+              <tr style={{background:noFill?'transparent':hdrBg}}>
+                {colLabels.map((h,i)=>(
+                  <th key={i} style={{
+                    padding:'3px 5px',
+                    textAlign:colAligns[i],
+                    fontWeight:700,
+                    color:noFill?(f.color||'#111827'):hdrTxt,
+                    fontSize:f.fontSize||9,
+                    borderBottom:noFill?`1px solid ${f.color||'#111827'}`:'none',
+                    position:'relative',
+                    userSelect:'none',
+                  }}>
+                    {h}
+                    <span
+                      onMouseDown={e=>handleColResize(i,e)}
+                      style={{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'col-resize',
+                        background:noFill?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.2)',
+                        display:'flex',alignItems:'center',justifyContent:'center',zIndex:10}}
+                      title="Drag to resize"
+                    >
+                      <span style={{width:1.5,height:'60%',background:noFill?'rgba(0,0,0,0.35)':'rgba(255,255,255,0.7)',borderRadius:1,display:'block'}}/>
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {sampleRows.map((row,ri)=>(
+              <tr key={ri} style={{background:'transparent',opacity:.4}}>
+                {row.map((cell,ci)=>(
+                  <td key={ci} style={{
+                    padding:'3px 5px',fontSize:f.fontSize||9,fontFamily:f.fontFamily||'Arial',
+                    textAlign:colAligns[ci],fontStyle:'italic',
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                    border:'none',background:'transparent',color:f.color||'#111827',
+                  }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    return (
+      <div style={{lineHeight:1.4}}>
+        {isInline ? (
+          <span style={{fontSize:f.fontSize||11,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827'}}>
+            <span style={{fontWeight:700}}>{f.label}: </span>
+            <span style={{fontWeight:f.bold?'700':'400',opacity:.5,fontStyle:'italic'}}>{varName}</span>
+          </span>
+        ) : (
+          <>
+            {f.showLabel===true && (
+              <div style={{fontSize:f.fontSize||11,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827',fontWeight:700,lineHeight:1.4}}>{f.label}:</div>
+            )}
+            <div style={{fontSize:f.fontSize||11,fontFamily:f.fontFamily||'Arial',color:f.color||'#111827',fontWeight:f.bold?'700':'400',opacity:.5,fontStyle:'italic',lineHeight:1.4}}>{varName}</div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  /* ── LOADING ── */
+  if (loading) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--surf)'}}>
+      <div style={{textAlign:'center'}}>
+        <div className="loader" style={{width:32,height:32,borderWidth:3,margin:'0 auto 12px'}}/>
+        <div style={{fontSize:14,color:'var(--slate)',fontWeight:600}}>Loading PO Layout Setup…</div>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════
+     MAIN RENDER
+  ══════════════════════════════════════════════════ */
+  return (
+    <div style={{minHeight:'100vh',background:'var(--surf)'}}>
+
+      {/* ── TITLEBAR ── */}
+      <div className="titlebar">
+        <div className="titlebar-brand">
+          <OperixLogo/>
+          <div>
+            <span>Operix</span>
+            <small style={{display:'block',marginTop:-2}}>PO Layout Setup</small>
+          </div>
+          <span style={{fontSize:11,color:'#475569',marginLeft:6,paddingLeft:10,borderLeft:'1px solid rgba(255,255,255,.1)'}}>{layoutName}</span>
+        </div>
+        <div className="titlebar-actions">
+          <span style={{fontSize:11,color:'#64748B'}}>{layout.placedFields.length} field{layout.placedFields.length!==1?'s':''} placed</span>
+          <button className="tb-pill" onClick={()=>window.location.href='dashboard.html'}><HomeIcon/> Dashboard</button>
+          <button className="tb-pill danger" onClick={async()=>{await firebase.auth().signOut();window.location.href='login.html';}}><LogoutIcon/> Logout</button>
+        </div>
+      </div>
+
+      {/* ── RIBBON ── */}
+      <div className="ribbon">
+        <div className="ribbon-tabs">
+          {['home','layout','numbering'].map(tab=>(
+            <div key={tab} className={`rtab ${activeRibbonTab===tab?'active':''}`}
+              onClick={()=>setActiveRibbonTab(tab)}>
+              {tab==='home'?'🏠 Home':tab==='layout'?'📐 Layout':'🔢 PO Series'}
+            </div>
+          ))}
+        </div>
+        <div className="ribbon-tools">
+          {ribbonContent[activeRibbonTab]}
+        </div>
+      </div>
+
+      {/* ── WORKSPACE ── */}
+      <div className="workspace">
+
+        {/* LEFT PANEL */}
+        <div className="panel">
+          {renderPanel()}
+        </div>
+
+        {/* CANVAS AREA */}
+        <div className="canvas-area">
+          {/* Canvas status bar */}
+          <div style={{width:794,display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              {layout.backgroundUrl
+                ? <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.45)',display:'flex',alignItems:'center',gap:4}}><CheckIcon/> BG Set</span>
+                : <button onClick={()=>{setActiveRibbonTab('layout');setActivePanel('background');}}
+                    style={{fontSize:10,fontWeight:700,color:'#fff',background:'rgba(245,158,11,.3)',border:'1px solid rgba(245,158,11,.5)',padding:'3px 10px',borderRadius:4,cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:3}}><UploadIcon/> Upload BG</button>
+              }
+              <span style={{fontSize:10,color:'rgba(255,255,255,.45)'}}>·</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.6)',fontWeight:600}}>{layout.placedFields.length} field{layout.placedFields.length!==1?'s':''} placed</span>
+            </div>
+            <div style={{display:'flex',gap:5}}>
+              <button onClick={()=>setShowGrid(g=>!g)}
+                style={{fontSize:10,fontWeight:700,padding:'4px 10px',borderRadius:5,border:'1px solid rgba(255,255,255,.2)',background:showGrid?'rgba(5,12,156,.5)':'rgba(255,255,255,.08)',color:showGrid?'#fff':'rgba(255,255,255,.5)',cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:4}}>
+                <GridIcon/> {showGrid?'Grid On':'Grid Off'}
+              </button>
+              <button onClick={saveLayout} disabled={saving}
+                style={{fontSize:10,fontWeight:700,padding:'4px 12px',borderRadius:5,border:'none',background:'#059669',color:'#fff',cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:4}}>
+                <SaveIcon/> Save Layout
+              </button>
+            </div>
+          </div>
+
+          {/* THE CANVAS */}
+          <div ref={canvasRef}
+            className={`po-canvas ${showGrid&&!layout.backgroundUrl?'canvas-grid-hint':''}`}
+            onClick={()=>setSelectedFieldId(null)}>
+
+            {/* Background image */}
+            {layout.backgroundUrl
+              ? <img src={layout.backgroundUrl} alt="BG" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'fill',borderRadius:2,zIndex:0,pointerEvents:'none',userSelect:'none'}}/>
+              : <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,pointerEvents:'none',zIndex:0}}>
+                  <div style={{opacity:.1}}><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#050C9C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+                  <p style={{fontSize:13,color:'#94A3B8',fontWeight:700}}>No background image</p>
+                  <p style={{fontSize:11,color:'#CBD5E1'}}>Layout → Background to upload your PO template</p>
+                </div>
+            }
+
+            {/* Accent bar (no background only) */}
+            {!layout.backgroundUrl&&<div style={{position:'absolute',top:0,left:0,right:0,height:4,background:'linear-gradient(90deg,#050C9C,#3B4FD8)',borderRadius:'2px 2px 0 0',pointerEvents:'none',zIndex:1}}/>}
+
+            {/* DRAGGABLE FIELD BLOCKS */}
+            {layout.placedFields.map(f => {
+              const isSelected = selectedFieldId === f.id;
+              const srcColor   = f.isCustom ? '#059669' : (SOURCE_COLOR[f.source]||'#64748B');
+              // For items_table: derive width from sum of columnWidths so the dashed
+              // rectangle always exactly matches the table — live as columns are resized.
+              // For all other fields: use f.width as before.
+              const DEFAULT_CW = [40,220,120,60,110,110];
+              const pixelW = f.id === 'items_table'
+                ? (f.columnWidths || DEFAULT_CW).reduce((a,b)=>a+b,0)
+                : (f.width || 200);
+              return (
+                <div key={f.id}
+                  style={{
+                    position:'absolute',
+                    left: f.x, top: f.y,
+                    width: pixelW,
+                    zIndex: isSelected ? 20 : 5,
+                    cursor: 'move',
+                    userSelect: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                  onMouseDown={e => handleMouseDown(e, f.id)}
+                  onClick={e => { e.stopPropagation(); setSelectedFieldId(f.id); setActivePanel('fieldstyle'); setActiveRibbonTab('layout'); }}
+                >
+                  {/* Label tag — floats ABOVE the field, does not push content */}
+                  <div style={{position:'absolute',top:-14,left:0,right:0,display:'flex',alignItems:'center',gap:4,padding:'1px 5px',background:`${srcColor}dd`,borderRadius:'3px 3px 0 0',lineHeight:1,userSelect:'none',zIndex:10,pointerEvents:'none'}}>
+                    <div style={{width:4,height:4,borderRadius:'50%',background:'#fff',flexShrink:0,opacity:.8}}/>
+                    <span style={{fontSize:6.5,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.07em',fontFamily:'DM Sans,sans-serif',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                    <span style={{fontSize:6,fontWeight:900,color:srcColor,background:'#fff',borderRadius:2,padding:'0 3px',letterSpacing:'.04em',textTransform:'uppercase',flexShrink:0}}>{f.isCustom?'TXT':f.source}</span>
+                    <span style={{fontSize:6,color:'rgba(255,255,255,.7)',fontFamily:'DM Mono,monospace',flexShrink:0}}>{Math.round(f.x)},{Math.round(f.y)}</span>
+                    {isSelected&&(
+                      <div onMouseDown={e=>{e.stopPropagation();removeField(f.id);}}
+                        style={{width:11,height:11,borderRadius:'50%',background:'#ef4444',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7.5,cursor:'pointer',fontWeight:900,flexShrink:0,lineHeight:1,pointerEvents:'all'}}>×</div>
+                    )}
+                  </div>
+                  {/* Outline box — transparent background, visible only as border */}
+                  <div style={{position:'absolute',inset:0,border:isSelected?`2px solid ${srcColor}`:`1.5px dashed ${srcColor}55`,borderRadius:3,boxShadow:isSelected?`0 0 0 3px ${srcColor}18`:undefined,background:'transparent',pointerEvents:'none'}}/>
+                  {/* Content — maxChars applied here as maxWidth so wrapping still works */}
+                  <div style={{
+                    position:'relative', pointerEvents:'none',
+                    maxWidth: (!f.isCustom && f.maxChars > 0) ? `${f.maxChars}ch` : '100%',
+                    wordBreak:'break-word', overflowWrap:'break-word',
+                  }}>
+                    {renderFieldPreview(f)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Below canvas */}
+          <div style={{width:794,display:'flex',justifyContent:'flex-end',marginTop:14}}>
+            <button onClick={saveLayout} disabled={saving}
+              style={{display:'flex',alignItems:'center',gap:7,padding:'8px 20px',background:saving?'rgba(255,255,255,.1)':'var(--blue)',color:saving?'rgba(255,255,255,.4)':'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:700,cursor:saving?'default':'pointer',fontFamily:'DM Sans,sans-serif'}}>
+              {saving?<div className="loader"/>:<SaveIcon/>}
+              {saving?'Saving…':'Save Layout'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
     </div>
   );
 }
 
-ReactDOM.render(<POLayoutSetup />, document.getElementById('root'));
+ReactDOM.render(<POLayoutSetup/>, document.getElementById('root'));
 </script>
 </body>
 </html>

@@ -198,6 +198,9 @@ const I = {
   building: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10",
   cart:     "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z",
   package:  "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+  pen:      "M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z",
+  img:      "M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z",
+  quote:    "M3 21l1.9-5.7a8.5 8.5 0 113.8 3.8L3 21M9 10h.01M12 10h.01M15 10h.01",
 };
 
 const OperixLogo = () => (
@@ -252,6 +255,27 @@ function MasterApp() {
   const [assignments,    setAssignments]    = useState([]);
   const [logs,           setLogs]           = useState([]);
   const [approvalGroups, setApprovalGroups] = useState([]);  const [savingFeature,    setSavingFeature]     = useState(null); // stores key being saved
+
+  /* ── subscription state ── */
+  const [subscriptions, setSubscriptions] = useState({});  // { companyName: { maxAdmins, maxUsers, plan } }
+  const [subEditModal, setSubEditModal] = useState(null);  // null | companyName
+  const [subForm, setSubForm] = useState({ plan:'starter', maxAdmins:3, maxUsers:10 });
+  const [savingSub, setSavingSub] = useState(false);
+
+  /* ── finance approval state ── */
+  const [fagForm, setFagForm] = useState({ name:'', description:'', steps:[], companyName:'' });
+  const [pendingAdjustments, setPendingAdjustments] = useState([]);
+  const [adjLoaded, setAdjLoaded] = useState(false);
+  /* ── user detail modal state (must be top-level — cannot use hooks inside IIFE) ── */
+  const [userDetailModal, setUserDetailModal] = useState(null);
+  const [userDetailForm, setUserDetailForm] = useState({});
+  const [savingDetail,   setSavingDetail]   = useState(false);
+
+  /* ── signature upload state ── */
+  const [sigModal,       setSigModal]       = useState(false);
+  const [sigAdminId,     setSigAdminId]     = useState(null);
+  const [sigUploading,   setSigUploading]   = useState(false);
+  const [sigPreview,     setSigPreview]     = useState(null);
 
 
   /* ── ui state ── */
@@ -369,6 +393,26 @@ const loadData = async (db) => {
       setLogs(logsData);
       setApprovalGroups(agData);
 
+      // Load pending AR balance adjustments (master view — may fail if rules don't allow master yet)
+      try {
+        const adjSnap = await db.collection('arBalanceAdjustments')
+          .where('status','==','pending')
+          .orderBy('createdAt','desc')
+          .get();
+        setPendingAdjustments(adjSnap.docs.map(d=>({id:d.id,...d.data()})));
+        setAdjLoaded(true);
+      } catch(e) {
+        // Firestore rules may not yet include arBalanceAdjustments for master role
+        // This is non-critical — master view of pending adjustments is optional
+        console.warn('arBalanceAdjustments not accessible from master (add rules to enable):', e.code);
+        setAdjLoaded(true); // mark loaded so UI doesn't hang
+      }
+      // Load subscriptions
+      try {
+        const subSnap = await db.collection('systemSettings').doc('subscriptions').get();
+        if (subSnap.exists) setSubscriptions(subSnap.data());
+      } catch(e) { console.warn('subscriptions not found yet'); }
+
       // Load company feature flags
       try {
         const featSnap = await db.collection('systemSettings').doc('companyFeatures').get();
@@ -403,7 +447,41 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
   };
 
 
-  const logAction = async (db, action, details) => {
+  /* ══ SUBSCRIPTIONS ══ */
+  const saveSubscription = async (companyName) => {
+    setSavingSub(true);
+    const db = firebase.firestore();
+    try {
+      await db.collection('systemSettings').doc('subscriptions').set(
+        { [companyName]: { plan: subForm.plan, maxAdmins: parseInt(subForm.maxAdmins)||3, maxUsers: parseInt(subForm.maxUsers)||10, updatedAt: firebase.firestore.FieldValue.serverTimestamp() } },
+        { merge: true }
+      );
+      setSubscriptions(prev => ({ ...prev, [companyName]: { plan:subForm.plan, maxAdmins:parseInt(subForm.maxAdmins)||3, maxUsers:parseInt(subForm.maxUsers)||10 } }));
+      await logAction(db, 'Subscription Updated', `Updated subscription for ${companyName}: ${subForm.plan} plan, ${subForm.maxAdmins} admins, ${subForm.maxUsers} users`);
+      toast(`Subscription updated for ${companyName}`);
+      setSubEditModal(null);
+    } catch(e) { toast(e.message, 'error'); }
+    setSavingSub(false);
+  };
+
+  /* ══ FINANCE APPROVAL GROUPS ══ */
+  const saveFinanceApprovalGroup = async () => {
+    if (!fagForm.name || fagForm.steps.length === 0) return toast('Name and at least one step required', 'error');
+    const db = firebase.firestore();
+    try {
+      const data = { name: fagForm.name, description: fagForm.description||'', docType: 'FinanceAdjustment', steps: fagForm.steps, companyName: fagForm.companyName||'', active: true, createdBy: user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (editingId) { await db.collection('approvalGroups').doc(editingId).update(data); toast('Finance Approval Group updated'); }
+      else           { await db.collection('approvalGroups').add(data); toast('Finance Approval Group created'); }
+      await logAction(db, 'Finance Approval Group Saved', `Configured group "${fagForm.name}"`);
+      await loadData(db); closeModal(); setFagForm({ name:'', description:'', steps:[], companyName:'' });
+    } catch(e) { toast(e.message, 'error'); }
+  };
+
+  const addFagStep = () => setFagForm(p=>({...p, steps:[...p.steps, {approverAdminId:'', approverName:'', approverRole:''}]}));
+  const updFagStep = (i,f,v) => setFagForm(p=>{ const s=[...p.steps]; s[i]={...s[i],[f]:v}; return {...p,steps:s}; });
+  const remFagStep = (i) => setFagForm(p=>({...p, steps:p.steps.filter((_,x)=>x!==i)}));
+
+    const logAction = async (db, action, details) => {
     try {
       await db.collection('masterLogs').add({
         masterId: user?.uid, masterName: user?.displayName,
@@ -446,6 +524,69 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
       }
       await loadData(db); closeModal();
     } catch(e) { toast(e.message,'error'); }
+  };
+
+  /* ══ SIGNATURE UPLOAD ══ */
+  const openSigModal = (adminId) => {
+    const adm = admins.find(a => a.id === adminId);
+    setSigAdminId(adminId);
+    setSigPreview(adm?.signatureUrl || null);
+    setSigModal(true);
+  };
+
+  const uploadSignature = async (file) => {
+    if (!file || !file.type.startsWith('image/')) { toast('Please select an image file (PNG or JPG)', 'error'); return; }
+    setSigUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'operix_products');
+      formData.append('folder', 'operix-signatures');
+      const res = await fetch('https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload', { method:'POST', body:formData });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setSigPreview(data.secure_url);
+      toast('Signature uploaded — click Save to confirm', 'info');
+    } catch(e) { toast('Signature upload failed: ' + e.message, 'error'); }
+    setSigUploading(false);
+  };
+
+  const saveSignature = async () => {
+    if (!sigPreview || !sigAdminId) return;
+    const db = firebase.firestore();
+    const adm = admins.find(a => a.id === sigAdminId);
+    try {
+      await db.collection('users').doc(sigAdminId).update({
+        signatureUrl: sigPreview,
+        signatureUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        signatureUpdatedBy: user.uid
+      });
+      // Notify the admin
+      await db.collection('notifications').add({
+        userId: sigAdminId,
+        type: 'signature_uploaded',
+        title: 'Signature Updated',
+        message: `Your authorized signature has been uploaded by the Master Administrator and is now active on quotation documents.`,
+        read: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await logAction(db, 'Signature Uploaded', `Uploaded signature for admin ${adm?.fullName}`);
+      toast(`Signature saved for ${adm?.fullName}`);
+      await loadData(db);
+      setSigModal(false); setSigAdminId(null); setSigPreview(null);
+    } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+  };
+
+  const removeSignature = async (adminId) => {
+    if (!confirm('Remove this administrator\'s signature? It will no longer appear on quotation documents.')) return;
+    const db = firebase.firestore();
+    const adm = admins.find(a => a.id === adminId);
+    await db.collection('users').doc(adminId).update({
+      signatureUrl: firebase.firestore.FieldValue.delete(),
+      signatureUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await logAction(db, 'Signature Removed', `Removed signature for admin ${adm?.fullName}`);
+    toast('Signature removed'); await loadData(db);
   };
 
   const deleteAdmin = async (adminId) => {
@@ -691,17 +832,23 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
  const companies = [...new Set([...admins.map(a=>a.companyName),...users.map(u=>u.companyName)].filter(Boolean))];
 
   const orderApprovalGroups = approvalGroups.filter(g => g.docType === 'Order');
-  const poApprovalGroups    = approvalGroups.filter(g => g.docType !== 'Order');
+  const poApprovalGroups    = approvalGroups.filter(g => g.docType !== 'Order' && g.docType !== 'Quotation');
+  const quotationApprovalGroups = approvalGroups.filter(g => g.docType === 'Quotation');
+
+  const financeApprovalGroups = approvalGroups.filter(g => g.docType === 'FinanceAdjustment');
 
   const navItems = [
-    { id:'overview',        label:'Overview',             icon:I.grid,     count:null },
-    { id:'admins',          label:'Administrators',        icon:I.shield,   count:stats.admins },
-    { id:'roles',           label:'Role Designations',     icon:I.tag,      count:admins.filter(a=>a.assignedRole).length },
-    { id:'approval',        label:'PO Approval Groups',    icon:I.approval, count:poApprovalGroups.length },
-    { id:'order-approval',  label:'Order Approval Groups', icon:I.cart,     count:orderApprovalGroups.length },
-    { id:'features',        label:'Company Features',      icon:I.approval, count:companies.length },
-    { id:'users',           label:'Users',                 icon:I.users,    count:stats.users },
-    { id:'assignments',     label:'Assignments',           icon:I.link,     count:stats.assignments },
+    { id:'overview',          label:'Overview',               icon:I.grid,     count:null },
+    { id:'subscriptions',     label:'Subscriptions',          icon:I.building, count:companies.length },
+    { id:'admins',            label:'Administrators',         icon:I.shield,   count:stats.admins },
+    { id:'roles',             label:'Role Designations',      icon:I.tag,      count:admins.filter(a=>a.assignedRole).length },
+    { id:'approval',          label:'PO Approval Groups',     icon:I.approval, count:poApprovalGroups.length },
+    { id:'order-approval',    label:'Order Approval Groups',  icon:I.cart,     count:orderApprovalGroups.length },
+    { id:'quote-approval',    label:'Quotation Approval',     icon:I.quote,    count:quotationApprovalGroups.length },
+    { id:'finance-approval',  label:'Finance Approval Group', icon:I.workflow, count:financeApprovalGroups.length },
+    { id:'features',          label:'Company Features',       icon:I.approval, count:companies.length },
+    { id:'users',             label:'Users',                  icon:I.users,    count:stats.users },
+    { id:'assignments',       label:'Assignments',            icon:I.link,     count:stats.assignments },
   ];
 
   return (
@@ -785,11 +932,12 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                   <div className="page-subtitle">Full system status and quick actions</div>
                 </div>
               </div>
-              <div className="stats-grid">
+              <div className="stats-grid" style={{gridTemplateColumns:'repeat(5,1fr)'}}>
                 <div className="stat-card blue"><div className="stat-label">Administrators</div><div className="stat-value">{stats.admins}</div><div className="stat-sub">{admins.filter(a=>a.assignedRole).length} with roles</div><div className="stat-icon"><Ico d={I.shield} size={48}/></div></div>
                 <div className="stat-card green"><div className="stat-label">Active Users</div><div className="stat-value">{stats.users}</div><div className="stat-sub">{stats.unassigned} unassigned</div><div className="stat-icon"><Ico d={I.users} size={48}/></div></div>
                 <div className="stat-card purple"><div className="stat-label">PO Approval Groups</div><div className="stat-value">{poApprovalGroups.length}</div><div className="stat-sub">{poApprovalGroups.filter(g=>g.active).length} active</div><div className="stat-icon"><Ico d={I.approval} size={48}/></div></div>
                 <div className="stat-card amber"><div className="stat-label">Order Approval Groups</div><div className="stat-value">{orderApprovalGroups.length}</div><div className="stat-sub">{orderApprovalGroups.filter(g=>g.active).length} active · {orderApprovalGroups.filter(g=>g.bypassAllowed).length} with bypass</div><div className="stat-icon"><Ico d={I.cart} size={48}/></div></div>
+                <div className="stat-card" style={{borderTop:'2px solid var(--purple)'}}><div className="stat-label">Quotation Approval</div><div className="stat-value" style={{color:'var(--purple)'}}>{quotationApprovalGroups.length}</div><div className="stat-sub">{admins.filter(a=>a.signatureUrl).length}/{admins.length} signatories set</div><div className="stat-icon"><Ico d={I.quote} size={48}/></div></div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                 <div className="table-card">
@@ -800,6 +948,7 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                       {label:'Add User Account',         icon:I.user,     action:()=>setModal('create-user'),     color:'var(--green)'},
                       {label:'Assign Role to Admin',     icon:I.tag,      action:()=>setModal('roles'),           color:'var(--purple)'},
                       {label:'Configure Approval Group', icon:I.approval, action:()=>setModal('approval-group'),  color:'var(--amber)'},
+                      {label:'Configure Quote Approval', icon:I.quote,    action:()=>setActiveNav('quote-approval'), color:'var(--purple)'},
                       {label:'Manage Assignments',       icon:I.link,     action:()=>setActiveNav('assignments'), color:'var(--cyan)'},
                     ].map(a=>(
                       <button key={a.label} className="btn btn-secondary" onClick={a.action} style={{width:'100%',justifyContent:'flex-start',gap:10}}>
@@ -817,7 +966,8 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                       {label:'Unassigned users',           value:getUnassignedUsers().length,              warn:true},
                       {label:'Active approval workflows',  value:approvalGroups.filter(g=>g.active).length,warn:false},
                       {label:'PO approval groups',         value:approvalGroups.filter(g=>g.docType==='PO').length,    warn:false},
-                      {label:'Invoice approval groups',    value:approvalGroups.filter(g=>g.docType==='Invoice').length,warn:false},
+                      {label:'Quotation approval groups',  value:quotationApprovalGroups.length,           warn:false},
+                      {label:'Admins missing signatures',  value:admins.filter(a=>!a.signatureUrl).length, warn:true},
                     ].map(s=>(
                       <div key={s.label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
                         <span style={{fontSize:12,color:'var(--text2)'}}>{s.label}</span>
@@ -874,6 +1024,15 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                             <button className="btn btn-icon btn-secondary" title="Assign Users"  onClick={()=>openAssignModal(a.id)}><Ico d={I.link} size={12}/></button>
                             <button className="btn btn-icon btn-secondary" title="Assign Role"   onClick={()=>{setRoleForm({adminId:a.id,roleId:a.assignedRole||'',approvalLimit:a.approvalLimit||'',notes:a.roleNotes||''});setModal('roles');}}><Ico d={I.tag} size={12}/></button>
                             <button className="btn btn-icon btn-secondary" title="Edit"          onClick={()=>{setAdminForm({email:a.email,fullName:a.fullName,companyName:a.companyName||'',tinNumber:a.tinNumber||'',address:a.address||'',phoneNumber:a.phoneNumber||'',password:''});setEditingId(a.id);setModal('create-admin');}}><Ico d={I.edit} size={12}/></button>
+                            <button
+                              className={`btn btn-icon btn-sm ${a.signatureUrl?'btn-success':'btn-secondary'}`}
+                              title={a.signatureUrl?'Update Signature':'Upload Signature'}
+                              onClick={()=>openSigModal(a.id)}
+                              style={{position:'relative'}}
+                            >
+                              <Ico d={I.pen} size={12}/>
+                              {a.signatureUrl&&<span style={{position:'absolute',top:-3,right:-3,width:8,height:8,borderRadius:'50%',background:'var(--green)',border:'1px solid var(--bg2)'}}/>}
+                            </button>
                             <button className="btn btn-icon btn-danger"    title="Delete"        onClick={()=>deleteAdmin(a.id)}><Ico d={I.trash} size={12}/></button>
                           </div>
                         </td>
@@ -1039,7 +1198,150 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
           )}
 
           {/* ══════════════ COMPANY FEATURES ══════════════ */}
-          {activeNav==='features'&&(
+          {/* ══════════════ QUOTATION APPROVAL GROUPS ══════════════ */}
+          {activeNav==='quote-approval'&&(
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title">
+                    <div className="page-title-icon" style={{background:'var(--purple-bg)',color:'var(--purple)'}}><Ico d={I.quote} size={15}/></div>
+                    Quotation Approval Groups
+                  </div>
+                  <div className="page-subtitle">Configure multi-step approval workflows for Quotations — route quotation documents to designated signatories before they are issued to clients</div>
+                </div>
+                <button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'Quotation',requiresAmount:false}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>New Quotation Approval Group</button>
+              </div>
+
+              {/* How it works banner */}
+              <div style={{background:'var(--purple-bg)',border:'1px solid rgba(168,85,247,.25)',borderRadius:8,padding:'12px 14px',marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                <span style={{color:'var(--purple)',flexShrink:0,marginTop:1}}><Ico d={I.info} size={14}/></span>
+                <div style={{fontSize:11,color:'var(--text2)',lineHeight:1.6}}>
+                  <strong style={{color:'var(--purple)'}}>How Quotation Approval Works:</strong> When a quotation is created and submitted for approval, the system routes it to the designated approver in sequence. Each approver is notified on their Dashboard. Once all steps are complete, the quotation is marked <strong style={{color:'var(--text)'}}>Approved</strong> and the signatory's uploaded signature is rendered automatically in the Quote Layout. Signatures are uploaded per administrator in the <strong style={{color:'var(--text)'}}>Administrators</strong> section using the <span style={{color:'var(--green)'}}>✎ Upload Signature</span> button.
+                </div>
+              </div>
+
+              {/* Signatory Coverage Card */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:20}}>
+                {[
+                  { label:'Active Quotation Groups',  val:quotationApprovalGroups.filter(g=>g.active).length,  color:'var(--green)',  cls:'green'  },
+                  { label:'Admins with Signatures',    val:admins.filter(a=>a.signatureUrl).length,             color:'var(--purple)', cls:'purple' },
+                  { label:'Pending Coverage',          val:admins.filter(a=>!a.signatureUrl).length,            color:'var(--amber)',  cls:'amber'  },
+                ].map(s=>(
+                  <div key={s.label} className={`stat-card ${s.cls}`} style={{padding:'14px 16px'}}>
+                    <div className="stat-label">{s.label}</div>
+                    <div className="stat-value" style={{fontSize:22,color:s.color}}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Signatory status table */}
+              <div className="table-card" style={{marginBottom:16}}>
+                <div className="table-header">
+                  <div><div className="table-header-title">Signatory Coverage</div><div className="table-header-sub">Administrators whose signatures appear on approved quotation documents</div></div>
+                  <button className="btn btn-secondary btn-sm" onClick={()=>setActiveNav('admins')}><Ico d={I.shield} size={11}/>Manage Admins</button>
+                </div>
+                <table className="data-table">
+                  <thead><tr><th>Administrator</th><th>Company</th><th>Role</th><th>Signature Status</th><th>Last Updated</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {admins.map(a=>(
+                      <tr key={a.id}>
+                        <td><div style={{display:'flex',alignItems:'center',gap:8}}><div className="user-avatar" style={{background:'linear-gradient(135deg,var(--blue),var(--purple))',width:26,height:26,fontSize:10}}>{a.fullName?.[0]||'A'}</div><span style={{fontWeight:600,color:'var(--text)'}}>{a.fullName}</span></div></td>
+                        <td>{a.companyName||<span style={{color:'var(--text3)'}}>—</span>}</td>
+                        <td>{a.assignedRole?<span className={`badge badge-${getRoleBadge(a.assignedRole)}`}>{a.assignedRoleName}</span>:<span className="badge badge-gray">Undesignated</span>}</td>
+                        <td>
+                          {a.signatureUrl
+                            ? <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                <span className="badge badge-green"><Ico d={I.check} size={9}/>Signature On File</span>
+                                <img src={a.signatureUrl} alt="sig" style={{height:28,maxWidth:80,objectFit:'contain',background:'#fff',borderRadius:4,padding:'2px 4px',border:'1px solid var(--border)'}}/>
+                              </div>
+                            : <span className="badge badge-amber"><Ico d={I.info} size={9}/>No Signature</span>
+                          }
+                        </td>
+                        <td style={{fontSize:11,color:'var(--text3)'}}>{a.signatureUpdatedAt?.toDate?new Date(a.signatureUpdatedAt.toDate()).toLocaleDateString():'—'}</td>
+                        <td>
+                          <div style={{display:'flex',gap:4}}>
+                            <button className={`btn btn-sm ${a.signatureUrl?'btn-success':'btn-primary'}`} onClick={()=>openSigModal(a.id)}>
+                              <Ico d={I.pen} size={11}/>{a.signatureUrl?'Update':'Upload Signature'}
+                            </button>
+                            {a.signatureUrl&&<button className="btn btn-sm btn-danger" onClick={()=>removeSignature(a.id)}><Ico d={I.trash} size={11}/></button>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {admins.length===0&&<div className="empty"><div className="empty-title">No administrators found</div><div className="empty-sub">Create administrators first, then upload their signatures</div></div>}
+              </div>
+
+              {/* Quotation Approval Groups list */}
+              {quotationApprovalGroups.length===0 ? (
+                <div className="table-card">
+                  <div className="empty">
+                    <div className="empty-icon"><Ico d={I.quote} size={40}/></div>
+                    <div className="empty-title">No quotation approval groups configured</div>
+                    <div className="empty-sub">Create a group to define the approval chain for quotation documents</div>
+                    <button className="btn btn-primary" onClick={()=>{setAgForm(p=>({...p,docType:'Quotation',requiresAmount:false}));setModal('approval-group');}}><Ico d={I.plus} size={13}/>Create First Group</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {quotationApprovalGroups.map(g=>(
+                    <div key={g.id} className="table-card">
+                      <div style={{padding:'14px 16px',display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                        <div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{g.name}</span>
+                            <span className="badge badge-purple">Quotation</span>
+                            <span className={`badge ${g.active?'badge-green':'badge-gray'}`}>{g.active?'Active':'Inactive'}</span>
+                            {g.bypassAllowed&&<span className="badge badge-amber">Bypass Allowed</span>}
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{g.description||'No description'}</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:11,color:'var(--text3)'}}>
+                            {g.companyName
+                              ? <span>Company: <strong style={{color:'var(--text2)'}}>{g.companyName}</strong></span>
+                              : <span>Scope: <strong style={{color:'var(--text2)'}}>All Companies</strong></span>
+                            }
+                            <span>Steps: <strong style={{color:'var(--text2)'}}>{g.steps?.length||0}</strong></span>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="btn btn-sm btn-secondary" onClick={()=>{setEditingId(g.id);setAgForm({name:g.name,description:g.description||'',docType:g.docType,steps:g.steps||[],minAmount:g.minAmount||'',maxAmount:g.maxAmount||'',appliesTo:g.appliesTo||'both',companyName:g.companyName||'',bypassAllowed:g.bypassAllowed||false,requiresAmount:!!g.requiresAmount});setModal('approval-group');}}><Ico d={I.edit} size={11}/>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={()=>deleteApprovalGroup(g.id,g.name)}><Ico d={I.trash} size={11}/></button>
+                        </div>
+                      </div>
+                      {g.steps?.length>0&&(
+                        <div style={{padding:'0 16px 14px',borderTop:'1px solid var(--border)',paddingTop:12}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:8}}>Approval &amp; Signature Chain</div>
+                          <div className="workflow-chain">
+                            {g.steps.map((step,i)=>{
+                              const stepAdmin = admins.find(a=>a.id===step.approverAdminId);
+                              return (
+                                <React.Fragment key={i}>
+                                  {i>0&&<div className="workflow-arrow"><Ico d={I.arrow} size={12}/></div>}
+                                  <div className="workflow-step">
+                                    <div className="workflow-step-num">Step {i+1}</div>
+                                    <div className="workflow-step-name">{step.approverName||step.approverRole||'Any Approver'}</div>
+                                    <div className="workflow-step-detail" style={{display:'flex',alignItems:'center',gap:4}}>
+                                      {stepAdmin?.signatureUrl
+                                        ? <><span style={{color:'var(--green)',fontSize:9}}>●</span><span style={{fontSize:10,color:'var(--green)'}}>Sig on file</span></>
+                                        : <><span style={{color:'var(--amber)',fontSize:9}}>●</span><span style={{fontSize:10,color:'var(--amber)'}}>No signature</span></>
+                                      }
+                                    </div>
+                                  </div>
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+
             <div className="page">
               <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
                 <div>
@@ -1221,45 +1523,311 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
             </div>
           )}
 
-          {/* ══════════════ USERS ══════════════ */}
-          {activeNav==='users'&&(
+
+          {/* ══════════════ SUBSCRIPTIONS ══════════════ */}
+          {activeNav==='subscriptions'&&(
             <div className="page">
               <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
-                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--green-bg)',color:'var(--green)'}}><Ico d={I.users} size={15}/></div>Users</div><div className="page-subtitle">Manage end-user accounts across all companies</div></div>
-                <div style={{display:'flex',gap:8}}>
+                <div>
+                  <div className="page-title"><div className="page-title-icon" style={{background:'var(--blue-bg)',color:'var(--blue-lt)'}}><Ico d={I.building} size={15}/></div>Subscriptions</div>
+                  <div className="page-subtitle">Set the plan, admin quota and user quota per company. Admins cannot exceed these limits when managing their users.</div>
+                </div>
+              </div>
+              {companies.length===0?(
+                <div className="table-card"><div className="empty"><div className="empty-icon"><Ico d={I.building} size={40}/></div><div className="empty-title">No companies found</div><div className="empty-sub">Assign company names to admins and users first</div></div></div>
+              ):(
+                <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                  {companies.map(company=>{
+                    const sub = subscriptions[company]||{ plan:'starter', maxAdmins:3, maxUsers:10 };
+                    const companyAdmins = admins.filter(a=>a.companyName===company);
+                    const companyUsers  = users.filter(u=>u.companyName===company);
+                    const adminPct  = Math.min(100,Math.round((companyAdmins.length/(sub.maxAdmins||1))*100));
+                    const userPct   = Math.min(100,Math.round((companyUsers.length/(sub.maxUsers||1))*100));
+                    const planColors = { starter:'var(--blue)', growth:'var(--green)', enterprise:'var(--purple)', unlimited:'var(--amber)' };
+                    const planColor  = planColors[sub.plan]||'var(--blue)';
+                    return (
+                      <div key={company} className="table-card">
+                        <div style={{padding:'16px 18px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:12}}>
+                            <div style={{width:36,height:36,borderRadius:8,background:'var(--blue-bg)',border:'1px solid rgba(59,127,232,.2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--blue-lt)',flexShrink:0}}><Ico d={I.building} size={16}/></div>
+                            <div>
+                              <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{company}</div>
+                              <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>{companyAdmins.length} admin{companyAdmins.length!==1?'s':''} · {companyUsers.length} user{companyUsers.length!==1?'s':''}</div>
+                            </div>
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:10}}>
+                            <span className="badge" style={{textTransform:'uppercase',letterSpacing:'.08em',color:planColor,background:`color-mix(in srgb, ${planColor} 12%, transparent)`,border:`1px solid color-mix(in srgb, ${planColor} 25%, transparent)`}}>{sub.plan||'starter'} plan</span>
+                            <button className="btn btn-sm btn-secondary" onClick={()=>{setSubForm({plan:sub.plan||'starter',maxAdmins:sub.maxAdmins||3,maxUsers:sub.maxUsers||10});setSubEditModal(company);}}>
+                              <Ico d={I.edit} size={11}/>Edit Plan
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{padding:'16px 18px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+                          <div>
+                            <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                              <span style={{fontSize:12,fontWeight:600,color:'var(--text2)'}}>Administrators</span>
+                              <span style={{fontSize:12,fontFamily:'IBM Plex Mono,monospace',color:adminPct>=90?'var(--red)':adminPct>=70?'var(--amber)':'var(--text2)'}}>{companyAdmins.length} / {sub.maxAdmins}</span>
+                            </div>
+                            <div style={{height:6,background:'var(--border)',borderRadius:99,overflow:'hidden'}}>
+                              <div style={{height:'100%',borderRadius:99,width:`${adminPct}%`,background:adminPct>=90?'var(--red)':adminPct>=70?'var(--amber)':'var(--blue)',transition:'width .3s'}}/>
+                            </div>
+                            <div style={{fontSize:10,color:'var(--text3)',marginTop:4}}>{Math.max(0,(sub.maxAdmins||0)-companyAdmins.length)} admin slot{Math.max(0,(sub.maxAdmins||0)-companyAdmins.length)!==1?'s':''} remaining</div>
+                          </div>
+                          <div>
+                            <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                              <span style={{fontSize:12,fontWeight:600,color:'var(--text2)'}}>Users</span>
+                              <span style={{fontSize:12,fontFamily:'IBM Plex Mono,monospace',color:userPct>=90?'var(--red)':userPct>=70?'var(--amber)':'var(--text2)'}}>{companyUsers.length} / {sub.maxUsers}</span>
+                            </div>
+                            <div style={{height:6,background:'var(--border)',borderRadius:99,overflow:'hidden'}}>
+                              <div style={{height:'100%',borderRadius:99,width:`${userPct}%`,background:userPct>=90?'var(--red)':userPct>=70?'var(--amber)':'var(--green)',transition:'width .3s'}}/>
+                            </div>
+                            <div style={{fontSize:10,color:'var(--text3)',marginTop:4}}>{Math.max(0,(sub.maxUsers||0)-companyUsers.length)} user slot{Math.max(0,(sub.maxUsers||0)-companyUsers.length)!==1?'s':''} remaining</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════ FINANCE APPROVAL GROUP ══════════════ */}
+          {activeNav==='finance-approval'&&(<>
+            <div className="page">
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div>
+                  <div className="page-title"><div className="page-title-icon" style={{background:'var(--green-bg)',color:'var(--green)'}}><Ico d={I.workflow} size={15}/></div>Finance Approval Group</div>
+                  <div className="page-subtitle">Configure approval workflows for balance adjustments in Accounts Receivable. Adjusted balances require approval before taking effect.</div>
+                </div>
+                <button className="btn btn-primary" onClick={()=>{setFagForm({name:'',description:'',steps:[],companyName:''});setEditingId(null);setModal('finance-approval-group');}}><Ico d={I.plus} size={13}/>New Finance Approval Group</button>
+              </div>
+              <div style={{background:'var(--amber-bg)',border:'1px solid rgba(245,158,11,.2)',borderRadius:8,padding:'12px 14px',marginBottom:16,display:'flex',gap:10,alignItems:'flex-start'}}>
+                <span style={{color:'var(--amber)',flexShrink:0,marginTop:1}}><Ico d={I.info} size={14}/></span>
+                <div style={{fontSize:11,color:'var(--text2)',lineHeight:1.5}}><strong style={{color:'var(--amber)'}}>How Finance Approval Works:</strong> When an admin adjusts a customer's balance in the Receivables module, the adjustment is held as <strong>Pending Approval</strong>. It appears on the designated approver's worklist. The approver can review the customer, the amount, and the reason before approving or denying. If no group is configured, adjustments take effect immediately without approval.</div>
+              </div>
+              {financeApprovalGroups.length===0?(
+                <div className="table-card"><div className="empty"><div className="empty-icon"><Ico d={I.workflow} size={40}/></div><div className="empty-title">No Finance Approval Groups configured</div><div className="empty-sub">Create a group to require approvals for AR balance adjustments</div><button className="btn btn-primary" onClick={()=>{setFagForm({name:'',description:'',steps:[],companyName:''});setEditingId(null);setModal('finance-approval-group');}}><Ico d={I.plus} size={13}/>Create First Group</button></div></div>
+              ):(
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {financeApprovalGroups.map(g=>(
+                    <div key={g.id} className="table-card">
+                      <div style={{padding:'14px 16px',display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                        <div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                            <span style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>{g.name}</span>
+                            <span className="badge badge-amber">Finance Adjustment</span>
+                            <span className={`badge ${g.active?'badge-green':'badge-gray'}`}>{g.active?'Active':'Inactive'}</span>
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{g.description||'No description'}</div>
+                          <div style={{display:'flex',gap:12,fontSize:11,color:'var(--text3)'}}>
+                            {g.companyName?<span>Company: <strong style={{color:'var(--text2)'}}>{g.companyName}</strong></span>:<span>Scope: <strong style={{color:'var(--text2)'}}>All Companies</strong></span>}
+                            <span>Steps: <strong style={{color:'var(--text2)'}}>{g.steps?.length||0}</strong></span>
+                          </div>
+                        </div>
+                        <div style={{display:'flex',gap:6}}>
+                          <button className="btn btn-sm btn-secondary" onClick={()=>{setEditingId(g.id);setFagForm({name:g.name,description:g.description||'',steps:g.steps||[],companyName:g.companyName||''});setModal('finance-approval-group');}}><Ico d={I.edit} size={11}/>Edit</button>
+                          <button className="btn btn-sm btn-danger" onClick={()=>deleteApprovalGroup(g.id,g.name)}><Ico d={I.trash} size={11}/></button>
+                        </div>
+                      </div>
+                      {g.steps?.length>0&&(
+                        <div style={{padding:'0 16px 14px',borderTop:'1px solid var(--border)',paddingTop:12}}>
+                          <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:8}}>Approval Chain</div>
+                          <div className="workflow-chain">
+                            {g.steps.map((step,i)=>(
+                              <React.Fragment key={i}>
+                                {i>0&&<div className="workflow-arrow"><Ico d={I.arrow} size={12}/></div>}
+                                <div className="workflow-step">
+                                  <div className="workflow-step-num">Step {i+1}</div>
+                                  <div className="workflow-step-name">{step.approverName||step.approverRole||'Any Approver'}</div>
+                                  <div className="workflow-step-detail" style={{fontSize:10,color:'var(--text3)'}}>{step.approverRole||'Finance Approver'}</div>
+                                </div>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pending adjustments cross-company view */}
+            {adjLoaded&&pendingAdjustments.length>0&&(
+              <div className="table-card" style={{marginTop:16}}>
+                <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'var(--text)'}}>Pending Balance Adjustments</div>
+                  <span className="badge badge-amber">{pendingAdjustments.length} pending</span>
+                </div>
+                <div style={{overflowX:'auto'}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                    <thead><tr style={{background:'var(--bg2)'}}>
+                      {['Customer','Company','Type','Amount','Reason','Requested By','Group','Date'].map(h=>(
+                        <th key={h} style={{padding:'8px 12px',textAlign:h==='Amount'?'right':'left',fontSize:10,fontWeight:700,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.04em',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap'}}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {pendingAdjustments.map((req,i)=>{
+                        const d=req.createdAt?.toDate?req.createdAt.toDate():new Date(req.createdAt||Date.now());
+                        return (
+                          <tr key={req.id} style={{borderBottom:'1px solid var(--border)'}}>
+                            <td style={{padding:'10px 12px',fontWeight:700,color:'var(--text)'}}>{req.customerName||'—'}</td>
+                            <td style={{padding:'10px 12px',fontSize:11,color:'var(--text2)'}}>{req.companyName||'—'}</td>
+                            <td style={{padding:'10px 12px'}}><span className={req.adjustmentType==='credit'?'badge badge-green':'badge badge-red'}>{req.adjustmentType==='credit'?'↓ Credit':'↑ Debit'}</span></td>
+                            <td style={{padding:'10px 12px',textAlign:'right',fontFamily:'monospace',fontWeight:700}}>₱{Number(req.amount||0).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+                            <td style={{padding:'10px 12px',color:'var(--text2)',maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{req.reason||'—'}</td>
+                            <td style={{padding:'10px 12px',color:'var(--text2)'}}>{req.requestedBy||'—'}</td>
+                            <td style={{padding:'10px 12px',fontSize:11,color:'var(--amber)'}}>{req.approvalGroupName||'—'}</td>
+                            <td style={{padding:'10px 12px',fontSize:11,color:'var(--text3)'}}>{d.toLocaleDateString('en-PH',{month:'short',day:'2-digit',year:'numeric'})}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>)}
+
+          {/* ══════════════ USERS ══════════════ */}
+          {activeNav==='users'&&(()=>{
+            // userDetailModal/Form/savingDetail state is declared at component top-level
+            const PAYMENT_TERMS = ['Net 7','Net 15','Net 30','Net 45','Net 60','Net 90','COD','Prepaid','Upon Delivery','Monthly'];
+            const openUserDetail = (u) => {
+              setUserDetailForm({
+                fullName: u.fullName||'', email: u.email||'', phoneNumber: u.phoneNumber||'',
+                address: u.address||'', companyName: u.companyName||'',
+                creditLimit: u.creditLimit||0, paymentTerms: u.paymentTerms||'Net 30',
+                accountStatus: u.accountStatus||'active', taxId: u.taxId||'',
+                taxRate: u.taxRate||0, customerId: u.customerId||'',
+                outstandingBalance: u.outstandingBalance||0, notes: u.notes||'',
+              });
+              setUserDetailModal(u);
+            };
+            const saveUserDetail = async () => {
+              if (!userDetailModal) return;
+              setSavingDetail(true);
+              const db = firebase.firestore();
+              try {
+                const upd = {
+                  fullName: userDetailForm.fullName,
+                  phoneNumber: userDetailForm.phoneNumber,
+                  address: userDetailForm.address,
+                  creditLimit: parseFloat(userDetailForm.creditLimit)||0,
+                  paymentTerms: userDetailForm.paymentTerms,
+                  accountStatus: userDetailForm.accountStatus,
+                  taxId: userDetailForm.taxId,
+                  taxRate: parseFloat(userDetailForm.taxRate)||0,
+                  customerId: userDetailForm.customerId,
+                  notes: userDetailForm.notes,
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                  updatedBy: user.uid,
+                };
+                if (userDetailForm.password) { upd.tempPassword = userDetailForm.password; upd.requiresPasswordReset = true; }
+                await db.collection('users').doc(userDetailModal.id).update(upd);
+                await logAction(db,'User Profile Updated',`Updated full profile for ${userDetailForm.fullName}`);
+                toast('User profile updated');
+                await loadData(db);
+                setUserDetailModal(null);
+              } catch(e) { toast(e.message,'error'); }
+              setSavingDetail(false);
+            };
+            return (
+            <div className="page">
+              {userDetailModal&&(
+                <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setUserDetailModal(null)}>
+                  <div className="modal" style={{maxWidth:700}}>
+                    <div className="modal-header">
+                      <div className="modal-title"><div style={{width:28,height:28,borderRadius:6,background:'linear-gradient(135deg,var(--green),var(--cyan))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#fff',marginRight:4}}>{userDetailModal.fullName?.[0]||'U'}</div>{userDetailModal.fullName}</div>
+                      <button className="btn btn-icon btn-secondary" onClick={()=>setUserDetailModal(null)}><Ico d={I.x} size={13}/></button>
+                    </div>
+                    <div className="modal-body" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                      <div style={{gridColumn:'1/-1',fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text3)',borderBottom:'1px solid var(--border)',paddingBottom:8,marginBottom:2}}>Identity &amp; Access</div>
+                      <div className="form-group"><label className="form-label">Full Name</label><input className="form-input" value={userDetailForm.fullName} onChange={e=>setUserDetailForm(p=>({...p,fullName:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Email (read-only)</label><input className="form-input" value={userDetailForm.email} readOnly disabled/></div>
+                      <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={userDetailForm.phoneNumber} onChange={e=>setUserDetailForm(p=>({...p,phoneNumber:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Reset Password (optional)</label><input className="form-input" type="password" placeholder="Leave blank to keep current" value={userDetailForm.password||''} onChange={e=>setUserDetailForm(p=>({...p,password:e.target.value}))}/></div>
+                      <div className="form-group" style={{gridColumn:'1/-1'}}><label className="form-label">Address</label><input className="form-input" value={userDetailForm.address} onChange={e=>setUserDetailForm(p=>({...p,address:e.target.value}))}/></div>
+                      <div style={{gridColumn:'1/-1',fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text3)',borderBottom:'1px solid var(--border)',paddingBottom:8,marginTop:4,marginBottom:2}}>Financial Settings</div>
+                      <div className="form-group"><label className="form-label">Credit Limit (₱)</label><input className="form-input" type="number" min="0" value={userDetailForm.creditLimit} onChange={e=>setUserDetailForm(p=>({...p,creditLimit:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Payment Terms</label>
+                        <select className="form-input form-select" value={userDetailForm.paymentTerms} onChange={e=>setUserDetailForm(p=>({...p,paymentTerms:e.target.value}))}>
+                          {PAYMENT_TERMS.map(t=><option key={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group"><label className="form-label">Account Status</label>
+                        <select className="form-input form-select" value={userDetailForm.accountStatus} onChange={e=>setUserDetailForm(p=>({...p,accountStatus:e.target.value}))}>
+                          {['active','on_hold','suspended','closed'].map(s=><option key={s} value={s}>{s.replace('_',' ').replace(/\w/g,c=>c.toUpperCase())}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group"><label className="form-label">Outstanding Balance (₱)</label><input className="form-input" type="number" value={userDetailForm.outstandingBalance} readOnly disabled style={{opacity:.6}}/><div className="form-hint">Managed via Receivables module</div></div>
+                      <div style={{gridColumn:'1/-1',fontSize:10,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text3)',borderBottom:'1px solid var(--border)',paddingBottom:8,marginTop:4,marginBottom:2}}>Tax &amp; System Identity</div>
+                      <div className="form-group"><label className="form-label">Tax ID / TIN</label><input className="form-input" value={userDetailForm.taxId} onChange={e=>setUserDetailForm(p=>({...p,taxId:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Tax Rate (%)</label><input className="form-input" type="number" min="0" max="100" step="0.01" value={userDetailForm.taxRate} onChange={e=>setUserDetailForm(p=>({...p,taxRate:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Customer ID</label><input className="form-input" placeholder="e.g. CUST-0001" value={userDetailForm.customerId} onChange={e=>setUserDetailForm(p=>({...p,customerId:e.target.value}))}/></div>
+                      <div className="form-group"><label className="form-label">Internal Notes</label><input className="form-input" value={userDetailForm.notes} onChange={e=>setUserDetailForm(p=>({...p,notes:e.target.value}))}/></div>
+                    </div>
+                    <div className="modal-footer">
+                      <button className="btn btn-secondary" onClick={()=>setUserDetailModal(null)}>Cancel</button>
+                      <button className="btn btn-primary" onClick={saveUserDetail} disabled={savingDetail} style={{opacity:savingDetail?.6:1}}>{savingDetail?<><div className="spinner" style={{width:12,height:12,borderWidth:2}}/> Saving…</>:<><Ico d={I.check} size={13}/>Save Profile</>}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                <div><div className="page-title"><div className="page-title-icon" style={{background:'var(--green-bg)',color:'var(--green)'}}><Ico d={I.users} size={15}/></div>Users</div><div className="page-subtitle">Read-only view of all users across companies · Users are created by Company Admins within their subscription quota</div></div>
+                <div style={{display:'flex',gap:8,alignItems:'center'}}>
                   <div style={{position:'relative'}}>
                     <input className="form-input" placeholder="Search users..." value={searchQ} onChange={e=>setSearchQ(e.target.value)} style={{paddingLeft:30,width:200,height:32,fontSize:12}}/>
                     <span style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',color:'var(--text3)'}}><Ico d={I.search} size={12}/></span>
                   </div>
-                  <button className="btn btn-success" onClick={()=>setModal('create-user')}><Ico d={I.plus} size={13}/>Add User</button>
+                  <div style={{fontSize:11,color:'var(--text3)',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,padding:'5px 10px',display:'flex',alignItems:'center',gap:5}}>
+                    <Ico d={I.info} size={11}/>Users are created by Company Admins
+                  </div>
                 </div>
               </div>
               <div className="table-card">
                 <table className="data-table">
-                  <thead><tr><th>User</th><th>Email</th><th>Company</th><th>Phone</th><th>Assigned Admin(s)</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+                  <thead><tr><th>User</th><th>Customer ID</th><th>Company</th><th>Payment Terms</th><th>Credit Limit</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {users.filter(u=>!searchQ||u.fullName?.toLowerCase().includes(searchQ.toLowerCase())||u.email?.toLowerCase().includes(searchQ.toLowerCase())).map(u=>{
-                      const userAssignments = assignments.filter(a=>a.userId===u.id);
+                    {users.filter(u=>!searchQ||u.fullName?.toLowerCase().includes(searchQ.toLowerCase())||u.email?.toLowerCase().includes(searchQ.toLowerCase())||u.customerId?.toLowerCase().includes(searchQ.toLowerCase())).map(u=>{
+                      const statusColors = {active:'badge-green',on_hold:'badge-amber',suspended:'badge-red',closed:'badge-gray'};
+                      const statusLabel = (u.accountStatus||'active').replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+                      const bal = u.outstandingBalance||0;
+                      const lim = u.creditLimit||0;
+                      const utilPct = lim>0?Math.min(100,Math.round((bal/lim)*100)):0;
                       return (
                         <tr key={u.id}>
-                          <td><div style={{display:'flex',alignItems:'center',gap:8}}><div className="user-avatar" style={{background:'linear-gradient(135deg,var(--green),var(--cyan))'}}>{u.fullName?.[0]||'U'}</div><span style={{fontWeight:600,color:'var(--text)'}}>{u.fullName}</span></div></td>
-                          <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11}}>{u.email}</td>
-                          <td>{u.companyName||<span style={{color:'var(--text3)'}}>—</span>}</td>
-                          <td style={{fontSize:11}}>{u.phoneNumber||'—'}</td>
                           <td>
-                            {userAssignments.length===0
-                              ?<span className="badge badge-amber">Unassigned</span>
-                              :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
-                                {userAssignments.map(a=><span key={a.id} className="badge badge-green">{a.adminName}</span>)}
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <div className="user-avatar" style={{background:'linear-gradient(135deg,var(--green),var(--cyan))'}}>{u.fullName?.[0]||'U'}</div>
+                              <div>
+                                <div style={{fontWeight:600,color:'var(--text)',fontSize:12}}>{u.fullName}</div>
+                                <div style={{fontSize:10,color:'var(--text3)',fontFamily:'IBM Plex Mono,monospace'}}>{u.email}</div>
                               </div>
-                            }
+                            </div>
                           </td>
-                          <td>{u.createdAt?.toDate?new Date(u.createdAt.toDate()).toLocaleDateString():'—'}</td>
-                          <td><span className="badge badge-blue">Active</span></td>
+                          <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11,color:u.customerId?'var(--cyan)':'var(--text3)'}}>{u.customerId||'—'}</td>
+                          <td>{u.companyName||<span style={{color:'var(--text3)'}}>—</span>}</td>
+                          <td><span className={`badge ${u.paymentTerms?'badge-blue':'badge-gray'}`}>{u.paymentTerms||'Not set'}</span></td>
+                          <td>
+                            {lim>0?(
+                              <div>
+                                <div style={{fontSize:11,fontFamily:'IBM Plex Mono,monospace',color:'var(--text)',marginBottom:3}}>₱{Number(lim).toLocaleString()}</div>
+                                <div style={{height:4,background:'var(--border)',borderRadius:99,width:80}}>
+                                  <div style={{height:'100%',borderRadius:99,width:`${utilPct}%`,background:utilPct>=90?'var(--red)':utilPct>=70?'var(--amber)':'var(--green)'}}/>
+                                </div>
+                              </div>
+                            ):<span style={{color:'var(--text3)',fontSize:11}}>No limit</span>}
+                          </td>
+                          <td style={{fontFamily:'IBM Plex Mono,monospace',fontSize:11,color:bal>0?'var(--amber)':'var(--text3)'}}>₱{Number(bal).toLocaleString()}</td>
+                          <td><span className={`badge ${statusColors[u.accountStatus||'active']||'badge-green'}`}>{statusLabel}</span></td>
                           <td>
                             <div style={{display:'flex',gap:4}}>
-                              <button className="btn btn-icon btn-secondary" onClick={()=>{setUserForm({email:u.email,fullName:u.fullName,companyName:u.companyName||'',phoneNumber:u.phoneNumber||'',tinNumber:u.tinNumber||'',address:u.address||'',password:''});setEditingId(u.id);setModal('create-user');}}><Ico d={I.edit} size={12}/></button>
-                              <button className="btn btn-icon btn-danger" onClick={()=>deleteUser(u.id)}><Ico d={I.trash} size={12}/></button>
+                              <button className="btn btn-icon btn-secondary" title="Full Profile" onClick={()=>openUserDetail(u)}><Ico d={I.user} size={12}/></button>
+                              <button className="btn btn-icon btn-secondary" title="Quick Edit" onClick={()=>{setUserForm({email:u.email,fullName:u.fullName,companyName:u.companyName||'',phoneNumber:u.phoneNumber||'',tinNumber:u.tinNumber||'',address:u.address||'',password:''});setEditingId(u.id);setModal('create-user');}}><Ico d={I.edit} size={12}/></button>
+                              <button className="btn btn-icon btn-danger" title="Delete" onClick={()=>deleteUser(u.id)}><Ico d={I.trash} size={12}/></button>
                             </div>
                           </td>
                         </tr>
@@ -1270,7 +1838,8 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                 {users.length===0&&<div className="empty"><div className="empty-title">No users found</div><button className="btn btn-success" style={{marginTop:8}} onClick={()=>setModal('create-user')}><Ico d={I.plus} size={13}/>Add First User</button></div>}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ══════════════ ASSIGNMENTS ══════════════ */}
           {activeNav==='assignments'&&(
@@ -1320,7 +1889,7 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
                         {admin.assignedRole&&<span style={{fontSize:11,color:'var(--text3)'}}>Limit: <span style={{fontFamily:'IBM Plex Mono,monospace',color:'var(--text2)'}}>{fmtCurrency(admin.approvalLimit)}</span></span>}
                         <span className="badge badge-gray">{adminUsers.length} user{adminUsers.length!==1?'s':''}</span>
                         <button className="btn btn-sm btn-primary" style={{zIndex:2}} onClick={e=>{e.stopPropagation();openAssignModal(admin.id);}}>
-                          <Ico d={I.plus} size={11}/>Add Users
+                          <Ico d={I.info} size={11}/>Admin creates users
                         </button>
                         <span className={`chevron-icon ${collapsed?'':'open'}`} style={{color:'var(--text3)'}}><Ico d={I.chevron} size={14}/></span>
                       </div>
@@ -1547,11 +2116,12 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
               <div className="form-grid2">
                 <div className="form-group"><label className="form-label">Group Name *</label><input className="form-input" value={agForm.name} onChange={e=>setAgForm(p=>({...p,name:e.target.value}))} placeholder={agForm.docType==='Order'?'e.g. Standard Order Approval':'e.g. Standard PO Approval'}/></div>
                 <div className="form-group"><label className="form-label">Document Type *</label>
-                  <select className="form-input form-select" value={agForm.docType} onChange={e=>setAgForm(p=>({...p,docType:e.target.value,requiresAmount:e.target.value!=='Order'}))}>
+                  <select className="form-input form-select" value={agForm.docType} onChange={e=>setAgForm(p=>({...p,docType:e.target.value,requiresAmount:e.target.value!=='Order'&&e.target.value!=='Quotation'}))}>
                     <option value="PO">Purchase Order (PO)</option>
                     <option value="Invoice">Invoice</option>
                     <option value="Both">Both PO &amp; Invoice</option>
                     <option value="Order">Customer Order (Shop)</option>
+                    <option value="Quotation">Quotation</option>
                   </select>
                 </div>
               </div>
@@ -1886,7 +2456,177 @@ const saveCompanyFeature = async (companyName, featureKey, currentValue) => {
         </div>
       )}
 
-      {/* ── TOAST STACK ── */}
+
+      {/* ── SUBSCRIPTION EDIT MODAL ── */}
+      {subEditModal&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setSubEditModal(null)}>
+          <div className="modal" style={{maxWidth:440}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--blue-lt)'}}><Ico d={I.building} size={16}/></span>Subscription — {subEditModal}</div>
+              <button className="btn btn-icon btn-secondary" onClick={()=>setSubEditModal(null)}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">Plan</label>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                  {['starter','growth','enterprise','unlimited'].map(p=>(
+                    <div key={p} onClick={()=>setSubForm(f=>({...f,plan:p}))} style={{padding:'10px 14px',borderRadius:6,border:`1.5px solid ${subForm.plan===p?'var(--blue)':'var(--border2)'}`,background:subForm.plan===p?'var(--blue-bg)':'var(--bg3)',cursor:'pointer',transition:'all .12s'}}>
+                      <div style={{fontSize:12,fontWeight:700,color:subForm.plan===p?'var(--blue-lt)':'var(--text)',textTransform:'capitalize'}}>{p}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="form-grid2">
+                <div className="form-group">
+                  <label className="form-label">Max Admins</label>
+                  <input className="form-input" type="number" min="1" value={subForm.maxAdmins} onChange={e=>setSubForm(f=>({...f,maxAdmins:e.target.value}))}/>
+                  <div className="form-hint">Current: {admins.filter(a=>a.companyName===subEditModal).length} admins</div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Max Users</label>
+                  <input className="form-input" type="number" min="1" value={subForm.maxUsers} onChange={e=>setSubForm(f=>({...f,maxUsers:e.target.value}))}/>
+                  <div className="form-hint">Current: {users.filter(u=>u.companyName===subEditModal).length} users</div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>setSubEditModal(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={()=>saveSubscription(subEditModal)} disabled={savingSub} style={{opacity:savingSub?.6:1}}>{savingSub?<><div className="spinner" style={{width:12,height:12,borderWidth:2}}/> Saving…</>:<><Ico d={I.check} size={13}/>Save Subscription</>}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── FINANCE APPROVAL GROUP MODAL ── */}
+      {modal==='finance-approval-group'&&(
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setModal(null),setFagForm({name:'',description:'',steps:[],companyName:''}),setEditingId(null))}>
+          <div className="modal" style={{maxWidth:600}}>
+            <div className="modal-header">
+              <div className="modal-title"><span style={{color:'var(--amber)'}}><Ico d={I.workflow} size={16}/></span>{editingId?'Edit':'New'} Finance Approval Group</div>
+              <button className="btn btn-icon btn-secondary" onClick={()=>{setModal(null);setFagForm({name:'',description:'',steps:[],companyName:''});setEditingId(null);}}><Ico d={I.x} size={13}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group"><label className="form-label">Group Name <span style={{color:'var(--red)'}}>*</span></label><input className="form-input" placeholder="e.g. AR Balance Adjustment Approval" value={fagForm.name} onChange={e=>setFagForm(p=>({...p,name:e.target.value}))}/></div>
+              <div className="form-group"><label className="form-label">Description</label><input className="form-input" placeholder="Optional description" value={fagForm.description} onChange={e=>setFagForm(p=>({...p,description:e.target.value}))}/></div>
+              <div className="form-group">
+                <label className="form-label">Company Scope</label>
+                <select className="form-input form-select" value={fagForm.companyName} onChange={e=>setFagForm(p=>({...p,companyName:e.target.value}))}>
+                  <option value="">All Companies</option>
+                  {companies.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <div className="form-hint">Leave blank to apply to all companies</div>
+              </div>
+              <div style={{marginTop:16}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                  <label className="form-label" style={{margin:0}}>Approval Steps <span style={{color:'var(--red)'}}>*</span></label>
+                  <button className="btn btn-sm btn-secondary" onClick={addFagStep}><Ico d={I.plus} size={11}/>Add Step</button>
+                </div>
+                {fagForm.steps.length===0&&<div style={{padding:14,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,fontSize:12,color:'var(--text3)',textAlign:'center'}}>No steps yet — add at least one approver</div>}
+                {fagForm.steps.map((step,i)=>(
+                  <div key={i} className="rule-row" style={{marginBottom:8}}>
+                    <span className="rule-operator">Step {i+1}</span>
+                    <select className="form-input form-select" style={{flex:1,height:32,padding:'4px 28px 4px 8px',fontSize:12}} value={step.approverAdminId} onChange={e=>{const adm=admins.find(a=>a.id===e.target.value);updFagStep(i,'approverAdminId',e.target.value);updFagStep(i,'approverName',adm?.fullName||'');updFagStep(i,'approverRole',adm?.assignedRoleName||'Admin');}}>
+                      <option value="">Select Approver…</option>
+                      {admins.map(a=><option key={a.id} value={a.id}>{a.fullName}{a.assignedRoleName?` (${a.assignedRoleName})`:''}</option>)}
+                    </select>
+                    <button className="btn btn-icon btn-danger btn-sm" onClick={()=>remFagStep(i)}><Ico d={I.trash} size={11}/></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>{setModal(null);setFagForm({name:'',description:'',steps:[],companyName:''});setEditingId(null);}}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveFinanceApprovalGroup} disabled={!fagForm.name||fagForm.steps.length===0} style={{opacity:(!fagForm.name||fagForm.steps.length===0)?'.5':'1'}}><Ico d={I.check} size={13}/>Save Group</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SIGNATURE UPLOAD MODAL ── */}
+      {sigModal&&(()=>{
+        const adm = admins.find(a=>a.id===sigAdminId);
+        return (
+          <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&(setSigModal(false),setSigAdminId(null),setSigPreview(null))}>
+            <div className="modal" style={{maxWidth:460}}>
+              <div className="modal-header">
+                <div className="modal-title">
+                  <span style={{color:'var(--purple)'}}><Ico d={I.pen} size={16}/></span>
+                  Upload Signature — {adm?.fullName}
+                </div>
+                <button className="btn btn-icon btn-secondary" onClick={()=>{setSigModal(false);setSigAdminId(null);setSigPreview(null);}}><Ico d={I.x} size={13}/></button>
+              </div>
+              <div className="modal-body">
+                {/* Info notice */}
+                <div style={{background:'var(--purple-bg)',border:'1px solid rgba(168,85,247,.2)',borderRadius:6,padding:'10px 12px',marginBottom:16,fontSize:11,color:'var(--text2)',lineHeight:1.5}}>
+                  <strong style={{color:'var(--purple)'}}>Security &amp; Integrity:</strong> The signature is stored securely in the system and linked to this administrator's profile. It will only appear on quotation documents after the designated approval step is completed. The administrator will be notified when their signature is set up.
+                </div>
+
+                {/* Signature preview */}
+                <div style={{marginBottom:14}}>
+                  <div className="form-label">Signature Preview</div>
+                  <div style={{
+                    background:'#fff',border:'1px solid var(--border2)',borderRadius:8,
+                    minHeight:100,display:'flex',alignItems:'center',justifyContent:'center',
+                    padding:16,position:'relative'
+                  }}>
+                    {sigPreview
+                      ? <img src={sigPreview} alt="Signature Preview" style={{maxHeight:80,maxWidth:'100%',objectFit:'contain'}}/>
+                      : <div style={{textAlign:'center',color:'var(--text3)'}}>
+                          <Ico d={I.pen} size={28}/>
+                          <div style={{fontSize:11,marginTop:6}}>No signature uploaded yet</div>
+                        </div>
+                    }
+                    {sigUploading&&(
+                      <div style={{position:'absolute',inset:0,background:'rgba(15,17,23,.85)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
+                        <div className="spinner"/>
+                        <span style={{fontSize:11,color:'var(--text3)'}}>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Guidelines */}
+                <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,padding:'10px 12px',marginBottom:14,fontSize:11,color:'var(--text3)',lineHeight:1.6}}>
+                  <strong style={{color:'var(--text2)',display:'block',marginBottom:4}}>Signature Image Guidelines</strong>
+                  Recommended: PNG with transparent background · Min 300×100px · Max 2MB · Actual handwritten signature only — do not include name, title, or date lines (those are placed separately as text fields in the Quote Layout).
+                </div>
+
+                {/* Upload control */}
+                <input type="file" id="sigFileInput" accept="image/*" style={{display:'none'}}
+                  onChange={e=>{if(e.target.files[0])uploadSignature(e.target.files[0]);e.target.value='';}}/>
+                <button
+                  className="btn btn-secondary"
+                  style={{width:'100%',justifyContent:'center',marginBottom:8}}
+                  disabled={sigUploading}
+                  onClick={()=>document.getElementById('sigFileInput').click()}
+                >
+                  <Ico d={I.img} size={13}/>
+                  {sigUploading?'Uploading...':'Choose Signature Image'}
+                </button>
+
+                {sigPreview&&adm?.signatureUrl&&(
+                  <button className="btn btn-danger btn-sm" style={{width:'100%',justifyContent:'center',marginTop:4}} onClick={()=>removeSignature(sigAdminId).then(()=>{setSigModal(false);setSigAdminId(null);setSigPreview(null);})}>
+                    <Ico d={I.trash} size={11}/>Remove Signature
+                  </button>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={()=>{setSigModal(false);setSigAdminId(null);setSigPreview(null);}}>Cancel</button>
+                <button
+                  className="btn btn-primary"
+                  disabled={!sigPreview||sigUploading}
+                  style={{opacity:(!sigPreview||sigUploading)?'.5':'1'}}
+                  onClick={saveSignature}
+                >
+                  <Ico d={I.check} size={13}/>Save Signature
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+
       <Toasts toasts={toasts}/>
 
     </div>

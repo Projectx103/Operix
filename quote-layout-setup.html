@@ -11,15 +11,88 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', sans-serif; background: #f1f5f9; }
-  .field-chip { cursor: grab; user-select: none; }
-  .field-chip:active { cursor: grabbing; }
-  .canvas-field { position: absolute; cursor: move; user-select: none; }
-  .canvas-field:hover .field-controls { display: flex; }
-  .field-controls { display: none; }
-  .a4-canvas { width: 794px; height: 1123px; position: relative; overflow: hidden; }
+:root {
+  --ink:#0C1220; --ink2:#1E2D45; --slate:#64748B; --line:#E4EAF2;
+  --surf:#F4F7FB; --white:#ffffff;
+  --purple:#7C3AED; --purple-mid:#8B5CF6; --purple-lt:#A78BFA; --purple-bg:#F5F3FF;
+  --green:#059669; --green-bg:#ECFDF5;
+  --amber:#D97706; --red:#DC2626;
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh;}
+
+/* TITLEBAR */
+.titlebar{height:38px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:200;}
+.titlebar-brand{display:flex;align-items:center;gap:10px;}
+.titlebar-brand span{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.titlebar-brand small{font-size:9px;color:#64748B;font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+.titlebar-file{font-size:12px;color:#94A3B8;font-weight:500;}
+.titlebar-actions{display:flex;align-items:center;gap:8px;}
+.tb-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;text-decoration:none;}
+.tb-pill:hover{color:#fff;background:rgba(255,255,255,.12);}
+.tb-pill.danger{color:#FCA5A5;}
+.tb-pill.danger:hover{background:rgba(220,38,38,.2);color:#fff;}
+
+/* RIBBON */
+.ribbon{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:38px;z-index:190;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.ribbon-tabs{display:flex;padding:0 12px;border-bottom:1px solid var(--line);}
+.rtab{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--slate);padding:8px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.rtab:hover{color:var(--ink);background:var(--surf);}
+.rtab.active{color:var(--purple);border-bottom-color:var(--purple);background:var(--purple-bg);}
+.ribbon-tools{display:flex;align-items:stretch;padding:4px 12px;gap:2px;min-height:62px;overflow-x:auto;}
+.rtool-group{display:flex;align-items:stretch;gap:1px;padding:0 6px;border-right:1px solid var(--line);position:relative;}
+.rtool-group:last-child{border-right:none;}
+.rtool-group-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);white-space:nowrap;}
+.rtool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;transition:all .14s;min-width:48px;}
+.rtool:hover{background:var(--surf);border-color:var(--line);}
+.rtool.active{background:var(--purple-bg);border-color:#c4b5fd;color:var(--purple);}
+.rtool.success{background:#ECFDF5;border-color:#A7F3D0;}
+.rtool.success:hover{background:var(--green);color:#fff;}
+.rtool.success:hover .rtool-icon,.rtool.success:hover .rtool-label{color:#fff!important;}
+.rtool-icon{color:var(--slate);transition:color .14s;}
+.rtool-icon svg{display:block;}
+.rtool-label{font-size:10px;font-weight:700;color:var(--slate);white-space:nowrap;transition:color .14s;text-align:center;}
+.rtool-separator{width:1px;background:var(--line);margin:4px 4px;align-self:stretch;}
+.ribbon-groups-row{display:flex;align-items:center;padding:6px 12px 24px;gap:0;overflow-x:auto;}
+
+/* WORKSPACE */
+.workspace{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 140px);}
+
+/* PANEL */
+.panel{background:var(--white);border-right:1px solid var(--line);overflow-y:auto;max-height:calc(100vh - 140px);position:sticky;top:140px;}
+.panel-section{border-bottom:1px solid var(--line);padding:14px 16px;}
+.panel-section-title{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.panel-section-title::after{content:'';flex:1;height:1px;background:var(--line);}
+.form-group{margin-bottom:10px;}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:4px;letter-spacing:.02em;}
+.form-input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surf);transition:all .15s;outline:none;}
+.form-input:focus{border-color:var(--purple);background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.08);}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.field-chip{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1.5px solid var(--line);border-radius:7px;background:var(--surf);cursor:pointer;transition:all .15s;margin-bottom:5px;}
+.field-chip:hover{border-color:var(--purple-lt);background:var(--purple-bg);}
+.field-chip.placed{background:#F0FDF4;border-color:#A7F3D0;cursor:default;}
+.field-chip.placed:hover{background:#DCFCE7;border-color:#059669;}
+.canvas-area{background:#CBD5E1;padding:32px;overflow:auto;min-height:calc(100vh - 140px);display:flex;flex-direction:column;align-items:center;}
+.quote-canvas{background:#fff;width:794px;min-height:1123px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08);border-radius:2px;flex-shrink:0;overflow:hidden;}
+.toggle{width:28px;height:16px;border-radius:8px;background:#E2E8F0;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle.on::after{transform:translateX(12px);}
+.color-row{display:flex;gap:6px;align-items:center;}
+.color-swatch{width:32px;height:32px;border-radius:6px;border:2px solid var(--line);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0;}
+.color-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;opacity:0;}
+.color-swatch-preview{position:absolute;inset:0;border-radius:4px;pointer-events:none;}
+.upload-zone{border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surf);}
+.upload-zone:hover{border-color:var(--purple);background:var(--purple-bg);}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;animation:toastIn .2s ease;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+@keyframes toastIn{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.loader{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px;}
 </style>
 </head>
 <body>
@@ -27,91 +100,140 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
+/* ── ICONS ── */
+const Ic = ({ d, size=16, sw=2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {typeof d==='string'?<path d={d}/>:d}
+  </svg>
+);
+const SaveIcon   = () => <Ic size={18} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/>;
+const UploadIcon = () => <Ic size={18} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>;
+const LayoutIcon = () => <Ic size={18} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5zM14 11a1 1 0 011-1h4a1 1 0 011 1v8a1 1 0 01-1 1h-4a1 1 0 01-1-1v-8z"/>;
+const TypeIcon   = () => <Ic size={18} d="M4 7V4h16v3M9 20h6M12 4v16"/>;
+const ImageIcon  = () => <Ic size={18} d="M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h3l2-3h4l2 3h3a2 2 0 012 2z M12 13a3 3 0 100-6 3 3 0 000 6z"/>;
+const CheckIcon  = () => <Ic size={16} sw={2.5} d="M20 6L9 17l-5-5"/>;
+const XIcon      = () => <Ic size={16} sw={2.5} d="M18 6L6 18M6 6l12 12"/>;
+const HomeIcon   = () => <Ic size={16} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10"/>;
+const SignIcon   = () => <Ic size={18} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>;
+const ResetIcon  = () => <Ic size={16} d="M3 12a9 9 0 109-9M3 3v9h9" sw={2}/>;
+const PlusIcon   = () => <Ic size={16} d="M12 5v14M5 12h14"/>;
+const TextIcon   = () => <Ic size={16} d="M4 6h16M4 12h10M4 18h14"/>;
+const TableIcon  = () => <Ic size={14} d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>;
+
+const OperixLogo = () => (
+  <svg width="26" height="26" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="8" fill="#7C3AED"/>
+    <path d="M20 10C25 10 28 13 28 18C28 23 25 26 20 26C15 26 12 23 12 18C12 13 15 10 20 10ZM20 14C17 14 16 15.5 16 18C16 20.5 17 22 20 22C23 22 24 20.5 24 18C24 15.5 23 14 20 14Z" fill="white"/>
+    <rect x="18" y="26" width="4" height="4" fill="white"/>
+  </svg>
+);
+
+function Toast({ message, type='success', onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
+  return <div className={`toast ${type}`}>{type==='success'?<CheckIcon/>:<XIcon/>}{message}</div>;
+}
+
+/* ── FIELD GROUPS ── */
 const FIELD_GROUPS = [
   {
     group: '📄 Quote Header',
     fields: [
-      { id: 'quote_number',   label: 'Quote Number',           defaultWidth: 200 },
-      { id: 'quote_date',     label: 'Quote Date',             defaultWidth: 160 },
-      { id: 'valid_until',    label: 'Valid Until Date',        defaultWidth: 180 },
-      { id: 'reference',      label: 'Reference / Title',      defaultWidth: 260 },
-      { id: 'currency',       label: 'Currency',               defaultWidth: 100 },
+      { id:'quote_number',   label:'Quote Number',            defaultWidth:200 },
+      { id:'quote_date',     label:'Quote Date',              defaultWidth:160 },
+      { id:'valid_until',    label:'Valid Until Date',         defaultWidth:180 },
+      { id:'reference',      label:'Reference / Title',       defaultWidth:260 },
+      { id:'currency',       label:'Currency',                defaultWidth:100 },
     ]
   },
   {
     group: '🏢 Sender — Your Company',
     fields: [
-      { id: 'company_name',    label: 'Company Name',          defaultWidth: 280 },
-      { id: 'company_address', label: 'Company Address',       defaultWidth: 300 },
-      { id: 'company_tin',     label: 'TIN Number',            defaultWidth: 200 },
-      { id: 'company_phone',   label: 'Sender Phone',          defaultWidth: 180 },
-      { id: 'company_email',   label: 'Sender Email',          defaultWidth: 220 },
-      { id: 'prepared_by',     label: 'Prepared By (Full Name)',defaultWidth: 200 },
-      { id: 'prepared_role',   label: 'Preparer Position/Role',defaultWidth: 200 },
+      { id:'company_name',    label:'Company Name',           defaultWidth:280 },
+      { id:'company_address', label:'Company Address',        defaultWidth:300 },
+      { id:'company_tin',     label:'TIN Number',             defaultWidth:200 },
+      { id:'company_phone',   label:'Sender Phone',           defaultWidth:180 },
+      { id:'company_email',   label:'Sender Email',           defaultWidth:220 },
+      { id:'prepared_by',     label:'Prepared By',            defaultWidth:200 },
+      { id:'prepared_role',   label:'Preparer Position/Role', defaultWidth:200 },
     ]
   },
   {
     group: '👤 Recipient',
     fields: [
-      { id: 'recipient_name',    label: 'Recipient Full Name',   defaultWidth: 260 },
-      { id: 'recipient_email',   label: 'Recipient Email',       defaultWidth: 260 },
-      { id: 'recipient_company', label: 'Recipient Company',     defaultWidth: 260 },
+      { id:'recipient_name',    label:'Recipient Full Name',  defaultWidth:260 },
+      { id:'recipient_email',   label:'Recipient Email',      defaultWidth:260 },
+      { id:'recipient_company', label:'Recipient Company',    defaultWidth:260 },
     ]
   },
   {
-    group: '📦 Quoted Items',
+    group: '📦 Items & Totals',
     fields: [
-      { id: 'items_table', label: '📦 Items Table (Name · SKU · Qty · Unit Price · Total)', defaultWidth: 700 },
-    ]
-  },
-  {
-    group: '💰 Pricing',
-    fields: [
-      { id: 'subtotal',    label: 'Subtotal',       defaultWidth: 160 },
-      { id: 'discount',    label: 'Discount',       defaultWidth: 130 },
-      { id: 'tax_rate',    label: 'Tax Rate (%)',   defaultWidth: 130 },
-      { id: 'vat_amount',  label: 'VAT / Tax Amt',  defaultWidth: 160 },
-      { id: 'grand_total', label: 'Grand Total',    defaultWidth: 180 },
+      { id:'items_table',  label:'Items Table',   defaultWidth:714, isItemTable:true },
+      { id:'subtotal',     label:'Subtotal',      defaultWidth:160 },
+      { id:'discount',     label:'Discount',      defaultWidth:130 },
+      { id:'tax_rate',     label:'Tax Rate (%)',  defaultWidth:130 },
+      { id:'vat_amount',   label:'VAT / Tax Amt', defaultWidth:160 },
+      { id:'grand_total',  label:'Grand Total',   defaultWidth:180 },
     ]
   },
   {
     group: '📋 Terms & Notes',
     fields: [
-      { id: 'notes',         label: 'Notes to Recipient', defaultWidth: 500 },
-      { id: 'terms',         label: 'Terms & Conditions', defaultWidth: 600 },
-      { id: 'payment_terms', label: 'Payment Terms',      defaultWidth: 200 },
+      { id:'notes',         label:'Notes to Recipient', defaultWidth:500 },
+      { id:'terms',         label:'Terms & Conditions', defaultWidth:600 },
+      { id:'payment_terms', label:'Payment Terms',      defaultWidth:200 },
     ]
   },
   {
-    group: '✅ Authorization',
+    group: '✅ Authorization — Labels',
     fields: [
-      { id: 'prepared_by',  label: 'Prepared By — Name',      defaultWidth: 200 },
-      { id: 'prepared_sig', label: 'Prepared By — Signature', defaultWidth: 200 },
-      { id: 'approved_by',  label: 'Approved By — Name',      defaultWidth: 200 },
-      { id: 'approved_sig', label: 'Approved By — Signature', defaultWidth: 200 },
+      { id:'auth_prepared_label', label:'Auth Label: Prepared By', defaultWidth:180 },
+      { id:'auth_approved_label', label:'Auth Label: Approved By', defaultWidth:180 },
+      { id:'auth_noted_label',    label:'Auth Label: Noted By',    defaultWidth:180 },
+      { id:'auth_signature_line', label:'Auth: Signature Line',    defaultWidth:160 },
     ]
   },
 ];
 
-const FIELD_DEFINITIONS = FIELD_GROUPS.flatMap(g => g.fields);
+const FIELD_DEFS   = FIELD_GROUPS.flatMap(g => g.fields);
 const FONT_OPTIONS = ['Inter','Arial','Times New Roman','Georgia','Courier New','Helvetica','Trebuchet MS','Verdana'];
 
+/* ══════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════ */
 function QuoteLayoutSetup() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [backgroundUrl, setBackgroundUrl] = useState('');
-  const [uploadingBg, setUploadingBg] = useState(false);
-  const [placedFields, setPlacedFields] = useState([]);
-  const [selectedField, setSelectedField] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [layoutName, setLayoutName] = useState('Quote Layout');
-  const [dragOffset, setDragOffset] = useState({ x:0, y:0 });
-  const [draggingId, setDraggingId] = useState(null);
-  const canvasRef = useRef(null);
-  const nextTextId = useRef(1);
-  const [customTexts, setCustomTexts] = useState([]);
-  const [selectedText, setSelectedText] = useState(null);
+  const [user, setUser]                       = useState(null);
+  const [loading, setLoading]                 = useState(true);
+  const [activeRibbonTab, setActiveRibbonTab] = useState('layout');
+  const [activePanel, setActivePanel]         = useState('fields');
+  const [toast, setToast]                     = useState(null);
+  const [saving, setSaving]                   = useState(false);
+  const [layoutName, setLayoutName]           = useState('Quote Layout');
+  const [backgroundUrl, setBackgroundUrl]     = useState('');
+  const [uploadingBg, setUploadingBg]         = useState(false);
+  const [placedFields, setPlacedFields]       = useState([]);
+  const [selectedFieldId, setSelectedFieldId] = useState(null);
+  const [selectedCustomTextId, setSelectedCustomTextId] = useState(null);
+  const [customTexts, setCustomTexts]         = useState([]);
+  const [customTextInput, setCustomTextInput] = useState('');
+  const [signatories, setSignatories]         = useState([]);
+  const [sigGroupOpen, setSigGroupOpen]       = useState(true);
+
+  /* Items table config — exact mirror of invoice-manager */
+  const [itemsTable, setItemsTable] = useState({
+    showHeader:     true,
+    headerBgColor:  '#7C3AED',
+    headerTextColor:'#ffffff',
+    borderColor:    '#e5e7eb',
+    columnWidths:   [314, 60, 80, 130, 130],
+  });
+
+  const nextCustomId = useRef(1);
+  const draggingId   = useRef(null);
+  const dragOffset   = useRef({ x:0, y:0 });
+  const canvasRef    = useRef(null);
+
+  const showToast = (msg, type='success') => setToast({ msg, type });
 
   const FB = {
     apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
@@ -122,511 +244,1081 @@ function QuoteLayoutSetup() {
     appId:"1:794223223499:web:f059007b909cc15766f14e"
   };
 
+  /* ── Firebase init ── */
   useEffect(() => {
     const interval = setInterval(() => {
       if (window.firebase) {
         clearInterval(interval);
         if (!firebase.apps.length) firebase.initializeApp(FB);
         firebase.auth().onAuthStateChanged(async (u) => {
-          if (!u) { window.location.href = 'login.html'; return; }
-          const db = firebase.firestore();
+          if (!u) { window.location.href='login.html'; return; }
+          const db      = firebase.firestore();
           const userDoc = await db.collection('users').doc(u.uid).get();
           if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            window.location.href = 'shop-admin.html'; return;
+            window.location.href='shop-admin.html'; return;
           }
-          const userData = userDoc.data();
-          setUser({ uid: u.uid, ...userData });
+          const ud = userDoc.data();
+          setUser({ uid:u.uid, ...ud });
 
-          // Load layout — own first, then company-shared fallback
+          /* Load layout — own first, then company-shared fallback */
           let layoutData = null;
           const ownDoc = await db.collection('quotationLayouts').doc(u.uid).get();
           if (ownDoc.exists) {
             layoutData = ownDoc.data();
-          } else {
-            const myCompany = userData.companyName || '';
-            if (myCompany) {
-              try {
-                const coAdmins = await db.collection('users')
-                  .where('role','==','admin').where('companyName','==',myCompany).get();
-                for (const ad of coAdmins.docs) {
-                  if (ad.id === u.uid) continue;
-                  const shared = await db.collection('quotationLayouts').doc(ad.id).get();
-                  if (shared.exists) { layoutData = shared.data(); break; }
-                }
-              } catch(e) { console.warn('shared layout:', e); }
-            }
+          } else if (ud.companyName) {
+            try {
+              const coAdmins = await db.collection('users')
+                .where('role','==','admin').where('companyName','==',ud.companyName).get();
+              for (const ad of coAdmins.docs) {
+                if (ad.id === u.uid) continue;
+                const shared = await db.collection('quotationLayouts').doc(ad.id).get();
+                if (shared.exists) { layoutData = shared.data(); break; }
+              }
+            } catch(e) { console.warn('shared layout:', e); }
           }
           if (layoutData) {
             setBackgroundUrl(layoutData.backgroundUrl || '');
             setPlacedFields(layoutData.fields || []);
             setLayoutName(layoutData.layoutName || 'Quote Layout');
             setCustomTexts(layoutData.customTexts || []);
+            if (layoutData.itemsTable) {
+              setItemsTable(prev => ({
+                ...prev, ...layoutData.itemsTable,
+                columnWidths: layoutData.itemsTable.columnWidths || prev.columnWidths,
+              }));
+            }
           }
+
+          /* Load signatories */
+          try {
+            const myCompany = ud.companyName || '';
+            const sigSnap   = await db.collection('users')
+              .where('role','==','admin').where('isAdmin','==',true).get();
+            const sigs = sigSnap.docs
+              .map(d => ({ id:d.id, ...d.data() }))
+              .filter(a => a.signatureUrl && (!myCompany || a.companyName===myCompany));
+            setSignatories(sigs);
+          } catch(e) { console.warn('signatories:', e); }
+
           setLoading(false);
         });
       }
     }, 100);
   }, []);
 
-  const uploadBackground = (file) => {
-    if (!file || !file.type.startsWith('image/')) { alert('Please upload an image file (PNG, JPG)'); return; }
-    setUploadingBg(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'operix_products');
-    formData.append('folder', 'operix-quote-layouts');
-    const xhr = new XMLHttpRequest();
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 200) {
-        const res = JSON.parse(xhr.responseText);
-        setBackgroundUrl(res.secure_url);
-      } else { alert('Upload failed. Please try again.'); }
-      setUploadingBg(false);
-    });
-    xhr.addEventListener('error', () => { alert('Upload error.'); setUploadingBg(false); });
-    xhr.open('POST', 'https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
-    xhr.send(formData);
-  };
-
-  const addFieldToCanvas = (fieldDef) => {
-    if (placedFields.find(f => f.id === fieldDef.id)) { alert('This field is already on the canvas.'); return; }
-    setPlacedFields(prev => [...prev, {
-      id: fieldDef.id, label: fieldDef.label,
-      x: 50, y: Math.max(20, 50 + prev.length * 30),
-      width: fieldDef.defaultWidth,
-      fontSize: 11, color: '#111827', bold: false,
-      showLabel: false, labelPosition: 'above',
-      maxChars: 0, fontFamily: 'Inter'
-    }]);
-  };
-
-  const removeFieldFromCanvas = (fieldId) => {
-    setPlacedFields(prev => prev.filter(f => f.id !== fieldId));
-    if (selectedField === fieldId) setSelectedField(null);
-  };
-
-  const updateField = (fieldId, updates) => {
-    setPlacedFields(prev => prev.map(f => f.id === fieldId ? { ...f, ...updates } : f));
-  };
-
-  const handleCanvasMouseDown = (e, fieldId) => {
-    e.preventDefault();
-    const canvas = canvasRef.current.getBoundingClientRect();
-    const field = placedFields.find(f => f.id === fieldId);
-    setDraggingId(fieldId);
-    setSelectedField(fieldId);
-    setDragOffset({ x: e.clientX - canvas.left - field.x, y: e.clientY - canvas.top - field.y });
-  };
-
-  const handleCanvasMouseMove = (e) => {
-    if (!draggingId) return;
-    const canvas = canvasRef.current.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(e.clientX - canvas.left - dragOffset.x, 794 - 50));
-    const newY = Math.max(0, Math.min(e.clientY - canvas.top - dragOffset.y, 1123 - 20));
-    if (draggingId.startsWith('txt_')) {
-      updateCustomText(draggingId.replace('txt_',''), { x: newX, y: newY });
-    } else {
-      updateField(draggingId, { x: newX, y: newY });
-    }
-  };
-
-  const handleCanvasMouseUp = () => setDraggingId(null);
-
+  /* ── Save ── */
   const saveLayout = async () => {
-    if (!backgroundUrl) { alert('Please upload a background image first.'); return; }
+    if (!backgroundUrl) { showToast('Please upload a background image first.','error'); return; }
     setSaving(true);
     try {
-      const db = firebase.firestore();
-      await db.collection('quotationLayouts').doc(user.uid).set({
-        backgroundUrl, fields: placedFields, layoutName, customTexts,
+      await firebase.firestore().collection('quotationLayouts').doc(user.uid).set({
+        backgroundUrl, fields: placedFields, layoutName,
+        customTexts, itemsTable,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: user.uid
+        updatedBy: user.uid,
       });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) { alert('Save failed: ' + e.message); }
+      showToast('Layout saved!');
+    } catch(e) { showToast('Save failed: '+e.message,'error'); }
     setSaving(false);
   };
 
   const clearLayout = async () => {
-    if (!confirm('Clear this layout? All field placements and background will be removed.')) return;
+    if (!confirm('Clear all field placements and background?')) return;
     try {
-      const db = firebase.firestore();
-      await db.collection('quotationLayouts').doc(user.uid).delete();
-      setBackgroundUrl(''); setPlacedFields([]); setSelectedField(null); setCustomTexts([]);
-    } catch (e) { alert('Error clearing layout.'); }
+      await firebase.firestore().collection('quotationLayouts').doc(user.uid).delete();
+      setBackgroundUrl(''); setPlacedFields([]); setSelectedFieldId(null); setCustomTexts([]);
+      showToast('Layout cleared.');
+    } catch(e) { showToast('Error clearing layout.','error'); }
+  };
+
+  /* ── Background upload ── */
+  const uploadBackground = (file) => {
+    if (!file||!file.type.startsWith('image/')) { showToast('Please upload an image file','error'); return; }
+    setUploadingBg(true);
+    const fd = new FormData();
+    fd.append('file',file); fd.append('upload_preset','operix_products'); fd.append('folder','operix-quote-layouts');
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener('load', () => {
+      if (xhr.status===200) { setBackgroundUrl(JSON.parse(xhr.responseText).secure_url); showToast('Background uploaded!'); }
+      else showToast('Upload failed','error');
+      setUploadingBg(false);
+    });
+    xhr.addEventListener('error', () => { showToast('Upload error','error'); setUploadingBg(false); });
+    xhr.open('POST','https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
+    xhr.send(fd);
+  };
+
+  /* ── Field management ── */
+  const isPlaced = (id) => placedFields.some(f => f.id===id);
+
+  const addField = (fieldDef) => {
+    if (isPlaced(fieldDef.id)) { showToast('Field already on canvas','error'); return; }
+    setPlacedFields(prev => [...prev, {
+      id:fieldDef.id, label:fieldDef.label,
+      x:40, y:40+prev.length*28,
+      width:fieldDef.defaultWidth,
+      fontSize:11, color:'#111827', bold:false, fontFamily:'Inter',
+      showLabel:true, visible:true,
+      isItemTable:!!fieldDef.isItemTable,
+    }]);
   };
 
   const addCustomText = () => {
-    const id = 'custom_' + nextTextId.current++;
+    const txt = customTextInput.trim() || 'Custom Text';
+    const id  = 'custom_'+Date.now()+'_'+nextCustomId.current++;
     setCustomTexts(prev => [...prev, {
-      id, text: 'Custom Text', x: 60, y: 60 + prev.length * 30,
-      fontSize: 11, color: '#111827', bold: false, fontFamily: 'Inter', width: 200
+      id, text:txt, x:40, y:40+prev.length*28,
+      width:200, fontSize:11, color:'#111827', bold:false, fontFamily:'Inter',
     }]);
-    setSelectedText(id);
-    setSelectedField(null);
+    setCustomTextInput('');
   };
 
-  const updateCustomText = (id, updates) => {
-    setCustomTexts(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  const removeField      = (id) => { setPlacedFields(p=>p.filter(f=>f.id!==id)); if(selectedFieldId===id) setSelectedFieldId(null); };
+  const updateField      = (id, props) => setPlacedFields(p=>p.map(f=>f.id===id?{...f,...props}:f));
+  const removeCustomText = (id) => setCustomTexts(p=>p.filter(t=>t.id!==id));
+  const updateCustomText = (id, props) => setCustomTexts(p=>p.map(t=>t.id===id?{...t,...props}:t));
+
+  /* ── Drag (ref-based — no re-render during drag) ── */
+  const handleMouseDown = (e, id) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const sp   = canvasRef.current.closest('.canvas-area');
+    const st   = sp?sp.scrollTop:0;
+    const sl   = sp?sp.scrollLeft:0;
+    const isTxt = id.startsWith('txt_');
+    const rawId = isTxt?id.replace('txt_',''):id;
+    const item  = isTxt?customTexts.find(t=>t.id===rawId):placedFields.find(f=>f.id===rawId);
+    if (!item) return;
+    draggingId.current = id;
+    dragOffset.current = { x:e.clientX-rect.left+sl-item.x, y:e.clientY-rect.top+st-item.y };
+    if (!isTxt) { setSelectedFieldId(rawId); setSelectedCustomTextId(null); setActivePanel('fieldstyle'); }
+    else { setSelectedCustomTextId(rawId); setSelectedFieldId(null); setActivePanel('customtextstyle'); }
   };
 
-  const removeCustomText = (id) => {
-    setCustomTexts(prev => prev.filter(t => t.id !== id));
-    if (selectedText === id) setSelectedText(null);
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!draggingId.current||!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const sp   = canvasRef.current.closest('.canvas-area');
+      const st   = sp?sp.scrollTop:0;
+      const sl   = sp?sp.scrollLeft:0;
+      const newX = Math.max(0, e.clientX-rect.left+sl-dragOffset.current.x);
+      const newY = Math.max(0, e.clientY-rect.top +st-dragOffset.current.y);
+      const id   = draggingId.current;
+      if (id.startsWith('txt_')) updateCustomText(id.replace('txt_',''),{x:newX,y:newY});
+      else                        updateField(id,{x:newX,y:newY});
+    };
+    const onUp = () => { draggingId.current=null; };
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return () => { window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+  }, [placedFields, customTexts]);
+
+  const selectedField = placedFields.find(f=>f.id===selectedFieldId);
+
+  /* ══════════════════════════════════════════════════
+     RIBBON
+  ══════════════════════════════════════════════════ */
+  const ribbonContent = {
+    layout: (
+      <div className="ribbon-groups-row">
+        <div className="rtool-group">
+          <button className={`rtool ${activePanel==='fields'?'active':''}`} onClick={()=>setActivePanel('fields')}>
+            <span className="rtool-icon"><LayoutIcon/></span><span className="rtool-label">Fields</span>
+          </button>
+          <button className={`rtool ${activePanel==='background'?'active':''}`} onClick={()=>setActivePanel('background')}>
+            <span className="rtool-icon"><ImageIcon/></span><span className="rtool-label">Background</span>
+          </button>
+          <button className={`rtool ${activePanel==='fieldstyle'?'active':''}`}
+            onClick={()=>{ setActivePanel('fieldstyle'); if(!selectedFieldId&&placedFields.length) setSelectedFieldId(placedFields[0].id); }}>
+            <span className="rtool-icon"><TypeIcon/></span><span className="rtool-label">Style</span>
+          </button>
+          <button className={`rtool ${activePanel==='signatories'?'active':''}`} onClick={()=>setActivePanel('signatories')}>
+            <span className="rtool-icon"><SignIcon/></span><span className="rtool-label">Signatories</span>
+          </button>
+          <button className={`rtool ${activePanel==='itemstable'?'active':''}`} onClick={()=>setActivePanel('itemstable')}>
+            <span className="rtool-icon"><TableIcon/></span><span className="rtool-label">Items Table</span>
+          </button>
+          <span className="rtool-group-label">Layout</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool" onClick={()=>{ if(window.confirm('Clear all placed fields?')){setPlacedFields([]);setSelectedFieldId(null);} }}>
+            <span className="rtool-icon" style={{color:'#DC2626'}}><ResetIcon/></span>
+            <span className="rtool-label" style={{color:'#DC2626'}}>Clear All</span>
+          </button>
+          <span className="rtool-group-label">Canvas</span>
+        </div>
+        <div className="rtool-group">
+          <button className="rtool success" onClick={saveLayout} disabled={saving}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+            <span className="rtool-label" style={{color:'#059669'}}>Save Layout</span>
+          </button>
+          <span className="rtool-group-label">Save</span>
+        </div>
+      </div>
+    ),
   };
 
-  const handleTextMouseDown = (e, id) => {
-    e.preventDefault();
-    const canvas = canvasRef.current.getBoundingClientRect();
-    const txt = customTexts.find(t => t.id === id);
-    setDraggingId('txt_' + id);
-    setSelectedText(id);
-    setSelectedField(null);
-    setDragOffset({ x: e.clientX - canvas.left - txt.x, y: e.clientY - canvas.top - txt.y });
+  /* ══════════════════════════════════════════════════
+     LEFT PANEL — renderPanel()
+     Each panel is a fully dedicated section, switching
+     on activePanel — identical pattern to invoice-manager.
+  ══════════════════════════════════════════════════ */
+  const renderPanel = () => {
+
+    /* ── FIELDS LIBRARY ── */
+    if (activePanel==='fields') return (
+      <div>
+        <div className="panel-section">
+          <div className="panel-section-title"><TextIcon/> Add Custom Text</div>
+          <div style={{display:'flex',gap:6}}>
+            <input className="form-input" style={{flex:1,fontSize:12}} placeholder="e.g. Attention:"
+              value={customTextInput} onChange={e=>setCustomTextInput(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&addCustomText()}/>
+            <button onClick={addCustomText}
+              style={{flexShrink:0,padding:'0 12px',background:'var(--purple)',color:'#fff',border:'none',borderRadius:7,cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:4}}>
+              <PlusIcon/> Add
+            </button>
+          </div>
+          <p style={{fontSize:10,color:'var(--slate)',marginTop:5}}>Type your text then click Add. It will appear on the canvas for you to drag.</p>
+        </div>
+
+        {FIELD_GROUPS.map(g => (
+          <div className="panel-section" key={g.group}>
+            <div className="panel-section-title" style={{fontSize:9}}>{g.group}</div>
+            {g.fields.map(fd => {
+              const placed = isPlaced(fd.id);
+              return (
+                <div key={fd.id} className={`field-chip ${placed?'placed':''}`}
+                  onClick={()=>placed?null:addField(fd)}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:'var(--purple)',flexShrink:0}}/>
+                  <span style={{flex:1,fontSize:11,fontWeight:700,color:'var(--ink)'}}>{fd.label}</span>
+                  {fd.isItemTable&&<span style={{fontSize:8,fontWeight:900,color:'#fff',background:'var(--purple)',borderRadius:3,padding:'1px 5px',letterSpacing:'.04em'}}>TABLE</span>}
+                  {placed
+                    ?<span style={{fontSize:10,color:'var(--green)'}}>✓</span>
+                    :<span style={{fontSize:10,color:'var(--purple)',fontWeight:800}}>+</span>
+                  }
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {placedFields.length>0&&(
+          <div className="panel-section">
+            <div className="panel-section-title">📌 On Canvas ({placedFields.length})</div>
+            {placedFields.map(f=>(
+              <div key={f.id} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'1px solid var(--line)'}}>
+                <span style={{flex:1,fontSize:11,fontWeight:600,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                <button onClick={()=>removeField(f.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#DC2626',fontSize:13,fontWeight:900,lineHeight:1}}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    /* ── BACKGROUND UPLOAD ── */
+    if (activePanel==='background') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><ImageIcon/> Background / Letterhead</div>
+        <p style={{fontSize:11,color:'var(--slate)',marginBottom:10,lineHeight:1.5}}>Upload your company letterhead as PNG or JPG (A4: 794×1123px recommended).</p>
+        <div style={{borderRadius:8,background:'#FFFBEB',border:'1px solid #FDE68A',padding:10,marginBottom:12}}>
+          <p style={{fontSize:10,fontWeight:700,color:'#92400E',marginBottom:3}}>⚠ Do not embed signatures in the background</p>
+          <p style={{fontSize:10,color:'#B45309',lineHeight:1.5}}>Use the Signatories panel to add secure signature fields that render only after approval.</p>
+        </div>
+        <input type="file" id="bgUpload" accept="image/*" style={{display:'none'}}
+          onChange={e=>{if(e.target.files[0])uploadBackground(e.target.files[0]);e.target.value='';}}/>
+        <div className="upload-zone" onClick={()=>document.getElementById('bgUpload').click()}
+          style={{padding:14,minHeight:80,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6}}>
+          {uploadingBg
+            ?<div className="loader" style={{borderTopColor:'var(--purple)',borderColor:'rgba(124,58,237,.2)'}}/>
+            :backgroundUrl
+            ?<><img src={backgroundUrl} style={{height:40,maxWidth:'100%',objectFit:'contain',borderRadius:4}}/><span style={{fontSize:11,color:'var(--slate)',fontWeight:600}}>Click to replace</span></>
+            :<><UploadIcon/><span style={{fontSize:11,color:'var(--slate)',fontWeight:600}}>Click to upload letterhead</span></>
+          }
+        </div>
+        {backgroundUrl&&<p style={{fontSize:10,color:'var(--green)',marginTop:6,fontWeight:700}}>✓ Background uploaded</p>}
+        {!backgroundUrl&&<p style={{fontSize:10,color:'var(--amber)',marginTop:6}}>⚠ Background required before saving</p>}
+        {backgroundUrl&&(
+          <button onClick={()=>setBackgroundUrl('')}
+            style={{fontSize:10,color:'var(--red)',border:'none',background:'none',cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,marginTop:6,padding:0}}>
+            ✕ Remove background
+          </button>
+        )}
+      </div>
+    );
+
+    /* ── FIELD STYLE ── */
+    if (activePanel==='fieldstyle') {
+      if (!selectedField) return (
+        <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+          <div style={{fontSize:13,fontWeight:600}}>Click a field on the canvas to style it</div>
+        </div>
+      );
+      const f = selectedField;
+      return (
+        <div>
+          <div className="panel-section">
+            <div className="panel-section-title" style={{color:'var(--purple)'}}>
+              <div style={{width:7,height:7,borderRadius:'50%',background:'var(--purple)'}}/>
+              {f.label}
+            </div>
+
+            {/* ── ITEMS TABLE CONTROLS — exact mirror of invoice-manager ── */}
+            {f.isItemTable&&(
+              <div style={{padding:10,background:'var(--purple-bg)',border:'1px solid #c4b5fd',borderRadius:8,marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:'var(--ink2)',marginBottom:8}}>Table Header Row</div>
+
+                {/* Header visible toggle */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                  <span style={{fontSize:12,fontWeight:600,color:itemsTable.showHeader?'var(--green)':'var(--slate)'}}>
+                    {itemsTable.showHeader?'Header Visible':'Header Hidden'}
+                  </span>
+                  <div className={`toggle ${itemsTable.showHeader?'on':''}`}
+                    onClick={()=>setItemsTable(p=>({...p,showHeader:!p.showHeader}))}/>
+                </div>
+
+                {/* Header color pickers */}
+                {itemsTable.showHeader&&(<>
+                  <div className="form-group" style={{marginBottom:6}}>
+                    <label className="form-label">Header Background</label>
+                    <div className="color-row">
+                      <div className="color-swatch">
+                        <div className="color-swatch-preview" style={{background:itemsTable.headerBgColor}}/>
+                        <input type="color" value={itemsTable.headerBgColor}
+                          onChange={e=>setItemsTable(p=>({...p,headerBgColor:e.target.value}))}/>
+                      </div>
+                      <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                        value={itemsTable.headerBgColor}
+                        onChange={e=>setItemsTable(p=>({...p,headerBgColor:e.target.value}))}/>
+                    </div>
+                  </div>
+                  <div className="form-group" style={{marginBottom:0}}>
+                    <label className="form-label">Header Text Color</label>
+                    <div className="color-row">
+                      <div className="color-swatch">
+                        <div className="color-swatch-preview" style={{background:itemsTable.headerTextColor||'#fff'}}/>
+                        <input type="color" value={itemsTable.headerTextColor||'#ffffff'}
+                          onChange={e=>setItemsTable(p=>({...p,headerTextColor:e.target.value}))}/>
+                      </div>
+                      <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                        value={itemsTable.headerTextColor||'#ffffff'}
+                        onChange={e=>setItemsTable(p=>({...p,headerTextColor:e.target.value}))}/>
+                    </div>
+                  </div>
+                </>)}
+
+                {/* Column Width Controls */}
+                <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid #c4b5fd'}}>
+                  <div style={{fontSize:11,fontWeight:700,color:'var(--ink2)',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+                    <TableIcon/>Column Widths (px)
+                  </div>
+                  <div style={{fontSize:9,color:'var(--slate)',marginBottom:8,lineHeight:1.4}}>💡 Drag the resize handles on the table header, or type widths below</div>
+                  {['Item Description','SKU','Qty','Unit Price','Total'].map((col,i)=>(
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                      <span style={{fontSize:10,fontWeight:600,color:'var(--ink2)',width:90,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{col}</span>
+                      <input type="number" className="form-input" min="20" max="600"
+                        style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'4px 6px',flex:1}}
+                        value={Math.round((itemsTable.columnWidths||[314,60,80,130,130])[i])}
+                        onChange={e=>{
+                          const newCols=[...(itemsTable.columnWidths||[314,60,80,130,130])];
+                          newCols[i]=Math.max(20,+e.target.value);
+                          setItemsTable(p=>({...p,columnWidths:newCols}));
+                        }}/>
+                      <span style={{fontSize:10,color:'var(--slate)',flexShrink:0}}>px</span>
+                    </div>
+                  ))}
+                  <button onClick={()=>setItemsTable(p=>({...p,columnWidths:[314,60,80,130,130]}))}
+                    style={{fontSize:10,fontWeight:700,color:'var(--slate)',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:5,padding:'4px 10px',cursor:'pointer',fontFamily:'DM Sans,sans-serif',marginTop:2,width:'100%'}}>
+                    ↺ Reset Column Widths
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Width */}
+            <div className="form-group">
+              <label className="form-label">Width (px)</label>
+              <input className="form-input" type="number" value={f.width||200}
+                onChange={e=>updateField(f.id,{width:parseInt(e.target.value)||100})}/>
+            </div>
+
+            {/* Sig image height */}
+            {f.fieldType==='sig_image'&&(
+              <div className="form-group">
+                <label className="form-label">Height (px)</label>
+                <input className="form-input" type="number" value={f.height||50}
+                  onChange={e=>updateField(f.id,{height:parseInt(e.target.value)||30})}/>
+              </div>
+            )}
+
+            {/* Typography — not for items table */}
+            {!f.isItemTable&&(<>
+              <div className="form-group">
+                <label className="form-label">Font Size</label>
+                <input className="form-input" type="number" min="6" max="72" value={f.fontSize||11}
+                  onChange={e=>updateField(f.id,{fontSize:parseInt(e.target.value)||11})}/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Font Family</label>
+                <select className="form-input form-select" value={f.fontFamily||'Inter'}
+                  onChange={e=>updateField(f.id,{fontFamily:e.target.value})}>
+                  {FONT_OPTIONS.map(fo=><option key={fo}>{fo}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Text Color</label>
+                <div className="color-row">
+                  <div className="color-swatch">
+                    <div className="color-swatch-preview" style={{background:f.color||'#111827'}}/>
+                    <input type="color" value={f.color||'#111827'}
+                      onChange={e=>updateField(f.id,{color:e.target.value})}/>
+                  </div>
+                  <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                    value={f.color||'#111827'}
+                    onChange={e=>updateField(f.id,{color:e.target.value})}/>
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                <input type="checkbox" checked={!!f.bold} id="chk-bold"
+                  onChange={e=>updateField(f.id,{bold:e.target.checked})}
+                  style={{width:14,height:14,accentColor:'var(--purple)'}}/>
+                <label htmlFor="chk-bold" style={{fontSize:13,color:'var(--ink)',cursor:'pointer'}}>Bold</label>
+              </div>
+            </>)}
+
+            {/* ── LABEL STYLE (not for items table or signatories) ── */}
+            {!f.isItemTable&&!f.isSignatory&&(
+              <div style={{marginBottom:10,padding:10,background:'#F5F3FF',border:'1px solid #c4b5fd',borderRadius:8}}>
+                <div style={{fontSize:10,fontWeight:800,letterSpacing:'.07em',textTransform:'uppercase',color:'var(--purple)',marginBottom:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span>Label Style</span>
+                  <div style={{display:'flex',alignItems:'center',gap:5}}>
+                    <span style={{fontSize:9,fontWeight:700,color:(f.showLabel!==false)?'var(--green)':'var(--slate)'}}>{(f.showLabel!==false)?'Visible':'Hidden'}</span>
+                    <div className={`toggle ${(f.showLabel!==false)?'on':''}`}
+                      onClick={()=>updateField(f.id,{showLabel:!(f.showLabel!==false)})}/>
+                  </div>
+                </div>
+                {(f.showLabel!==false)&&(<>
+                  <div className="form-group" style={{marginBottom:6}}>
+                    <label className="form-label">Label Font Size</label>
+                    <input className="form-input" type="number" min="5" max="36"
+                      style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                      value={f.labelFontSize||8}
+                      onChange={e=>updateField(f.id,{labelFontSize:Math.max(5,parseInt(e.target.value)||8)})}/>
+                  </div>
+                  <div className="form-group" style={{marginBottom:6}}>
+                    <label className="form-label">Label Font Family</label>
+                    <select className="form-input form-select" value={f.labelFontFamily||'Inter'}
+                      onChange={e=>updateField(f.id,{labelFontFamily:e.target.value})}>
+                      {FONT_OPTIONS.map(fo=><option key={fo}>{fo}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{marginBottom:6}}>
+                    <label className="form-label">Label Color</label>
+                    <div className="color-row">
+                      <div className="color-swatch">
+                        <div className="color-swatch-preview" style={{background:f.labelColor||'#7C3AED'}}/>
+                        <input type="color" value={f.labelColor||'#7C3AED'}
+                          onChange={e=>updateField(f.id,{labelColor:e.target.value})}/>
+                      </div>
+                      <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                        value={f.labelColor||'#7C3AED'}
+                        onChange={e=>updateField(f.id,{labelColor:e.target.value})}/>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <input type="checkbox" checked={f.labelBold!==false} id="chk-lbl-bold"
+                      onChange={e=>updateField(f.id,{labelBold:e.target.checked})}
+                      style={{width:14,height:14,accentColor:'var(--purple)'}}/>
+                    <label htmlFor="chk-lbl-bold" style={{fontSize:12,color:'var(--ink)',cursor:'pointer'}}>Bold Label</label>
+                  </div>
+                </>)}
+              </div>
+            )}
+
+            {/* X / Y */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
+              <div>
+                <label className="form-label">X Position</label>
+                <input className="form-input" type="number" value={Math.round(f.x)}
+                  onChange={e=>updateField(f.id,{x:parseInt(e.target.value)||0})}/>
+              </div>
+              <div>
+                <label className="form-label">Y Position</label>
+                <input className="form-input" type="number" value={Math.round(f.y)}
+                  onChange={e=>updateField(f.id,{y:parseInt(e.target.value)||0})}/>
+              </div>
+            </div>
+
+            {/* Signatory badge */}
+            {f.isSignatory&&(
+              <div style={{background:'#FDF4FF',border:'1px solid #E879F9',borderRadius:7,padding:'8px 10px',marginBottom:10}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#A21CAF'}}>✍ Signatory Field</div>
+                <div style={{fontSize:10,color:'#C026D3',marginTop:2}}>
+                  {f.signatoryName} — {f.fieldType==='sig_image'?'Signature Image':f.fieldType==='sig_name'?'Name Label':'Title Label'}
+                </div>
+              </div>
+            )}
+
+            <button onClick={()=>removeField(f.id)}
+              style={{width:'100%',padding:'8px',background:'#FFF1F2',color:'var(--red)',border:'1.5px solid #FECACA',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+              Remove Field
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── ITEMS TABLE ── */
+    if (activePanel==='itemstable') return (
+      <div>
+        <div className="panel-section">
+          <div className="panel-section-title"><TableIcon/> Items Table Settings</div>
+          <p style={{fontSize:10,color:'var(--slate)',marginBottom:12,lineHeight:1.5}}>
+            Configure the quote items table column widths, header visibility, and colors. Make sure the <strong>Items Table</strong> field is placed on the canvas first.
+          </p>
+
+          {/* Header toggle */}
+          <div className="form-group">
+            <label className="form-label">Table Header Row</label>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',background:itemsTable.showHeader?'var(--green-bg)':'var(--surf)',borderRadius:7,border:`1px solid ${itemsTable.showHeader?'#A7F3D0':'var(--line)'}`}}>
+              <span style={{fontSize:12,fontWeight:600,color:itemsTable.showHeader?'var(--green)':'var(--slate)'}}>
+                {itemsTable.showHeader?'Header Visible':'Header Hidden'}
+              </span>
+              <div className={`toggle ${itemsTable.showHeader?'on':''}`}
+                onClick={()=>setItemsTable(p=>({...p,showHeader:!p.showHeader}))}/>
+            </div>
+          </div>
+
+          {/* Header colors */}
+          {itemsTable.showHeader&&(<>
+            <div className="form-group">
+              <label className="form-label">Header Background</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:itemsTable.headerBgColor}}/>
+                  <input type="color" value={itemsTable.headerBgColor}
+                    onChange={e=>setItemsTable(p=>({...p,headerBgColor:e.target.value}))}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={itemsTable.headerBgColor}
+                  onChange={e=>setItemsTable(p=>({...p,headerBgColor:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Header Text Color</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:itemsTable.headerTextColor||'#ffffff'}}/>
+                  <input type="color" value={itemsTable.headerTextColor||'#ffffff'}
+                    onChange={e=>setItemsTable(p=>({...p,headerTextColor:e.target.value}))}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={itemsTable.headerTextColor||'#ffffff'}
+                  onChange={e=>setItemsTable(p=>({...p,headerTextColor:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Row Border Color</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:itemsTable.borderColor||'#e5e7eb'}}/>
+                  <input type="color" value={itemsTable.borderColor||'#e5e7eb'}
+                    onChange={e=>setItemsTable(p=>({...p,borderColor:e.target.value}))}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={itemsTable.borderColor||'#e5e7eb'}
+                  onChange={e=>setItemsTable(p=>({...p,borderColor:e.target.value}))}/>
+              </div>
+            </div>
+          </>)}
+        </div>
+
+        {/* Column widths */}
+        <div className="panel-section">
+          <div className="panel-section-title">
+            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+            Column Widths (px)
+          </div>
+          <div style={{fontSize:9,color:'var(--slate)',marginBottom:10,lineHeight:1.5,background:'var(--purple-bg)',border:'1px solid #c4b5fd',borderRadius:7,padding:'7px 9px'}}>
+            💡 Drag the resize handles on the table header in the canvas, or type widths below
+          </div>
+          {['Item Description','SKU','Qty','Unit Price','Total'].map((col,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
+              <span style={{fontSize:10,fontWeight:700,color:'var(--ink2)',width:96,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{col}</span>
+              <input type="number" className="form-input" min="20" max="600"
+                style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 6px',flex:1}}
+                value={Math.round((itemsTable.columnWidths||[314,60,80,130,130])[i])}
+                onChange={e=>{
+                  const newCols=[...(itemsTable.columnWidths||[314,60,80,130,130])];
+                  newCols[i]=Math.max(20,+e.target.value);
+                  setItemsTable(p=>({...p,columnWidths:newCols}));
+                }}/>
+              <span style={{fontSize:10,color:'var(--slate)',flexShrink:0}}>px</span>
+            </div>
+          ))}
+          <button onClick={()=>setItemsTable(p=>({...p,columnWidths:[314,60,80,130,130]}))}
+            style={{fontSize:10,fontWeight:700,color:'var(--slate)',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:5,padding:'5px 10px',cursor:'pointer',fontFamily:'DM Sans,sans-serif',marginTop:4,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
+            ↺ Reset Column Widths
+          </button>
+
+          {/* Live preview strip */}
+          <div style={{marginTop:14,borderRadius:8,overflow:'hidden',border:'1px solid var(--line)'}}>
+            <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.08em',padding:'5px 8px',background:'var(--surf)',borderBottom:'1px solid var(--line)'}}>Live Preview</div>
+            <div style={{overflowX:'auto'}}>
+              <table style={{borderCollapse:'collapse',fontSize:10,fontFamily:'Inter,sans-serif',tableLayout:'fixed',width:'100%'}}>
+                <colgroup>{(itemsTable.columnWidths||[314,60,80,130,130]).map((w,i)=><col key={i} style={{width:Math.max(w*0.34,28)}}/>)}</colgroup>
+                <thead>
+                  <tr style={{background:itemsTable.showHeader?itemsTable.headerBgColor:'var(--surf)',color:itemsTable.showHeader?itemsTable.headerTextColor:'var(--ink)'}}>
+                    {['Item Description','SKU','Qty','Unit Price','Total'].map((lbl,i)=>(
+                      <th key={i} style={{padding:'4px 5px',textAlign:i===0?'left':'center',fontWeight:700,fontSize:9,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lbl}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[['Water Dispenser','WD-001','2','₱4,500','₱9,000'],['Filter Cartridge','FC-005','5','₱380','₱1,900']].map((row,ri)=>(
+                    <tr key={ri} style={{background:ri%2===0?'#fff':'var(--surf)'}}>
+                      {row.map((cell,ci)=>(
+                        <td key={ci} style={{padding:'3px 5px',fontSize:9,textAlign:ci===0?'left':'center',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',borderBottom:`1px solid ${itemsTable.borderColor||'#e5e7eb'}`}}>
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+    /* ── SIGNATORIES ── */
+    if (activePanel==='signatories') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><SignIcon/> Authorized Signatories</div>
+        {signatories.length===0?(
+          <div style={{textAlign:'center',padding:'16px 0',color:'var(--slate)'}}>
+            <div style={{fontSize:12,fontWeight:600,marginBottom:4}}>No signatures on file yet</div>
+            <div style={{fontSize:10,lineHeight:1.5}}>Ask the Master Administrator to upload signatures via Master Dashboard → Administrators.</div>
+          </div>
+        ):(
+          <div>
+            <p style={{fontSize:10,color:'var(--slate)',marginBottom:10,lineHeight:1.5}}>Click to add a signatory's image or name label to the canvas. Drag to position.</p>
+            {signatories.map((sig,idx)=>{
+              const sigImgId   = `sig_img_${sig.id}`;
+              const sigNameId  = `sig_name_${sig.id}`;
+              const sigTitleId = `sig_title_${sig.id}`;
+              return (
+                <div key={sig.id} style={{background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:10,padding:10,marginBottom:8}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#7C3AED,#A855F7)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:11,fontWeight:800,flexShrink:0}}>
+                      {(sig.fullName||'?')[0]}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sig.fullName}</div>
+                      <div style={{fontSize:10,color:'var(--slate)'}}>{sig.assignedRoleName||sig.assignedRole||'Administrator'}</div>
+                    </div>
+                    <img src={sig.signatureUrl} alt="sig" style={{height:26,maxWidth:60,objectFit:'contain',background:'#fff',border:'1px solid var(--line)',borderRadius:4,padding:2,flexShrink:0}}/>
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                    {[
+                      { id:sigImgId,   label:'Signature Image', placed:isPlaced(sigImgId),
+                        payload:{ id:sigImgId, label:`${sig.fullName} — Signature`, isSignatory:true, signatoryId:sig.id, signatoryName:sig.fullName, signatoryUrl:sig.signatureUrl, fieldType:'sig_image', x:50, y:900+idx*60, width:160, height:50, fontSize:11, color:'#111827', bold:false, fontFamily:'Inter', showLabel:false } },
+                      { id:sigNameId,  label:'Name Label',      placed:isPlaced(sigNameId),
+                        payload:{ id:sigNameId,  label:`${sig.fullName} — Name`,      isSignatory:true, signatoryId:sig.id, signatoryName:sig.fullName, fieldType:'sig_name',  x:50, y:950+idx*60, width:180, fontSize:11, color:'#111827', bold:true,  fontFamily:'Inter', showLabel:false } },
+                      { id:sigTitleId, label:'Title Label',     placed:isPlaced(sigTitleId),
+                        payload:{ id:sigTitleId, label:`${sig.fullName} — Title`,     isSignatory:true, signatoryId:sig.id, signatoryName:sig.fullName, signatoryTitle:sig.assignedRoleName||sig.assignedRole||'', fieldType:'sig_title', x:50, y:965+idx*60, width:180, fontSize:10, color:'#6B7280', bold:false, fontFamily:'Inter', showLabel:false } },
+                    ].map(btn=>(
+                      <button key={btn.id} onClick={()=>{ if(btn.placed)return; setPlacedFields(p=>[...p,btn.payload]); }}
+                        style={{fontSize:10,padding:'4px 9px',borderRadius:99,border:`1px solid ${btn.placed?'#E879F9':'var(--line)'}`,background:btn.placed?'#FDF4FF':'#fff',color:btn.placed?'#A21CAF':'var(--slate)',fontWeight:600,cursor:btn.placed?'default':'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .15s'}}>
+                        {btn.placed?'✓ ':'+ '}{btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+
+    /* ── CUSTOM TEXT STYLE ── */
+    if (activePanel==='customtextstyle') {
+      const t = customTexts.find(ct=>ct.id===selectedCustomTextId);
+      if (!t) return (
+        <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+          <div style={{fontSize:13,fontWeight:600}}>Click a Custom Text on the canvas to style it</div>
+        </div>
+      );
+      return (
+        <div>
+          <div className="panel-section">
+            <div className="panel-section-title" style={{color:'#D97706'}}>
+              <div style={{width:7,height:7,borderRadius:'50%',background:'#F59E0B'}}/>
+              Custom Text
+            </div>
+
+            {/* Text content editor */}
+            <div className="form-group">
+              <label className="form-label">Text Content</label>
+              <textarea className="form-input form-textarea" rows={3}
+                style={{fontSize:12,resize:'vertical'}}
+                value={t.text}
+                onChange={e=>updateCustomText(t.id,{text:e.target.value})}/>
+            </div>
+
+            {/* Font Size */}
+            <div className="form-group">
+              <label className="form-label">Font Size (px)</label>
+              <input className="form-input" type="number" min="6" max="72"
+                value={t.fontSize||11}
+                onChange={e=>updateCustomText(t.id,{fontSize:parseInt(e.target.value)||11})}/>
+            </div>
+
+            {/* Font Family */}
+            <div className="form-group">
+              <label className="form-label">Font Family</label>
+              <select className="form-input form-select" value={t.fontFamily||'Inter'}
+                onChange={e=>updateCustomText(t.id,{fontFamily:e.target.value})}>
+                {FONT_OPTIONS.map(fo=><option key={fo}>{fo}</option>)}
+              </select>
+            </div>
+
+            {/* Color */}
+            <div className="form-group">
+              <label className="form-label">Text Color</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:t.color||'#111827'}}/>
+                  <input type="color" value={t.color||'#111827'}
+                    onChange={e=>updateCustomText(t.id,{color:e.target.value})}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={t.color||'#111827'}
+                  onChange={e=>updateCustomText(t.id,{color:e.target.value})}/>
+              </div>
+            </div>
+
+            {/* Bold */}
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+              <input type="checkbox" checked={!!t.bold} id="chk-ct-bold"
+                onChange={e=>updateCustomText(t.id,{bold:e.target.checked})}
+                style={{width:14,height:14,accentColor:'var(--purple)'}}/>
+              <label htmlFor="chk-ct-bold" style={{fontSize:13,color:'var(--ink)',cursor:'pointer'}}>Bold</label>
+            </div>
+
+            {/* Width */}
+            <div className="form-group">
+              <label className="form-label">Width (px)</label>
+              <input className="form-input" type="number" min="20" max="794"
+                value={t.width||200}
+                onChange={e=>updateCustomText(t.id,{width:parseInt(e.target.value)||200})}/>
+            </div>
+
+            {/* X / Y */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
+              <div>
+                <label className="form-label">X Position</label>
+                <input className="form-input" type="number" value={Math.round(t.x)}
+                  onChange={e=>updateCustomText(t.id,{x:parseInt(e.target.value)||0})}/>
+              </div>
+              <div>
+                <label className="form-label">Y Position</label>
+                <input className="form-input" type="number" value={Math.round(t.y)}
+                  onChange={e=>updateCustomText(t.id,{y:parseInt(e.target.value)||0})}/>
+              </div>
+            </div>
+
+            {/* Live preview */}
+            <div style={{padding:'10px 12px',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:8,marginBottom:12,minHeight:36}}>
+              <div style={{fontSize:8,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.07em',marginBottom:5}}>Preview</div>
+              <div style={{fontSize:t.fontSize||11,color:t.color||'#111827',fontWeight:t.bold?700:400,fontFamily:t.fontFamily||'Inter',whiteSpace:'pre-wrap',wordBreak:'break-word',lineHeight:1.4}}>
+                {t.text||'Custom Text'}
+              </div>
+            </div>
+
+            {/* Delete */}
+            <button onClick={()=>{removeCustomText(t.id);setSelectedCustomTextId(null);setActivePanel('fields');}}
+              style={{width:'100%',padding:'8px',background:'#FFF1F2',color:'var(--red)',border:'1.5px solid #FECACA',borderRadius:8,fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+              Remove Custom Text
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+        <div style={{opacity:.5,marginBottom:8}}><LayoutIcon/></div>
+        <div style={{fontSize:13,fontWeight:600}}>Select a tool from the ribbon</div>
+      </div>
+    );
   };
 
-  const selectedFieldData = placedFields.find(f => f.id === selectedField);
+  /* ══════════════════════════════════════════════════
+     CANVAS FIELD CONTENT RENDERER
+  ══════════════════════════════════════════════════ */
+  const renderFieldContent = (f) => {
+    const fs = f.fontSize||11;
+    const color = f.color||'#111827';
+    const ff = f.fontFamily||'Inter';
 
+    /* Signatory image */
+    if (f.fieldType==='sig_image') return (
+      <div style={{display:'flex',flexDirection:'column',gap:2}}>
+        <span style={{fontSize:8,color:'#A21CAF',fontWeight:700,lineHeight:1.2}}>✍ {f.label}</span>
+        {f.signatoryUrl&&<img src={f.signatoryUrl} alt="Sig" style={{maxHeight:f.height||44,maxWidth:'100%',objectFit:'contain',opacity:.85,pointerEvents:'none'}}/>}
+      </div>
+    );
+    /* Signatory name */
+    if (f.fieldType==='sig_name') return (
+      <div style={{display:'flex',flexDirection:'column',gap:1}}>
+        <span style={{fontSize:8,color:'#A21CAF',fontWeight:700,lineHeight:1.2}}>✍ {f.label}</span>
+        <span style={{fontSize:fs,fontWeight:'bold',color,fontFamily:ff}}>{f.signatoryName}</span>
+      </div>
+    );
+    /* Signatory title */
+    if (f.fieldType==='sig_title') return (
+      <div style={{display:'flex',flexDirection:'column',gap:1}}>
+        <span style={{fontSize:8,color:'#A21CAF',fontWeight:700,lineHeight:1.2}}>✍ {f.label}</span>
+        <span style={{fontSize:fs,color,fontFamily:ff}}>{f.signatoryTitle||'—'}</span>
+      </div>
+    );
+
+    /* ── Items Table — full resizable table, exact mirror of invoice-manager ── */
+    if (f.isItemTable) {
+      const it   = itemsTable;
+      const cols = it.columnWidths||[314,60,80,130,130];
+      const colLabels = ['Item Description','SKU','Qty','Unit Price','Total'];
+      const colAlign  = ['left','left','center','right','right'];
+      const sampleRows = [
+        ['Premium Water Dispenser — Floor Standing (Hot & Cold)','WD-001','2 pcs','₱4,500.00','₱9,000.00'],
+        ['Replacement Filter Cartridge (5-Stage)','FC-005','5 pcs','₱380.00','₱1,900.00'],
+        ['Installation & Delivery Fee','SVC-01','1','₱500.00','₱500.00'],
+      ];
+      const handleColResize = (colIdx, e) => {
+        e.preventDefault(); e.stopPropagation();
+        const startX = e.clientX;
+        const startW = cols[colIdx];
+        const onMove = (mv) => {
+          const newW = Math.max(30, startW+mv.clientX-startX);
+          const newCols=[...cols]; newCols[colIdx]=newW;
+          setItemsTable(p=>({...p,columnWidths:newCols}));
+        };
+        const onUp = ()=>{ window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+        window.addEventListener('mousemove',onMove);
+        window.addEventListener('mouseup',onUp);
+      };
+      return (
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:fs,color,fontFamily:ff,tableLayout:'fixed',background:'transparent'}}>
+          <colgroup>{cols.map((w,i)=><col key={i} style={{width:w}}/>)}</colgroup>
+          {it.showHeader&&(
+            <thead>
+              <tr style={{backgroundColor:it.headerBgColor||'#7C3AED',color:it.headerTextColor||'#ffffff'}}>
+                {colLabels.map((lbl,i)=>(
+                  <th key={i} style={{padding:'5px 7px',textAlign:colAlign[i],fontWeight:700,position:'relative',userSelect:'none',border:'none'}}>
+                    {lbl}
+                    <span onMouseDown={e=>handleColResize(i,e)}
+                      style={{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'col-resize',background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10}}
+                      title="Drag to resize column">
+                      <span style={{width:1.5,height:'60%',background:'rgba(255,255,255,0.6)',borderRadius:1,display:'block'}}/>
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {sampleRows.map((row,ri)=>(
+              <tr key={ri} style={{background:'transparent'}}>
+                {row.map((cell,ci)=>(
+                  <td key={ci} style={{padding:'5px 7px',border:'none',background:'transparent',textAlign:colAlign[ci],overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontWeight:ci===4?600:400}}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+
+    /* Default text field */
+    const showLbl = f.showLabel !== false; // default: show label
+    const lblSize = f.labelFontSize || 8;
+    const lblColor = f.labelColor || '#7C3AED';
+    const lblFamily = f.labelFontFamily || 'Inter';
+    const lblBold = f.labelBold !== false; // default bold
+    return (
+      <div style={{fontSize:fs,color,fontWeight:f.bold?700:400,fontFamily:ff,lineHeight:1.4}}>
+        {showLbl && (
+          <span style={{fontSize:lblSize,color:lblColor,fontWeight:lblBold?700:400,fontFamily:lblFamily,display:'block',lineHeight:1.3,marginBottom:1}}>{f.label}</span>
+        )}
+        <span style={{opacity:.55}}>[{f.id}]</span>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════════════════════════
+     LOADING
+  ══════════════════════════════════════════════════ */
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-gray-600">Loading Quote Layout Setup...</p>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0C1220'}}>
+      <div style={{textAlign:'center'}}>
+        <OperixLogo/>
+        <div style={{marginTop:20,width:32,height:32,border:'2px solid rgba(255,255,255,.2)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'20px auto 0'}}/>
+        <p style={{color:'#64748B',fontSize:13,marginTop:12,fontFamily:'DM Sans,sans-serif'}}>Loading Quote Layout Setup...</p>
       </div>
     </div>
   );
 
+  /* ══════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-700 to-violet-600 text-white px-8 py-5 shadow-xl">
-        <div className="flex items-center justify-between max-w-screen-2xl mx-auto">
-          <div className="flex items-center gap-4">
-            <button onClick={() => window.location.href = 'shop-admin.html'}
-              className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold">Quote Layout Setup</h1>
-              <p className="text-purple-200 text-sm">Upload your letterhead and drag fields to position quote data</p>
+    <div>
+      {/* TITLEBAR */}
+      <div className="titlebar">
+        <div className="titlebar-brand">
+          <OperixLogo/>
+          <div><span>Operix</span><small>Quote Layout Setup</small></div>
+        </div>
+        <div className="titlebar-file">
+          <input value={layoutName} onChange={e=>setLayoutName(e.target.value)}
+            style={{background:'transparent',border:'none',outline:'none',color:'#94A3B8',fontSize:12,fontFamily:'DM Sans,sans-serif',fontWeight:500,width:200,textAlign:'center'}}
+            placeholder="Layout Name"/>
+        </div>
+        <div className="titlebar-actions">
+          <a href="shop-admin.html" className="tb-pill"><HomeIcon/>Shop Admin</a>
+          <button className="tb-pill danger" onClick={clearLayout}>✕ Clear Layout</button>
+        </div>
+      </div>
+
+      {/* RIBBON */}
+      <div className="ribbon">
+        <div className="ribbon-tabs">
+          <div className={`rtab ${activeRibbonTab==='layout'?'active':''}`}
+            onClick={()=>{ setActiveRibbonTab('layout'); setActivePanel('fields'); }}>Layout</div>
+        </div>
+        <div className="ribbon-tools">{ribbonContent[activeRibbonTab]||ribbonContent.layout}</div>
+      </div>
+
+      {/* WORKSPACE */}
+      <div className="workspace">
+        <div className="panel">{renderPanel()}</div>
+
+        {/* CANVAS AREA */}
+        <div className="canvas-area">
+
+          {/* Canvas top bar */}
+          <div style={{width:794,display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:12,fontWeight:700,color:'#fff',opacity:.85}}>📄 Quote Canvas</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.45)',fontFamily:'DM Mono,monospace'}}>794×1123px (A4)</span>
+              {backgroundUrl
+                ?<span style={{fontSize:10,fontWeight:700,color:'#fff',background:'rgba(5,150,105,.6)',padding:'2px 8px',borderRadius:4,display:'flex',alignItems:'center',gap:3}}><CheckIcon/> BG Set</span>
+                :<button onClick={()=>{setActiveRibbonTab('layout');setActivePanel('background');}} style={{fontSize:10,fontWeight:700,color:'#fff',background:'rgba(245,158,11,.3)',border:'1px solid rgba(245,158,11,.5)',padding:'2px 8px',borderRadius:4,cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:3}}><UploadIcon/> Upload BG</button>
+              }
+              <span style={{fontSize:10,color:'rgba(255,255,255,.6)',fontWeight:600}}>{placedFields.length} field{placedFields.length!==1?'s':''} placed</span>
+            </div>
+            <div style={{display:'flex',gap:5}}>
+              <button onClick={saveLayout} disabled={saving}
+                style={{fontSize:10,fontWeight:700,padding:'4px 12px',borderRadius:5,border:'none',background:'#059669',color:'#fff',cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:4}}>
+                <SaveIcon/> {saving?'Saving...':'Save'}
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <input type="text" value={layoutName} onChange={e => setLayoutName(e.target.value)}
-              placeholder="Layout Name"
-              className="px-3 py-2 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg text-white placeholder-purple-300 text-sm outline-none focus:bg-opacity-30"/>
-            {saved && <span className="px-3 py-2 bg-green-500 rounded-lg text-sm font-semibold animate-pulse">✓ Saved!</span>}
-            <button onClick={clearLayout}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-sm font-semibold transition-all">
-              Clear Layout
-            </button>
-            <button onClick={saveLayout} disabled={saving || !backgroundUrl}
-              className="px-6 py-2 bg-white text-purple-700 hover:bg-purple-50 rounded-lg font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-2">
-              {saving
-                ? <><div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>Saving...</>
-                : '💾 Save Layout'}
+
+          {/* THE CANVAS */}
+          <div ref={canvasRef} className="quote-canvas" onClick={()=>{ setSelectedFieldId(null); setSelectedCustomTextId(null); setActivePanel('fields'); }}>
+
+            {/* Background */}
+            {backgroundUrl
+              ?<img src={backgroundUrl} alt="BG" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'fill',borderRadius:2,zIndex:0,pointerEvents:'none',userSelect:'none'}}/>
+              :<div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,pointerEvents:'none',zIndex:0}}>
+                <div style={{opacity:.1}}><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                <p style={{fontSize:13,color:'#94A3B8',fontWeight:700}}>No background image</p>
+                <p style={{fontSize:11,color:'#CBD5E1'}}>Layout → Background to upload your letterhead</p>
+              </div>
+            }
+
+            {/* Accent bar */}
+            {!backgroundUrl&&<div style={{position:'absolute',top:0,left:0,right:0,height:4,background:'linear-gradient(90deg,#7C3AED,#A78BFA)',borderRadius:'2px 2px 0 0',pointerEvents:'none',zIndex:1}}/>}
+
+            {/* DRAGGABLE FIELDS */}
+            {placedFields.map(f=>{
+              const isSelected = selectedFieldId===f.id;
+              const srcColor   = f.isSignatory?'#A21CAF':'#7C3AED';
+              return (
+                <div key={f.id}
+                  style={{position:'absolute',left:f.x,top:f.y,width:f.width||200,zIndex:isSelected?20:5,cursor:'move',userSelect:'none',boxSizing:'border-box'}}
+                  onMouseDown={e=>handleMouseDown(e,f.id)}
+                  onClick={e=>{e.stopPropagation();setSelectedFieldId(f.id);setActivePanel('fieldstyle');}}>
+                  {/* Label tag strip */}
+                  <div style={{position:'absolute',top:-14,left:0,right:0,display:'flex',alignItems:'center',gap:4,padding:'1px 5px',background:`${srcColor}dd`,borderRadius:'3px 3px 0 0',lineHeight:1,userSelect:'none',zIndex:10,pointerEvents:'none'}}>
+                    <div style={{width:4,height:4,borderRadius:'50%',background:'#fff',flexShrink:0,opacity:.8}}/>
+                    <span style={{fontSize:6.5,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.07em',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                    <span style={{fontSize:6,color:'rgba(255,255,255,.7)',fontFamily:'DM Mono,monospace',flexShrink:0}}>{Math.round(f.x)},{Math.round(f.y)}</span>
+                    {isSelected&&(
+                      <div onMouseDown={e=>{e.stopPropagation();removeField(f.id);}}
+                        style={{width:11,height:11,borderRadius:'50%',background:'#ef4444',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7.5,cursor:'pointer',fontWeight:900,flexShrink:0,lineHeight:1,pointerEvents:'all'}}>×</div>
+                    )}
+                  </div>
+                  {/* Outline */}
+                  <div style={{position:'absolute',inset:0,border:isSelected?`2px solid ${srcColor}`:`1.5px dashed ${srcColor}55`,borderRadius:3,boxShadow:isSelected?`0 0 0 3px ${srcColor}18`:undefined,background:isSelected?`${srcColor}08`:'transparent',pointerEvents:'none'}}/>
+                  {/* Content */}
+                  <div style={{position:'relative',pointerEvents:'none'}}>
+                    {renderFieldContent(f)}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* CUSTOM TEXTS */}
+            {customTexts.map(t=>{
+              const isCTSelected = selectedCustomTextId===t.id;
+              return (
+                <div key={t.id}
+                  style={{position:'absolute',left:t.x,top:t.y,width:t.width||200,zIndex:isCTSelected?20:5,cursor:'move',userSelect:'none',boxSizing:'border-box'}}
+                  onMouseDown={e=>handleMouseDown(e,'txt_'+t.id)}
+                  onClick={e=>{e.stopPropagation();setSelectedCustomTextId(t.id);setSelectedFieldId(null);setActivePanel('customtextstyle');}}>
+                  {/* Label strip */}
+                  <div style={{position:'absolute',top:-14,left:0,right:0,display:'flex',alignItems:'center',gap:4,padding:'1px 5px',background:'#F59E0Bdd',borderRadius:'3px 3px 0 0',lineHeight:1,zIndex:10,pointerEvents:'none'}}>
+                    <div style={{width:4,height:4,borderRadius:'50%',background:'#fff',flexShrink:0,opacity:.8}}/>
+                    <span style={{fontSize:6.5,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.07em',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Custom Text</span>
+                    <span style={{fontSize:6,color:'rgba(255,255,255,.7)',fontFamily:'DM Mono,monospace',flexShrink:0}}>{Math.round(t.x)},{Math.round(t.y)}</span>
+                    {isCTSelected&&(
+                      <div onMouseDown={e=>{e.stopPropagation();removeCustomText(t.id);setSelectedCustomTextId(null);}}
+                        style={{width:11,height:11,borderRadius:'50%',background:'#ef4444',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7.5,cursor:'pointer',fontWeight:900,flexShrink:0,lineHeight:1,pointerEvents:'all'}}>×</div>
+                    )}
+                  </div>
+                  {/* Outline */}
+                  <div style={{position:'absolute',inset:0,border:isCTSelected?'2px solid #F59E0B':'1.5px dashed rgba(245,158,11,.5)',borderRadius:3,boxShadow:isCTSelected?'0 0 0 3px rgba(245,158,11,.18)':undefined,background:isCTSelected?'rgba(245,158,11,.06)':'rgba(245,158,11,.04)',pointerEvents:'none'}}/>
+                  {/* Content */}
+                  <div style={{position:'relative',pointerEvents:'none',fontSize:t.fontSize||11,color:t.color||'#111827',fontWeight:t.bold?700:400,fontFamily:t.fontFamily||'Inter',whiteSpace:'pre-wrap',wordBreak:'break-word',padding:'2px 4px',minHeight:18}}>
+                    {t.text}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Below canvas save */}
+          <div style={{width:794,display:'flex',gap:8,justifyContent:'flex-end',marginTop:14}}>
+            <button onClick={saveLayout} disabled={saving}
+              style={{display:'flex',alignItems:'center',gap:7,padding:'8px 20px',background:saving?'rgba(255,255,255,.1)':'var(--purple)',color:saving?'rgba(255,255,255,.4)':'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:700,cursor:saving?'default':'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .15s'}}>
+              {saving?<div className="loader"/>:<SaveIcon/>}
+              {saving?'Saving...':'Save Layout'}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-0 max-w-screen-2xl mx-auto p-6">
-
-        {/* Left Panel */}
-        <div className="w-72 flex-shrink-0 mr-6 space-y-4">
-
-          {/* Upload Background */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
-              Upload Letterhead / Background
-            </h3>
-            <p className="text-xs text-gray-500 mb-3">Upload your company letterhead as PNG or JPG (A4: 794×1123px recommended)</p>
-            <input type="file" id="bgUpload" accept="image/*" className="hidden"
-              onChange={e => { if (e.target.files[0]) uploadBackground(e.target.files[0]); }}/>
-            <button onClick={() => document.getElementById('bgUpload').click()} disabled={uploadingBg}
-              className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-              {uploadingBg
-                ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Uploading...</>
-                : '📁 Upload Background Image'}
-            </button>
-            {backgroundUrl && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><span>✓</span> Background uploaded</p>}
-            {!backgroundUrl && <p className="text-xs text-amber-600 mt-2">⚠ Background required before saving</p>}
-          </div>
-
-          {/* Field Library */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-              Quote Fields
-            </h3>
-            <p className="text-xs text-gray-500 mb-4">Click any field to add it to the canvas, then drag to position.</p>
-            <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
-              {FIELD_GROUPS.map(group => (
-                <div key={group.group}>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{group.group}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.fields.map(f => {
-                      const placed = placedFields.find(p => p.id === f.id);
-                      return (
-                        <button key={f.id}
-                          onClick={() => !placed && addFieldToCanvas(f)}
-                          className={`field-chip text-xs px-2.5 py-1 rounded-full border font-medium transition-all ${
-                            placed
-                              ? 'bg-purple-100 border-purple-300 text-purple-700 cursor-default'
-                              : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700'
-                          }`}>
-                          {placed ? '✓ ' : ''}{f.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom Text */}
-          <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-2">Custom Text</h3>
-            <p className="text-xs text-gray-500 mb-3">Add static text labels, titles, or dividers.</p>
-            <button onClick={addCustomText}
-              className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold transition-all">
-              + Add Text Element
-            </button>
-          </div>
-
-          {/* Field Inspector */}
-          {(selectedFieldData || selectedText) && (
-            <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-              <h3 className="font-bold text-gray-800 mb-3">
-                {selectedFieldData ? '⚙ Field Properties' : '⚙ Text Properties'}
-              </h3>
-              {selectedFieldData && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Width (px)</label>
-                    <input type="number" value={selectedFieldData.width}
-                      onChange={e => updateField(selectedField, { width: parseInt(e.target.value)||100 })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Font Size</label>
-                    <input type="number" min="6" max="72" value={selectedFieldData.fontSize}
-                      onChange={e => updateField(selectedField, { fontSize: parseInt(e.target.value)||11 })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Font Family</label>
-                    <select value={selectedFieldData.fontFamily||'Inter'}
-                      onChange={e => updateField(selectedField, { fontFamily: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
-                      {FONT_OPTIONS.map(f=><option key={f}>{f}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Color</label>
-                    <div className="flex gap-2">
-                      <input type="color" value={selectedFieldData.color}
-                        onChange={e => updateField(selectedField, { color: e.target.value })}
-                        className="w-10 h-9 border border-gray-200 rounded cursor-pointer"/>
-                      <input type="text" value={selectedFieldData.color}
-                        onChange={e => updateField(selectedField, { color: e.target.value })}
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-mono"/>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" checked={selectedFieldData.bold}
-                      onChange={e => updateField(selectedField, { bold: e.target.checked })}
-                      className="w-4 h-4 accent-purple-600"/>
-                    <label className="text-sm text-gray-700">Bold</label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" checked={selectedFieldData.showLabel}
-                      onChange={e => updateField(selectedField, { showLabel: e.target.checked })}
-                      className="w-4 h-4 accent-purple-600"/>
-                    <label className="text-sm text-gray-700">Show Label</label>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">X Position</label>
-                    <input type="number" value={Math.round(selectedFieldData.x)}
-                      onChange={e => updateField(selectedField, { x: parseInt(e.target.value)||0 })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-1">Y Position</label>
-                    <input type="number" value={Math.round(selectedFieldData.y)}
-                      onChange={e => updateField(selectedField, { y: parseInt(e.target.value)||0 })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                  </div>
-                  <button onClick={() => removeFieldFromCanvas(selectedField)}
-                    className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold transition-all">
-                    Remove Field
-                  </button>
-                </div>
-              )}
-              {selectedText && !selectedFieldData && (()=>{
-                const txt = customTexts.find(t=>t.id===selectedText);
-                if (!txt) return null;
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Text Content</label>
-                      <input type="text" value={txt.text}
-                        onChange={e => updateCustomText(selectedText, { text: e.target.value })}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Font Size</label>
-                      <input type="number" min="6" max="72" value={txt.fontSize}
-                        onChange={e => updateCustomText(selectedText, { fontSize: parseInt(e.target.value)||11 })}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Color</label>
-                      <div className="flex gap-2">
-                        <input type="color" value={txt.color}
-                          onChange={e => updateCustomText(selectedText, { color: e.target.value })}
-                          className="w-10 h-9 border border-gray-200 rounded cursor-pointer"/>
-                        <input type="text" value={txt.color}
-                          onChange={e => updateCustomText(selectedText, { color: e.target.value })}
-                          className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-mono"/>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" checked={txt.bold}
-                        onChange={e => updateCustomText(selectedText, { bold: e.target.checked })}
-                        className="w-4 h-4 accent-purple-600"/>
-                      <label className="text-sm text-gray-700">Bold</label>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Width (px)</label>
-                      <input type="number" value={txt.width||200}
-                        onChange={e => updateCustomText(selectedText, { width: parseInt(e.target.value)||100 })}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm"/>
-                    </div>
-                    <button onClick={() => removeCustomText(selectedText)}
-                      className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold transition-all">
-                      Remove Text
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-
-        {/* Canvas Area */}
-        <div className="flex-1 min-w-0">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-gray-800">Quote Canvas — A4 Preview</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Drag fields to position them on your quote template</p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className="w-3 h-3 rounded-full bg-purple-400 inline-block"></span> Placed fields
-                <span className="w-3 h-3 rounded-full bg-amber-400 inline-block ml-2"></span> Selected
-              </div>
-            </div>
-
-            {!backgroundUrl ? (
-              <div className="a4-canvas bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-4">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">📄</div>
-                  <p className="text-gray-500 font-medium">No background uploaded yet</p>
-                  <p className="text-gray-400 text-sm mt-1">Upload your company letterhead to start designing</p>
-                  <button onClick={() => document.getElementById('bgUpload').click()} disabled={uploadingBg}
-                    className="mt-4 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-all">
-                    Upload Letterhead
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-auto">
-                <div ref={canvasRef}
-                  className="a4-canvas relative"
-                  style={{ backgroundImage: `url(${backgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'top center', cursor: draggingId ? 'grabbing' : 'default' }}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  onClick={e => { if (e.target === canvasRef.current) { setSelectedField(null); setSelectedText(null); } }}>
-
-                  {/* Placed fields */}
-                  {placedFields.map(field => (
-                    <div key={field.id}
-                      className="canvas-field"
-                      style={{ left: field.x, top: field.y, width: field.width, zIndex: selectedField===field.id ? 20 : 10 }}
-                      onMouseDown={e => handleCanvasMouseDown(e, field.id)}>
-                      <div style={{
-                        border: `1.5px solid ${selectedField===field.id ? '#7C3AED' : 'rgba(124,58,237,0.35)'}`,
-                        background: selectedField===field.id ? 'rgba(124,58,237,0.08)' : 'rgba(124,58,237,0.04)',
-                        borderRadius: 3, padding: '1px 4px', minHeight: 18,
-                        fontSize: field.fontSize, color: field.color,
-                        fontWeight: field.bold ? 'bold' : 'normal',
-                        fontFamily: field.fontFamily || 'Inter',
-                        userSelect: 'none', boxSizing: 'border-box'
-                      }}>
-                        <span style={{ fontSize: 9, color: '#7C3AED', fontWeight: 700, display: 'block', lineHeight: 1.2, fontFamily: 'Inter' }}>
-                          {field.label}
-                        </span>
-                        <span style={{ color: field.color, opacity: 0.6 }}>
-                          [{field.id}]
-                        </span>
-                      </div>
-                      <div className="field-controls absolute -top-6 right-0 flex gap-1">
-                        <button onClick={e => { e.stopPropagation(); removeFieldFromCanvas(field.id); }}
-                          className="w-5 h-5 bg-red-500 text-white rounded text-xs flex items-center justify-center font-bold hover:bg-red-600">✕</button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Custom texts */}
-                  {customTexts.map(txt => (
-                    <div key={txt.id}
-                      className="canvas-field"
-                      style={{ left: txt.x, top: txt.y, width: txt.width || 200, zIndex: selectedText===txt.id ? 20 : 10 }}
-                      onMouseDown={e => handleTextMouseDown(e, txt.id)}>
-                      <div style={{
-                        border: `1.5px solid ${selectedText===txt.id ? '#F59E0B' : 'rgba(245,158,11,0.4)'}`,
-                        background: selectedText===txt.id ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.03)',
-                        borderRadius: 3, padding: '1px 4px', minHeight: 18,
-                        fontSize: txt.fontSize, color: txt.color,
-                        fontWeight: txt.bold ? 'bold' : 'normal',
-                        fontFamily: txt.fontFamily || 'Inter',
-                        userSelect: 'none', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
-                      }}>
-                        {txt.text}
-                      </div>
-                      <div className="field-controls absolute -top-6 right-0 flex gap-1">
-                        <button onClick={e => { e.stopPropagation(); removeCustomText(txt.id); }}
-                          className="w-5 h-5 bg-red-500 text-white rounded text-xs flex items-center justify-center font-bold hover:bg-red-600">✕</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Placed fields summary */}
-          {placedFields.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
-              <h3 className="font-bold text-gray-800 mb-3">Placed Fields ({placedFields.length})</h3>
-              <div className="flex flex-wrap gap-2">
-                {placedFields.map(f => (
-                  <span key={f.id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-200 text-purple-700 rounded-full text-xs font-semibold">
-                    {f.label}
-                    <button onClick={() => removeFieldFromCanvas(f.id)} className="text-purple-400 hover:text-red-500 ml-0.5 font-bold">✕</button>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
     </div>
   );
 }

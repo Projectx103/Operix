@@ -144,13 +144,20 @@ function SupplierSetup() {
     faxNumber: '',
     
     // Tax Information
-    taxId: '',
-    vatNumber: '',
+    taxId: '',         // Full TIN: e.g. 123-456-789-000
+    tinBranch: '000',  // Branch code, 000 = head office
+    vatRegistered: false, // If true, vatNumber is auto-constructed as TIN+branchCode+V
+    vatNumber: '',     // Auto-constructed — do not edit directly; kept for backward compat
     taxExempt: false,
 taxExemptionReason: '',
 taxRate: '12',
 customTaxRate: '',
+vatTreatment: 'inclusive',
 taxClassification: '',
+taxCode: '',
+taxInfo: null,  // structured: { code, rate, type, label }
+ewtCode: '',
+ewtRate: '',
 exemptionCertNumber: '',
 exemptionExpiry: '',
 taxExemptionReasonOther: '',
@@ -255,8 +262,11 @@ const decryptedData = {
   swiftCode: safeDecrypt(data.swiftCode || ''),
   iban: safeDecrypt(data.iban || ''),
   routingNumber: safeDecrypt(data.routingNumber || ''),
-  // Tax fields
+  // Tax fields — TIN is encrypted, vatNumber is derived (TIN + branch + V)
   taxId: safeDecrypt(data.taxId || ''),
+  tinBranch: data.tinBranch || '000',
+  vatRegistered: data.vatRegistered || false,
+  // vatNumber stored for backward compat but always re-derived on load
   vatNumber: safeDecrypt(data.vatNumber || ''),
   registrationNumber: safeDecrypt(data.registrationNumber || '')
 };
@@ -286,12 +296,26 @@ const decryptedData = {
         website: decryptedData.website || '',
         faxNumber: decryptedData.faxNumber || '',
         taxId: decryptedData.taxId || '',
-        vatNumber: decryptedData.vatNumber || '',
+        tinBranch: decryptedData.tinBranch || '000',
+        vatRegistered: decryptedData.vatRegistered || false,
+        // Re-derive vatNumber from TIN + branch + V on load
+        vatNumber: (() => {
+          const tin = decryptedData.taxId || '';
+          const branch = decryptedData.tinBranch || '000';
+          const isVat = decryptedData.vatRegistered || false;
+          if (!tin) return decryptedData.vatNumber || '';
+          return isVat ? `${tin.replace(/-$/, '')}-${branch}V` : '';
+        })(),
         taxExempt: decryptedData.taxExempt || false,
 taxExemptionReason: decryptedData.taxExemptionReason || '',
 taxRate: decryptedData.taxRate || '12',
 customTaxRate: decryptedData.customTaxRate || '',
+vatTreatment: decryptedData.vatTreatment || 'inclusive',
 taxClassification: decryptedData.taxClassification || '',
+taxCode: decryptedData.taxCode || '',
+taxInfo: decryptedData.taxInfo || null,
+ewtCode: decryptedData.ewtCode || '',
+ewtRate: decryptedData.ewtRate || '',
 exemptionCertNumber: decryptedData.exemptionCertNumber || '',
 exemptionExpiry: decryptedData.exemptionExpiry || '',
 taxExemptionReasonOther: decryptedData.taxExemptionReasonOther || '',
@@ -322,6 +346,14 @@ const saveSupplierData = async () => {
       setSaving(true);
       const db = firebase.firestore();
       
+      // Construct vatNumber from TIN + branch code + V (PH BIR standard)
+      const derivedVatNumber = (() => {
+        const tin = supplierData.taxId || '';
+        const branch = supplierData.tinBranch || '000';
+        if (!tin || !supplierData.vatRegistered) return '';
+        return `${tin.replace(/-$/, '')}-${branch}V`;
+      })();
+
       // Encrypt sensitive fields before saving
       const encryptedData = {
         ...supplierData,
@@ -334,9 +366,15 @@ const saveSupplierData = async () => {
         routingNumber: supplierData.routingNumber ? encryptData(supplierData.routingNumber) : '',
         // Tax fields - ENCRYPTED
         taxId: supplierData.taxId ? encryptData(supplierData.taxId) : '',
-        vatNumber: supplierData.vatNumber ? encryptData(supplierData.vatNumber) : '',
+        tinBranch: supplierData.tinBranch || '000',
+        vatRegistered: supplierData.vatRegistered || false,
+        vatNumber: derivedVatNumber ? encryptData(derivedVatNumber) : '',
         registrationNumber: supplierData.registrationNumber ? encryptData(supplierData.registrationNumber) : '',
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        // taxInfo is the structured tax object — not sensitive, save as plain object
+        // e.g. { code: "VAT12-EX", rate: 0.12, type: "VAT_EXCLUSIVE" }
+        taxInfo: supplierData.taxInfo || null,
+        taxCode: supplierData.taxCode || '',
       };
       
       await db.collection('suppliers').doc(supplier.id).update(encryptedData);
@@ -368,8 +406,8 @@ const calculateCompletion = () => {
     supplierData.industry,
     supplierData.phoneNumber,
     
-    // Tax Information - 1 field (TIN OR VAT)
-    supplierData.taxId || supplierData.vatNumber ? 'filled' : '',
+    // Tax Information - TIN is the single source of truth
+    supplierData.taxId ? 'filled' : '',
     
     // Financial Details - 2 fields (Bank Name + Account Holder + one of Account/IBAN)
     supplierData.bankName,
@@ -601,227 +639,478 @@ const calculateCompletion = () => {
             </div>
           )}
 
-{/* Step 2: Tax Information - Oracle EBS Style */}
+
+{/* Step 2: Tax Information — BIR Philippines */}
 {activeStep === 2 && (
-  <div className="space-y-6">
-    <div className="border-b border-gray-200 pb-4">
+  <div className="space-y-0">
+
+    {/* ── PAGE HEADER ─────────────────────────────── */}
+    <div className="border-b border-gray-200 pb-4 mb-6">
       <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
         <CreditCard />
         Tax Information
       </h2>
-      <p className="text-gray-600 mt-1">Tax identification, classification, and compliance details</p>
+      <p className="text-gray-500 mt-1 text-sm">
+        BIR-compliant tax setup — TIN, tax code, VAT classification, withholding, and exemption details
+      </p>
     </div>
 
-    {/* Section A: Tax Registration */}
-    <div>
-      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">A</span>
-        Tax Registration
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* ══════════════════════════════════════════════
+        SECTION A — TAX IDENTIFICATION
+        TIN is the single source of truth.
+        VAT number is auto-constructed: TIN + branch + V
+    ══════════════════════════════════════════════ */}
+    <div className="rounded-2xl border border-gray-200 overflow-hidden mb-5">
+      <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-purple-50 to-white border-b border-gray-200">
+        <span className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">A</span>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tax ID / EIN / TIN
-            <span className="ml-1 text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={supplierData.taxId}
-            onChange={(e) => setSupplierData({...supplierData, taxId: e.target.value})}
-            placeholder="XX-XXXXXXX"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-          />
-          <p className="text-xs text-gray-400 mt-1">Taxpayer Identification Number issued by BIR/IRS</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">VAT Registration Number</label>
-          <input
-            type="text"
-            value={supplierData.vatNumber}
-            onChange={(e) => setSupplierData({...supplierData, vatNumber: e.target.value})}
-            placeholder="e.g. 123-456-789-000"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-          />
-          <p className="text-xs text-gray-400 mt-1">Leave blank if not VAT-registered</p>
+          <p className="text-sm font-bold text-gray-800 leading-none">Tax Identification (TIN)</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            In the Philippines, TIN and VAT Registration No. are the same — VAT No. is just <span style={{fontFamily:'monospace'}}>TIN-BranchCode-V</span>
+          </p>
         </div>
       </div>
-    </div>
+      <div className="p-5 space-y-5">
 
-    {/* Section B: Tax Classification (Oracle EBS style) */}
-    <div className="border-t border-gray-100 pt-6">
-      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">B</span>
-        Tax Classification
-      </h3>
+        {/* Row 1: TIN + Branch Code side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-      {/* Tax Exempt Toggle — Oracle EBS style */}
-      <div className={`rounded-xl border-2 p-5 mb-5 transition-all ${
-        supplierData.taxExempt 
-          ? 'border-green-400 bg-green-50' 
-          : 'border-gray-200 bg-gray-50'
-      }`}>
-        <label className="flex items-start gap-4 cursor-pointer">
-          <div className="relative mt-0.5">
+          {/* TIN */}
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              TIN — Taxpayer Identification Number <span className="text-red-500">*</span>
+            </label>
             <input
-              type="checkbox"
-              checked={supplierData.taxExempt}
-              onChange={(e) => setSupplierData({
-                ...supplierData, 
-                taxExempt: e.target.checked,
-                // Clear tax rate when exempt, restore default when not
-                taxRate: e.target.checked ? '0' : (supplierData.taxRate || '12')
-              })}
-              className="sr-only"
+              type="text"
+              value={supplierData.taxId}
+              onChange={(e) => setSupplierData({...supplierData, taxId: e.target.value})}
+              placeholder="000-000-000-000"
+              maxLength={15}
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-mono tracking-widest"
             />
-            <div className={`w-12 h-6 rounded-full transition-all duration-300 ${
-              supplierData.taxExempt ? 'bg-green-500' : 'bg-gray-300'
-            }`}>
-              <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 mt-0.5 ${
-                supplierData.taxExempt ? 'translate-x-6' : 'translate-x-0.5'
-              }`}></div>
-            </div>
+            <p className="text-xs text-gray-400 mt-1">12-digit BIR-issued TIN. Format: 000-000-000-000</p>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-800">Tax Exempt Supplier</span>
-              {supplierData.taxExempt && (
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                  EXEMPT
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {supplierData.taxExempt 
-                ? 'This supplier is declared tax exempt. Tax rate is set to 0%.' 
-                : 'Toggle ON if this supplier holds a valid tax exemption certificate.'}
-            </p>
-          </div>
-        </label>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Tax Rate — always visible, disabled when exempt */}
+          {/* Branch Code */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              Branch Code
+            </label>
+            <input
+              type="text"
+              value={supplierData.tinBranch || '000'}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 3).padStart(e.target.value.length > 0 ? e.target.value.replace(/\D/g,'').length : 0, '0');
+                setSupplierData({...supplierData, tinBranch: e.target.value.replace(/\D/g,'').slice(0,3) || '000'});
+              }}
+              placeholder="000"
+              maxLength={3}
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm font-mono text-center tracking-widest"
+            />
+            <p className="text-xs text-gray-400 mt-1">000 = Head Office</p>
+          </div>
+        </div>
+
+        {/* Row 2: VAT Registered toggle */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Applicable Tax Rate (%)
-            <span className="ml-1 text-red-500">*</span>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            VAT Registration Status
           </label>
-          {supplierData.taxExempt ? (
-            <div className="w-full px-4 py-2 border border-green-300 rounded-lg bg-green-50 text-green-700 font-bold flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              0% — Tax Exempt
+          <div className="flex items-center gap-4">
+            {/* Toggle */}
+            <button
+              type="button"
+              onClick={() => setSupplierData({...supplierData, vatRegistered: !supplierData.vatRegistered})}
+              className="flex items-center gap-3 focus:outline-none"
+            >
+              <div className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${supplierData.vatRegistered ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${supplierData.vatRegistered ? 'translate-x-6' : 'translate-x-0.5'}`}/>
+              </div>
+              <span className={`text-sm font-semibold ${supplierData.vatRegistered ? 'text-purple-700' : 'text-gray-500'}`}>
+                {supplierData.vatRegistered ? 'VAT-Registered' : 'Non-VAT / Not Registered'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Row 3: Auto-constructed VAT Number — read only, derived display */}
+        <div className={`rounded-xl border-2 p-4 transition-all ${supplierData.vatRegistered ? 'border-purple-200 bg-purple-50' : 'border-gray-100 bg-gray-50'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              VAT Registration Number
+              <span className="ml-2 text-gray-400 font-normal normal-case tracking-normal">(auto-constructed from TIN + Branch + V)</span>
+            </label>
+            {supplierData.vatRegistered && supplierData.taxId && (
+              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">AUTO</span>
+            )}
+          </div>
+
+          {supplierData.vatRegistered && supplierData.taxId ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 px-3.5 py-2.5 border border-purple-300 rounded-xl bg-white text-sm font-mono font-bold text-purple-800 tracking-widest select-all">
+                {`${supplierData.taxId}-${supplierData.tinBranch || '000'}V`}
+              </div>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(`${supplierData.taxId}-${supplierData.tinBranch || '000'}V`)}
+                className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-xl transition-colors"
+              >
+                <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+          ) : supplierData.vatRegistered && !supplierData.taxId ? (
+            <div className="px-3.5 py-2.5 border border-amber-200 rounded-xl bg-amber-50 text-sm text-amber-700 font-medium">
+              ⚠ Enter TIN above to generate VAT Registration Number
             </div>
           ) : (
-            <select
-              value={supplierData.taxRate || '12'}
-              onChange={(e) => setSupplierData({...supplierData, taxRate: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-            >
-              <option value="">Select tax rate</option>
-              <option value="0">0% — Zero-Rated</option>
-              <option value="5">5%</option>
-              <option value="10">10%</option>
-              <option value="12">12% — Standard VAT</option>
-              <option value="15">15%</option>
-              <option value="20">20%</option>
-              <option value="custom">Custom Rate</option>
-            </select>
+            <div className="px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-400 italic">
+              Not applicable — supplier is not VAT-registered
+            </div>
           )}
-          <p className="text-xs text-gray-400 mt-1">
-            {supplierData.taxExempt 
-              ? 'Rate locked to 0% due to tax exemption' 
-              : 'Select the VAT/tax rate applicable to this supplier'}
+          <p className="text-xs text-gray-400 mt-1.5">
+            {supplierData.vatRegistered
+              ? 'This value is saved to Firestore and used in purchase orders, BIR 2307, and accounting entries.'
+              : 'Toggle VAT-Registered above if this supplier is BIR VAT-registered.'}
           </p>
         </div>
 
-        {/* Custom rate input — only shows if "custom" selected */}
-        {!supplierData.taxExempt && supplierData.taxRate === 'custom' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Custom Tax Rate (%)
-              <span className="ml-1 text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={supplierData.customTaxRate || ''}
-              onChange={(e) => setSupplierData({...supplierData, customTaxRate: e.target.value})}
-              placeholder="e.g. 7.5"
-              className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-            />
-            <p className="text-xs text-gray-400 mt-1">Enter your exact applicable rate</p>
-          </div>
-        )}
-
-        {/* Tax Classification Code (Oracle EBS field) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Tax Classification Code</label>
-          <select
-            value={supplierData.taxClassification || ''}
-            onChange={(e) => setSupplierData({...supplierData, taxClassification: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-          >
-            <option value="">Select classification</option>
-            <option value="VAT">VAT — Value Added Tax</option>
-            <option value="NON-VAT">NON-VAT — Non-VAT Registered</option>
-            <option value="EXEMPT">EXEMPT — Tax Exempt</option>
-            <option value="ZERO-RATED">ZERO-RATED — Zero-Rated Export</option>
-            <option value="GOVERNMENT">GOVERNMENT — Government Entity</option>
-          </select>
-          <p className="text-xs text-gray-400 mt-1">Used for BIR tax classification reporting</p>
-        </div>
       </div>
     </div>
 
-    {/* Section C: Exemption Certificate — only shown when exempt */}
-    {supplierData.taxExempt && (
-      <div className="border-t border-gray-100 pt-6">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">C</span>
-          Exemption Details
-          <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-normal normal-case tracking-normal">Required when exempt</span>
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* ══════════════════════════════════════════════
+        SECTION B — TAX CODE & CLASSIFICATION
+        (the core scalable fix)
+    ══════════════════════════════════════════════ */}
+    <div className="rounded-2xl border border-gray-200 overflow-hidden mb-5">
+      <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-blue-50 to-white border-b border-gray-200">
+        <span className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">B</span>
+        <div>
+          <p className="text-sm font-bold text-gray-800 leading-none">Tax Code &amp; Classification</p>
+          <p className="text-xs text-gray-400 mt-0.5">Select the BIR tax code — this drives VAT rate, treatment, and withholding automatically</p>
+        </div>
+      </div>
+      <div className="p-5 space-y-5">
+
+        {/* TAX CODE — the primary scalable selector */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Tax Code <span className="text-red-500">*</span>
+          </label>
+
+          {/* Tax code cards grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            {[
+              {
+                // Firestore taxInfo object
+                taxInfo: { code: 'VAT12-EX', rate: 0.12, type: 'VAT_EXCLUSIVE' },
+                label: 'VAT', sub: '12% — Exclusive',
+                color: '#7C3AED', bg: '#FAF5FF', border: '#DDD6FE',
+                // legacy flat fields (kept for backward compat)
+                taxRate: '12', vatTreatment: 'exclusive', taxClassification: 'VAT', taxExempt: false,
+              },
+              {
+                taxInfo: { code: 'VAT12-IN', rate: 0.12, type: 'VAT_INCLUSIVE' },
+                label: 'VAT Inclusive', sub: '12% — Inclusive',
+                color: '#6D28D9', bg: '#EDE9FE', border: '#C4B5FD',
+                taxRate: '12', vatTreatment: 'inclusive', taxClassification: 'VAT', taxExempt: false,
+              },
+              {
+                taxInfo: { code: 'VAT0-ZERO', rate: 0.00, type: 'VAT_ZERO_RATED' },
+                label: 'Zero-Rated', sub: '0% — Export / PEZA',
+                color: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD',
+                taxRate: '0', vatTreatment: 'exclusive', taxClassification: 'ZERO-RATED', taxExempt: false,
+              },
+              {
+                taxInfo: { code: 'NONVAT', rate: 0.00, type: 'NON_VAT' },
+                label: 'Non-VAT', sub: '3% Percentage Tax',
+                color: '#065F46', bg: '#F0FDF4', border: '#BBF7D0',
+                taxRate: '3', vatTreatment: 'exclusive', taxClassification: 'NON-VAT', taxExempt: false,
+              },
+              {
+                taxInfo: { code: 'EXEMPT', rate: 0.00, type: 'VAT_EXEMPT' },
+                label: 'Exempt', sub: 'No tax — cert required',
+                color: '#92400E', bg: '#FFFBEB', border: '#FDE68A',
+                taxRate: '0', vatTreatment: 'exclusive', taxClassification: 'EXEMPT', taxExempt: true,
+              },
+              {
+                taxInfo: { code: 'GOVT', rate: 0.00, type: 'GOVERNMENT' },
+                label: 'Government', sub: 'RA 9184 — GOCCs / LGUs',
+                color: '#1E3A5F', bg: '#EFF6FF', border: '#BFDBFE',
+                taxRate: '0', vatTreatment: 'exclusive', taxClassification: 'GOVERNMENT', taxExempt: false,
+              },
+            ].map(tc => {
+              const isSelected = supplierData.taxCode === tc.taxInfo.code;
+              return (
+                <button
+                  key={tc.taxInfo.code}
+                  type="button"
+                  onClick={() => setSupplierData({
+                    ...supplierData,
+                    // ── Primary structured field (what accounting reads) ──
+                    taxInfo: tc.taxInfo,
+                    taxCode: tc.taxInfo.code,
+                    // ── Legacy flat fields (backward compat) ──
+                    taxRate: tc.taxRate,
+                    vatTreatment: tc.vatTreatment,
+                    taxClassification: tc.taxClassification,
+                    taxExempt: tc.taxExempt,
+                  })}
+                  style={{
+                    all: 'unset',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    padding: '12px 14px',
+                    borderRadius: 14,
+                    border: `2px solid ${isSelected ? tc.color : '#E5E7EB'}`,
+                    background: isSelected ? tc.bg : '#FAFAFA',
+                    cursor: 'pointer',
+                    transition: 'all .15s',
+                    boxShadow: isSelected ? `0 0 0 3px ${tc.border}` : 'none',
+                    position: 'relative',
+                    boxSizing: 'border-box',
+                    width: '100%',
+                  }}
+                >
+                  {isSelected && (
+                    <span style={{
+                      position:'absolute', top:8, right:8,
+                      width:18, height:18, borderRadius:'50%',
+                      background: tc.color,
+                      display:'flex', alignItems:'center', justifyContent:'center'
+                    }}>
+                      <svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </span>
+                  )}
+                  <span style={{
+                    fontSize: 13, fontWeight: 800,
+                    color: isSelected ? tc.color : '#374151',
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.5px'
+                  }}>{tc.code}</span>
+                  <span style={{fontSize: 11, fontWeight: 600, color: isSelected ? tc.color : '#374151'}}>{tc.label}</span>
+                  <span style={{fontSize: 10, color: isSelected ? tc.color : '#9CA3AF', opacity: isSelected ? 0.85 : 1}}>{tc.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Live summary of what the selected code means */}
+          {supplierData.taxCode && (
+            <div style={{
+              display:'flex', alignItems:'flex-start', gap:10,
+              padding:'12px 16px', borderRadius:12,
+              background: supplierData.taxCode==='VAT12-EX'||supplierData.taxCode==='VAT12-IN' ? '#FAF5FF'
+                         : supplierData.taxCode==='ZERO' ? '#F0F9FF'
+                         : supplierData.taxCode==='NVAT' ? '#F0FDF4'
+                         : supplierData.taxCode==='EXEMPT' ? '#FFFBEB'
+                         : '#EFF6FF',
+              border: '1px solid',
+              borderColor: supplierData.taxCode==='VAT12-EX'||supplierData.taxCode==='VAT12-IN' ? '#DDD6FE'
+                          : supplierData.taxCode==='ZERO' ? '#BAE6FD'
+                          : supplierData.taxCode==='NVAT' ? '#BBF7D0'
+                          : supplierData.taxCode==='EXEMPT' ? '#FDE68A'
+                          : '#BFDBFE',
+            }}>
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0, marginTop:1}}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div style={{fontSize:12, lineHeight:1.6}}>
+                {supplierData.taxCode === 'VAT12-EX' && <span><strong>VAT (Exclusive):</strong> Supplier is VAT-registered. Invoice prices are net of 12% VAT — system will add ₱12 per ₱100 on POs. Classification: VAT. BIR Form 2307 may apply.</span>}
+                {supplierData.taxCode === 'VAT12-IN' && <span><strong>VAT (Inclusive):</strong> Supplier's quoted prices already include 12% VAT. System back-calculates: ₱112 quoted → ₱100 net + ₱12 VAT. Classification: VAT.</span>}
+                {supplierData.taxCode === 'VAT0-ZERO' && <span><strong>Zero-Rated:</strong> 0% output VAT. Applies to export sales, PEZA-registered entities (RR 11-2005). No VAT passed to buyer. Supplier can still claim input VAT credits.</span>}
+                {supplierData.taxCode === 'NONVAT' && <span><strong>Non-VAT / Percentage Tax:</strong> Supplier is not VAT-registered. Subject to 3% Percentage Tax under NIRC Sec. 116. No input VAT credit available to buyer.</span>}
+                {supplierData.taxCode === 'EXEMPT' && <span><strong>Tax Exempt:</strong> Supplier holds a valid BIR exemption certificate. No VAT or percentage tax applies. Certificate number and expiry required below.</span>}
+                {supplierData.taxCode === 'GOVT' && <span><strong>Government Entity:</strong> GOCC, LGU, or national government agency under RA 9184. VAT-exempt on procurement; subject to final withholding tax rules.</span>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Auto-populated read-only summary row */}
+        {supplierData.taxCode && (
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tax Rate</label>
+              <div className="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold text-gray-700">
+                {supplierData.taxInfo
+                  ? `${Math.round(supplierData.taxInfo.rate * 100)}% — ${
+                      supplierData.taxInfo.type === 'VAT_EXCLUSIVE'  ? 'VAT Exclusive'     :
+                      supplierData.taxInfo.type === 'VAT_INCLUSIVE'  ? 'VAT Inclusive'     :
+                      supplierData.taxInfo.type === 'VAT_ZERO_RATED' ? 'Zero-Rated'        :
+                      supplierData.taxInfo.type === 'NON_VAT'        ? 'Non-VAT (3% PT)'   :
+                      supplierData.taxInfo.type === 'VAT_EXEMPT'     ? 'Exempt'            :
+                      supplierData.taxInfo.type === 'GOVERNMENT'     ? 'Government'        : ''
+                    }`
+                  : '—'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">VAT Treatment</label>
+              <div className="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold text-gray-700">
+                {supplierData.vatTreatment === 'inclusive' ? 'Inclusive' : 'Exclusive'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Classification</label>
+              <div className="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold text-gray-700">
+                {supplierData.taxInfo ? supplierData.taxInfo.type : supplierData.taxClassification || '—'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom rate — only if no standard code picked */}
+        {!supplierData.taxCode && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Exemption Certificate Number
-              <span className="ml-1 text-red-500">*</span>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+              Manual Tax Rate (%) — if no code above applies
+            </label>
+            <input
+              type="number" step="0.01" min="0" max="100"
+              value={supplierData.customTaxRate || ''}
+              onChange={(e) => setSupplierData({...supplierData, customTaxRate: e.target.value})}
+              placeholder="e.g. 7.5"
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+            />
+          </div>
+        )}
+
+      </div>
+    </div>
+
+    {/* ══════════════════════════════════════════════
+        SECTION C — EXPANDED WITHHOLDING TAX (EWT)
+    ══════════════════════════════════════════════ */}
+    <div className="rounded-2xl border border-gray-200 overflow-hidden mb-5">
+      <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-orange-50 to-white border-b border-gray-200">
+        <span className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">C</span>
+        <div>
+          <p className="text-sm font-bold text-gray-800 leading-none">Expanded Withholding Tax (EWT)</p>
+          <p className="text-xs text-gray-400 mt-0.5">BIR ATC code for withholding — required for BIR Form 2307 generation</p>
+        </div>
+      </div>
+      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* EWT ATC Code */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">BIR ATC Code</label>
+          <select
+            value={supplierData.ewtCode || ''}
+            onChange={(e) => {
+              const atcMap = {
+                'WI010': '1', 'WI011': '2', 'WC158': '2', 'WC160': '10',
+                'WC161': '15', 'WI090': '5', 'WI095': '10', 'WC120': '1',
+                'WC125': '2', 'WC130': '5', 'WC135': '10', 'NONE': '0',
+              };
+              setSupplierData({...supplierData, ewtCode: e.target.value, ewtRate: atcMap[e.target.value] || ''});
+            }}
+            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none text-sm"
+          >
+            <option value="">— Select ATC Code —</option>
+            <optgroup label="Individual Payees">
+              <option value="WI010">WI010 — Professional fees (1%)</option>
+              <option value="WI011">WI011 — Professional fees (2%)</option>
+              <option value="WI090">WI090 — Rentals — Real property (5%)</option>
+              <option value="WI095">WI095 — Rentals — Personal property (10%)</option>
+            </optgroup>
+            <optgroup label="Corporate Payees">
+              <option value="WC120">WC120 — Goods (1%)</option>
+              <option value="WC125">WC125 — Goods &gt; ₱720,000 (2%)</option>
+              <option value="WC130">WC130 — Services (2%)</option>
+              <option value="WC135">WC135 — Services &gt; ₱720,000 (5%)</option>
+              <option value="WC158">WC158 — Professional / consultants (2%)</option>
+              <option value="WC160">WC160 — Commission / brokers (10%)</option>
+              <option value="WC161">WC161 — Commission &gt; ₱720,000 (15%)</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="NONE">Not subject to withholding</option>
+            </optgroup>
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Used to auto-populate BIR Form 2307. Choose the ATC that matches the supplier's nature of income.</p>
+        </div>
+
+        {/* EWT Rate — auto-filled from ATC */}
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Withholding Rate (%)</label>
+          {supplierData.ewtCode && supplierData.ewtCode !== 'NONE' ? (
+            <div className="px-3.5 py-2.5 border border-orange-200 rounded-xl bg-orange-50 text-sm font-bold text-orange-700 flex items-center gap-2">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              {supplierData.ewtRate}% — auto-set from {supplierData.ewtCode}
+            </div>
+          ) : (
+            <input
+              type="number" step="0.01" min="0" max="100"
+              value={supplierData.ewtRate || ''}
+              onChange={(e) => setSupplierData({...supplierData, ewtRate: e.target.value})}
+              placeholder="e.g. 2"
+              disabled={supplierData.ewtCode === 'NONE'}
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none text-sm disabled:bg-gray-50 disabled:text-gray-400"
+            />
+          )}
+          <p className="text-xs text-gray-400 mt-1">
+            {supplierData.ewtCode === 'NONE' ? 'No withholding applies to this supplier.' : 'Auto-populated from ATC selection above.'}
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    {/* ══════════════════════════════════════════════
+        SECTION D — EXEMPTION DETAILS (conditional)
+    ══════════════════════════════════════════════ */}
+    {(supplierData.taxCode === 'EXEMPT' || supplierData.taxExempt || (supplierData.taxInfo && supplierData.taxInfo.type === 'VAT_EXEMPT')) && (
+      <div className="rounded-2xl border-2 border-amber-300 overflow-hidden mb-5 bg-amber-50">
+        <div className="flex items-center gap-3 px-5 py-3 bg-amber-100 border-b border-amber-200">
+          <span className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">D</span>
+          <div>
+            <p className="text-sm font-bold text-gray-800 leading-none">Exemption Certificate</p>
+            <p className="text-xs text-amber-700 mt-0.5">Required when tax code is EXEMPT — BIR-issued certificate details</p>
+          </div>
+          <span className="ml-auto px-2.5 py-1 bg-amber-200 text-amber-800 text-xs font-bold rounded-full">REQUIRED</span>
+        </div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+              Certificate Number <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={supplierData.exemptionCertNumber || ''}
               onChange={(e) => setSupplierData({...supplierData, exemptionCertNumber: e.target.value})}
               placeholder="e.g. CERT-2024-00123"
-              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
+              className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none text-sm bg-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Certificate Expiry Date</label>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Certificate Expiry</label>
             <input
               type="date"
               value={supplierData.exemptionExpiry || ''}
               onChange={(e) => setSupplierData({...supplierData, exemptionExpiry: e.target.value})}
-              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
+              className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none text-sm bg-white"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reason for Tax Exemption
-              <span className="ml-1 text-red-500">*</span>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+              Reason for Exemption <span className="text-red-500">*</span>
             </label>
             <select
               value={supplierData.taxExemptionReason || ''}
               onChange={(e) => setSupplierData({...supplierData, taxExemptionReason: e.target.value})}
-              className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none mb-3 bg-white"
+              className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none text-sm mb-3 bg-white"
             >
-              <option value="">Select exemption reason</option>
+              <option value="">Select reason</option>
               <option value="Government Entity">Government Entity (RA 9184)</option>
               <option value="Non-Profit Organization">Non-Profit / Charitable Organization</option>
               <option value="Export Sales">Export Sales — Zero-Rated (NIRC Sec. 106)</option>
@@ -830,35 +1119,41 @@ const calculateCompletion = () => {
               <option value="Diplomatic">Diplomatic / Embassy</option>
               <option value="Other">Other (specify below)</option>
             </select>
-
             {supplierData.taxExemptionReason === 'Other' && (
               <textarea
                 value={supplierData.taxExemptionReasonOther || ''}
                 onChange={(e) => setSupplierData({...supplierData, taxExemptionReasonOther: e.target.value})}
                 placeholder="Describe the specific reason for tax exemption..."
-                className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white"
-                rows="3"
+                className="w-full px-3.5 py-2.5 border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-400 outline-none text-sm bg-white"
+                rows="2"
               />
             )}
           </div>
-        </div>
 
-        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
-          </svg>
-          <p className="text-sm text-amber-800">
-            <strong>Compliance Notice:</strong> Tax exemption claims require a valid BIR-issued certificate. Ensure the certificate number and expiry date are current. Expired certificates will not be accepted for tax-exempt transactions.
-          </p>
+        </div>
+        <div className="px-5 pb-5">
+          <div className="flex items-start gap-3 p-3.5 bg-amber-100 border border-amber-200 rounded-xl">
+            <svg className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
+            </svg>
+            <p className="text-xs text-amber-800">
+              <strong>BIR Compliance:</strong> A valid BIR-issued certificate is required. Expired certificates are not accepted for tax-exempt transactions. Ensure expiry date is current.
+            </p>
+          </div>
         </div>
       </div>
     )}
 
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-      <p className="text-sm text-yellow-800">
-        <strong>Note:</strong> Tax information is used for purchase order generation, withholding tax computation, and BIR compliance reporting. Ensure all fields are accurate.
+    {/* ── BOTTOM NOTE ─────────────────────────────── */}
+    <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+      <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p className="text-xs text-blue-800">
+        <strong>Note:</strong> Tax code selection auto-fills rate, treatment, and classification. These values are used for PO computation, withholding tax (Form 2307), and BIR compliance reporting. Contact your BIR-accredited accountant if unsure of the correct ATC code.
       </p>
     </div>
+
   </div>
 )}
 

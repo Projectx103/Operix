@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Privacy Statement — Operix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:       #1E1B4B;
+    --navy-mid:   #312E81;
+    --navy-light: #4338CA;
+    --indigo:     #6366F1;
+    --indigo-pale:#EEF2FF;
+    --rule:       #E0E7FF;
+    --ink:        #111827;
+    --ink-mid:    #374151;
+    --ink-soft:   #6B7280;
+    --ink-faint:  #9CA3AF;
+    --surface:    #FAFAFA;
+    --white:      #FFFFFF;
+    --accent:     #4F46E5;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top bar ─────────────────────────────────────────────── */
+  .topbar {
+    background: var(--navy);
+    padding: 0 48px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .topbar-logo-mark {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--indigo), #818CF8);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .topbar-logo-mark svg { display: block; }
+  .topbar-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -.01em;
+  }
+  .topbar-back {
+    display: flex;
+    align-items: center;
+    gap:6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.60);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .topbar-back:hover { color: #fff; }
+
+  /* ── Hero banner ─────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 55%, #3730A3 100%);
+    padding: 72px 48px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 80% 50%, rgba(99,102,241,0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 300px 300px at 10% 80%, rgba(167,139,250,0.10) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 800px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    padding: 4px 12px 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.70);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-label-dot {
+    width: 6px; height: 6px;
+    background: #A5B4FC;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 5vw, 52px);
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.12;
+    letter-spacing: -.02em;
+    margin-bottom: 20px;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: #C7D2FE;
+  }
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+  }
+  .hero-meta-item strong {
+    color: rgba(255,255,255,0.80);
+    font-weight: 500;
+  }
+  .hero-meta-divider {
+    width: 1px; height: 14px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ── Page layout ─────────────────────────────────────────── */
+  .page-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 0;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 48px 80px;
+    align-items: start;
+  }
+
+  /* ── Sidebar nav ─────────────────────────────────────────── */
+  .sidebar {
+    position: sticky;
+    top: 80px;
+    padding: 48px 0 0;
+    padding-right: 32px;
+  }
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+    padding-left: 12px;
+  }
+  .sidebar-nav {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sidebar-nav a {
+    display: block;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+    line-height: 1.4;
+  }
+  .sidebar-nav a:hover {
+    background: var(--indigo-pale);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  .sidebar-nav a.active {
+    background: var(--indigo-pale);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Main content ────────────────────────────────────────── */
+  .content {
+    padding: 48px 0 0 48px;
+    border-left: 1px solid var(--rule);
+    min-width: 0;
+  }
+
+  .section {
+    margin-bottom: 56px;
+    scroll-margin-top: 88px;
+  }
+  .section:last-child { margin-bottom: 0; }
+
+  .section-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--indigo);
+    letter-spacing: .08em;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--navy);
+    margin-bottom: 18px;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+  }
+  .section-body {
+    font-size: 14px;
+    color: var(--ink-mid);
+    line-height: 1.75;
+  }
+  .section-body p { margin-bottom: 16px; }
+  .section-body p:last-child { margin-bottom: 0; }
+
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, var(--rule), transparent);
+    margin-bottom: 56px;
+  }
+
+  /* Callout box */
+  .callout {
+    background: var(--indigo-pale);
+    border-left: 3px solid var(--indigo);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 13.5px;
+    color: var(--navy-mid);
+    line-height: 1.65;
+  }
+  .callout strong { color: var(--navy); }
+
+  /* Bullet list */
+  .policy-list {
+    list-style: none;
+    margin: 12px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .policy-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ink-mid);
+    line-height: 1.65;
+  }
+  .policy-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    background: var(--indigo);
+    border-radius: 50%;
+    margin-top: 8px;
+  }
+
+  /* Role table */
+  .role-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+  }
+  .role-table th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.85);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .role-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-mid);
+    line-height: 1.55;
+  }
+  .role-table tr:last-child td { border-bottom: none; }
+  .role-table tr:nth-child(even) td { background: #FAFBFF; }
+  .role-table td:first-child {
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+    font-size: 12.5px;
+  }
+
+  /* Retention table */
+  .retention-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .retention-table th {
+    background: #F5F3FF;
+    color: var(--navy);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--rule);
+  }
+  .retention-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-mid);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .retention-table tr:last-child td { border-bottom: none; }
+  .retention-table td:first-child { font-weight: 500; color: var(--ink); }
+  .retention-table td:last-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Rights cards */
+  .rights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .right-card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 18px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .right-card:hover {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.06);
+  }
+  .right-card-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .right-card-icon {
+    width: 22px; height: 22px;
+    background: var(--indigo-pale);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .right-card-body {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  .page-footer {
+    background: var(--navy);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .page-footer-copy {
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .page-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.40);
+  }
+  .page-footer-right a {
+    color: rgba(255,255,255,0.60);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .page-footer-right a:hover { color: #fff; }
+
+  /* ── Scrollspy ──────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .page-body { grid-template-columns: 1fr; padding: 0 20px 60px; }
+    .sidebar { display: none; }
+    .content { padding: 32px 0 0; border-left: none; }
+    .hero { padding: 48px 20px 40px; }
+    .topbar { padding: 0 20px; }
+    .rights-grid { grid-template-columns: 1fr; }
+    .page-footer { padding: 16px 20px; flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<nav class="topbar">
+  <a href="Dashboard.html" class="topbar-logo">
+    <div class="topbar-logo-mark">
+      <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+    </div>
+    <span class="topbar-name">Operix</span>
+  </a>
+  <a href="Dashboard.html" class="topbar-back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Dashboard
+  </a>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-label">
+      <span class="hero-label-dot"></span>
+      Legal &amp; Compliance
+    </div>
+    <h1 class="hero-title">Privacy<br/><em>Statement</em></h1>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>Effective: <strong>January 1, 2026</strong></span>
+      </div>
+      <div class="hero-meta-divider"></div>
+      <div class="hero-meta-item">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>Last Updated: <strong>May 5, 2026</strong></span>
+      </div>
+      <div class="hero-meta-divider"></div>
+      <div class="hero-meta-item">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Operix <strong>Enterprise Resource Planning</strong></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Page body -->
+<div class="page-body">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <p class="sidebar-title">Contents</p>
+    <ul class="sidebar-nav" id="sidebar-nav">
+      <li><a href="#s1" class="active">1. Introduction</a></li>
+      <li><a href="#s2">2. Information We Collect</a></li>
+      <li><a href="#s3">3. How We Use Your Information</a></li>
+      <li><a href="#s4">4. Role-Based Access Controls</a></li>
+      <li><a href="#s5">5. Data Storage &amp; Security</a></li>
+      <li><a href="#s6">6. Data Sharing &amp; Disclosure</a></li>
+      <li><a href="#s7">7. Signature &amp; Document Data</a></li>
+      <li><a href="#s8">8. Data Retention</a></li>
+      <li><a href="#s9">9. Your Rights</a></li>
+      <li><a href="#s10">10. Cookies &amp; Sessions</a></li>
+      <li><a href="#s11">11. Policy Changes</a></li>
+      <li><a href="#s12">12. Contact</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main content -->
+  <main class="content">
+
+    <!-- 1 -->
+    <section class="section" id="s1">
+      <span class="section-number">01</span>
+      <h2 class="section-title">Introduction</h2>
+      <div class="section-body">
+        <p>Operix is an enterprise resource planning (ERP) platform built for internal business operations. It covers inventory management, purchase order processing, order fulfillment, supplier management, financial ledger functions, accounts payable and receivable, and multi-step approval workflows.</p>
+        <p>This Privacy Statement explains how Operix collects, uses, stores, protects, and manages information when administrators, approvers, and authorized personnel access and operate the system.</p>
+        <div class="callout">
+          <strong>By accessing or using Operix, you acknowledge that you have read, understood, and agree</strong> to the data practices described in this Privacy Statement. If you do not agree, please contact your system administrator.
+        </div>
+        <p>This statement applies to all Operix modules including Inventory, Orders, Purchases, Receiving, Suppliers, Shipping, General Ledger, Payables, Receivables, Reports, and the Approval Worklist.</p>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 2 -->
+    <section class="section" id="s2">
+      <span class="section-number">02</span>
+      <h2 class="section-title">Information We Collect</h2>
+      <div class="section-body">
+        <p>Operix collects information necessary to operate and maintain the system's business processes. The categories of information collected are:</p>
+
+        <p><strong>Account &amp; Identity Information</strong></p>
+        <ul class="policy-list">
+          <li>Full name, email address, and role designation</li>
+          <li>Assigned approval authorities and step positions within approval groups</li>
+          <li>Profile photographs (where uploaded)</li>
+          <li>Digital signature images uploaded by or on behalf of administrators for use in official PO documents</li>
+        </ul>
+
+        <p><strong>Operational &amp; Transaction Data</strong></p>
+        <ul class="policy-list">
+          <li>Purchase orders, revision history, approval chains, and PO status records</li>
+          <li>Supplier records including names, addresses, contact details, banking references (encrypted), and TIN/Tax IDs (encrypted)</li>
+          <li>Inventory items, stock levels, SKUs, cost prices, and category assignments</li>
+          <li>Customer orders, quotations, shipping records, and receiving logs</li>
+          <li>Payment terms, currency settings, and delivery notes</li>
+        </ul>
+
+        <p><strong>Financial Records</strong></p>
+        <ul class="policy-list">
+          <li>General ledger journal entries and account mappings</li>
+          <li>Accounts payable and receivable balances</li>
+          <li>Tax computations, VAT amounts, subtotals, discounts, and grand totals</li>
+          <li>Revenue figures and order amounts used in dashboard analytics</li>
+        </ul>
+
+        <p><strong>Audit &amp; Activity Logs</strong></p>
+        <ul class="policy-list">
+          <li>Timestamps of all system actions (approvals, denials, revisions, status changes)</li>
+          <li>User identifiers associated with each recorded action</li>
+          <li>Approval history entries including step index, approver name, role, and decision date</li>
+          <li>IP addresses and session identifiers for security audit purposes</li>
+        </ul>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 3 -->
+    <section class="section" id="s3">
+      <span class="section-number">03</span>
+      <h2 class="section-title">How We Use Your Information</h2>
+      <div class="section-body">
+        <p>Information collected within Operix is used exclusively for the following operational and compliance purposes:</p>
+        <ul class="policy-list">
+          <li>Authenticate users and enforce access based on assigned roles and permission tiers</li>
+          <li>Process, track, and advance purchase orders through configured multi-step approval workflows</li>
+          <li>Manage supplier relationships, inventory stock levels, pricing, and restocking thresholds</li>
+          <li>Fulfill customer orders, track shipments, and log receiving transactions</li>
+          <li>Generate financial reports, journal ledger entries, and management dashboards</li>
+          <li>Maintain complete, tamper-evident audit trails required for financial compliance and accountability</li>
+          <li>Render official PDF purchase order documents with assigned approver signatures</li>
+          <li>Deliver in-system notifications for approval requests, status changes, and workflow events</li>
+          <li>Monitor system access and enforce security policies</li>
+        </ul>
+        <div class="callout">
+          Operix does <strong>not</strong> use collected data for advertising, user profiling, behavioral analytics, or any purpose outside the direct operation of your organization's business processes.
+        </div>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 4 -->
+    <section class="section" id="s4">
+      <span class="section-number">04</span>
+      <h2 class="section-title">Role-Based Access Controls</h2>
+      <div class="section-body">
+        <p>Access to data within Operix is strictly governed by a role-based access control (RBAC) model. Each user is granted access only to the information necessary for their designated function.</p>
+
+        <table class="role-table">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Access Scope</th>
+              <th>Key Capabilities</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Master Administrator</td>
+              <td>Full system access</td>
+              <td>User management, approval group configuration, signature assignment, system-wide settings, all modules</td>
+            </tr>
+            <tr>
+              <td>Administrator</td>
+              <td>Assigned modules only</td>
+              <td>Operational module access as assigned; can process POs, orders, inventory; limited settings access</td>
+            </tr>
+            <tr>
+              <td>Approver</td>
+              <td>Approval worklist &amp; assigned POs</td>
+              <td>View, approve, or deny purchase orders routed to their approval step</td>
+            </tr>
+            <tr>
+              <td>Standard User / Purchaser</td>
+              <td>Assigned module scope</td>
+              <td>Create and submit requests within permitted modules; no access to system settings or other users' data</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>All role assignments and permission changes are logged and auditable. No user may access, modify, or export data beyond the boundaries of their defined role.</p>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 5 -->
+    <section class="section" id="s5">
+      <span class="section-number">05</span>
+      <h2 class="section-title">Data Storage &amp; Security</h2>
+      <div class="section-body">
+        <p>All Operix data is stored on Google Cloud infrastructure through Firebase and Firestore services, which operate under Google's enterprise-grade security and compliance frameworks. The following measures are in place:</p>
+        <ul class="policy-list">
+          <li>All data is encrypted in transit using <strong>TLS 1.2+ / HTTPS</strong> protocols at all times</li>
+          <li>Data at rest is encrypted by the Google Cloud infrastructure using AES-256</li>
+          <li>Sensitive supplier fields — including banking references and Tax ID numbers — are additionally encrypted at the <strong>application layer using AES encryption</strong> before being written to the database</li>
+          <li>Digital signature images are stored in <strong>Firebase Storage</strong> with access restricted by Firebase Authentication tokens; no unauthenticated access is possible</li>
+          <li>Session management is handled through Firebase Authentication with automatic token expiry on logout and inactivity timeout</li>
+          <li>Passwords are managed exclusively through Firebase Authentication; <strong>no plaintext passwords</strong> are stored anywhere in the system</li>
+          <li>All database read/write operations are protected by Firestore Security Rules scoped to authenticated users</li>
+        </ul>
+        <div class="callout">
+          Operix's security practices are reviewed periodically. If a security incident affecting your data is identified, your organization's Master Administrator will be notified promptly.
+        </div>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 6 -->
+    <section class="section" id="s6">
+      <span class="section-number">06</span>
+      <h2 class="section-title">Data Sharing &amp; Disclosure</h2>
+      <div class="section-body">
+        <p>Operix does not sell, rent, trade, or otherwise transfer personal or operational data to external parties. Data is shared only in the following strictly limited circumstances:</p>
+        <ul class="policy-list">
+          <li><strong>Internal Operations:</strong> Data is shared among authorized users within your organization solely as required to complete business processes such as approval routing, document generation, and fulfillment workflows.</li>
+          <li><strong>Infrastructure Providers:</strong> Google Firebase and Google Cloud Platform serve as the underlying infrastructure. These services operate under Google's enterprise Data Processing Addendum and are subject to their own privacy and security commitments.</li>
+          <li><strong>Legal Compliance:</strong> We may disclose data if required to do so by applicable law, lawful regulation, court order, or request from a competent government authority.</li>
+          <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, reorganization, or sale of business assets, data may be transferred to the successor entity. The successor will be bound by equivalent or stronger privacy protections.</li>
+        </ul>
+        <p>Suppliers and external parties to whom purchase orders are issued receive only the information contained in the generated PO document. They do not receive any access to the Operix system or its underlying data.</p>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 7 -->
+    <section class="section" id="s7">
+      <span class="section-number">07</span>
+      <h2 class="section-title">Signature &amp; Document Data</h2>
+      <div class="section-body">
+        <p>Operix generates official PDF purchase order documents that may include digital signature images belonging to administrators who serve as designated approvers. These signatures are handled as follows:</p>
+        <ul class="policy-list">
+          <li>Signature images are uploaded voluntarily by or on behalf of the named administrator through the Master Dashboard</li>
+          <li>Signatures are used <strong>solely</strong> for rendering official purchase order output documents</li>
+          <li>Signature images are stored securely in Firebase Storage with access tokens restricted to authenticated system users only</li>
+          <li>Signatures are <strong>never shared</strong> with suppliers, external parties, or third-party services in raw form — they appear only as embedded images in generated PDF documents</li>
+          <li>When a PO is generated, the system fetches the approver's signature using their <code>approverAdminId</code> stored in the approval group configuration to ensure the correct signature is always matched to the correct approver step</li>
+        </ul>
+        <div class="callout">
+          Any administrator may request the removal or replacement of their signature image at any time by contacting the system's <strong>Master Administrator</strong>. Removal does not affect historical PO documents that have already been generated.
+        </div>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 8 -->
+    <section class="section" id="s8">
+      <span class="section-number">08</span>
+      <h2 class="section-title">Data Retention</h2>
+      <div class="section-body">
+        <p>Operix retains data according to the following schedules, designed to meet standard accounting, audit, and operational requirements:</p>
+
+        <table class="retention-table">
+          <thead>
+            <tr>
+              <th>Data Category</th>
+              <th>Description</th>
+              <th>Retention Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Purchase Orders &amp; Approval History</td>
+              <td>All PO records, revisions, and complete approval chains</td>
+              <td>7 years minimum</td>
+            </tr>
+            <tr>
+              <td>Financial &amp; Ledger Records</td>
+              <td>Journal entries, AP/AR balances, tax computations</td>
+              <td>7 years minimum</td>
+            </tr>
+            <tr>
+              <td>Inventory Transaction Logs</td>
+              <td>Receiving entries, stock adjustments, order fulfillment</td>
+              <td>5 years minimum</td>
+            </tr>
+            <tr>
+              <td>User Account Data</td>
+              <td>Profile, role assignments, signature references</td>
+              <td>Duration of active authorization + 2 years post-deactivation</td>
+            </tr>
+            <tr>
+              <td>System Access Logs</td>
+              <td>Session records, IP addresses, authentication events</td>
+              <td>90 days minimum</td>
+            </tr>
+            <tr>
+              <td>Notification Records</td>
+              <td>Approval requests, status change alerts</td>
+              <td>1 year</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Requests for early deletion of specific records must be submitted to the Master Administrator and are subject to applicable legal and regulatory retention requirements. Some records may not be eligible for early deletion if they form part of an ongoing audit trail.</p>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 9 -->
+    <section class="section" id="s9">
+      <span class="section-number">09</span>
+      <h2 class="section-title">Your Rights</h2>
+      <div class="section-body">
+        <p>All authorized users of Operix have the following rights with respect to their personal information held within the system. To exercise any of these rights, contact your organization's Operix Master Administrator.</p>
+
+        <div class="rights-grid">
+          <div class="right-card">
+            <div class="right-card-title">
+              <div class="right-card-icon">
+                <svg width="12" height="12" fill="none" stroke="#4338CA" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </div>
+              Right of Access
+            </div>
+            <div class="right-card-body">You may request a summary of personal data associated with your user account held within the system.</div>
+          </div>
+          <div class="right-card">
+            <div class="right-card-title">
+              <div class="right-card-icon">
+                <svg width="12" height="12" fill="none" stroke="#4338CA" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </div>
+              Right to Correction
+            </div>
+            <div class="right-card-body">You may request correction of inaccurate personal information through your designated administrator.</div>
+          </div>
+          <div class="right-card">
+            <div class="right-card-title">
+              <div class="right-card-icon">
+                <svg width="12" height="12" fill="none" stroke="#4338CA" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </div>
+              Right to Deletion
+            </div>
+            <div class="right-card-body">Subject to legal retention requirements, you may request deletion of your personal account data upon separation from the organization.</div>
+          </div>
+          <div class="right-card">
+            <div class="right-card-title">
+              <div class="right-card-icon">
+                <svg width="12" height="12" fill="none" stroke="#4338CA" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+              </div>
+              Right to Object
+            </div>
+            <div class="right-card-body">You may raise concerns about the processing of your personal data with the Master Administrator at any time.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 10 -->
+    <section class="section" id="s10">
+      <span class="section-number">10</span>
+      <h2 class="section-title">Cookies &amp; Session Management</h2>
+      <div class="section-body">
+        <p>Operix is a web-based single-page application. It does not use third-party advertising cookies, cross-site tracking pixels, or behavioral analytics tools of any kind.</p>
+        <ul class="policy-list">
+          <li>Authentication state is managed through <strong>Firebase Authentication tokens</strong> stored in browser session storage</li>
+          <li>Session tokens expire automatically on logout or after the inactivity timeout configured by your administrator</li>
+          <li>No persistent cross-session tracking cookies are set</li>
+          <li>Browser local storage may be used for ephemeral UI preferences (such as sidebar state) that contain no personal data</li>
+        </ul>
+        <div class="callout">
+          Operix products are <strong>ad-free</strong>. No advertiser pays to have any product, service, or content promoted within the system.
+        </div>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 11 -->
+    <section class="section" id="s11">
+      <span class="section-number">11</span>
+      <h2 class="section-title">Changes to This Privacy Statement</h2>
+      <div class="section-body">
+        <p>We reserve the right to update this Privacy Statement at any time to reflect changes in our operational practices, legal or regulatory requirements, or the capabilities of the Operix system.</p>
+        <p>Material changes will be communicated to Master Administrators through the in-system notification mechanism prior to taking effect. The <strong>Last Updated</strong> date at the top of this document reflects the most recent revision.</p>
+        <p>Continued access to and use of Operix following the posting of an updated Privacy Statement constitutes your acceptance of those changes. If a proposed change is not acceptable, please contact the system owner prior to the effective date.</p>
+      </div>
+    </section>
+    <div class="section-divider"></div>
+
+    <!-- 12 -->
+    <section class="section" id="s12">
+      <span class="section-number">12</span>
+      <h2 class="section-title">Contact Information</h2>
+      <div class="section-body">
+        <p>If you have questions, concerns, or requests regarding this Privacy Statement or the handling of data within Operix, please contact your organization's designated <strong>Operix Master Administrator</strong> or system owner.</p>
+        <div class="callout">
+          For privacy-related requests — including access, correction, deletion, or objection — please direct your inquiry to the Master Administrator account within your organization's Operix deployment. Master Administrators are responsible for handling data subject requests on behalf of the organization.
+        </div>
+        <p>Operix is a proprietary enterprise system. All intellectual property rights in the system, its design, documentation, and data models are reserved.</p>
+        <p style="margin-top:24px;padding-top:20px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-faint);">
+          Copyright &copy; 2026, 2027, Operix and/or its affiliates. All rights reserved.
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Footer -->
+<footer class="page-footer">
+  <span class="page-footer-copy">Copyright &copy; 2026, 2027, Operix and/or its affiliates. All rights reserved.</span>
+  <div class="page-footer-right">
+    <a href="Dashboard.html">Back to Dashboard</a>
+    <span style="margin:0 6px;opacity:.3">·</span>
+    <span>Operix ERP</span>
+  </div>
+</footer>
+
+<script>
+  // Scrollspy — highlight sidebar nav item based on scroll position
+  const sections = document.querySelectorAll('.section[id]');
+  const navLinks = document.querySelectorAll('#sidebar-nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

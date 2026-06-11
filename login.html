@@ -237,13 +237,13 @@ onAuthStateChanged(auth, async (user) => {
       }
       
       if (userData.status === 'approved' || userData.role) {
-        if (userData.role === 'master') {
-          window.location.href = 'master-dashboard.html';
-        } else if (userData.role === 'admin') {
-          window.location.href = 'dashboard.html';
-        } else {
-          window.location.href = 'dashboard.html';
-        }
+if (userData.role === 'master') {
+        window.location.href = 'master-dashboard.html';
+      } else if (userData.role === 'admin') {
+        window.location.href = 'Dashboard.html';
+      } else {
+        window.location.href = 'shop.html';
+      }
       }
     }
   }
@@ -384,15 +384,14 @@ loginForm.addEventListener('submit', async (e) => {
       loginError.textContent = 'Your registration was rejected. Please contact support.';
       await auth.signOut();
     } else if (userData.status === 'approved' || userData.role) {
-      // Redirect based on role
-      if (userData.role === 'master') {
-        window.location.href = 'master-dashboard.html';
-      } else if (userData.role === 'admin') {
-        window.location.href = 'dashboard.html';
+        if (userData.role === 'master') {
+          window.location.href = 'master-dashboard.html';
+        } else if (userData.role === 'admin') {
+          window.location.href = 'Dashboard.html';
+        } else {
+          window.location.href = 'shop.html';
+        }
       } else {
-        window.location.href = 'dashboard.html';
-      }
-    } else {
       loginError.textContent = 'Account status unknown. Please contact support.';
       await auth.signOut();
     }
@@ -555,15 +554,13 @@ newPasswordForm.addEventListener('submit', async (e) => {
     newPasswordError.style.color = 'green';
     newPasswordError.textContent = '✓ Password set successfully! Redirecting...';
     
-    setTimeout(() => {
+setTimeout(() => {
       if (userData.role === 'master') {
         window.location.href = 'master-dashboard.html';
       } else if (userData.role === 'admin') {
-        window.location.href = 'dashboard.html';
-      } else if (userData.role === 'user') {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'Dashboard.html';
       } else {
-        window.location.href = 'dashboard.html';
+        window.location.href = 'shop.html';
       }
     }, 1500);
     

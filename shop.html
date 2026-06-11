@@ -12,6 +12,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* Fluent UI font override for Quick Quote panel */
+.qq-panel, .qq-panel * { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important; }
+.qq-panel input, .qq-panel textarea { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important; }
 :root{
   --ink:#0C1220;--ink2:#1E2D45;--slate:#64748B;
   --line:#E4EAF2;--surf:#F4F7FB;--white:#fff;
@@ -25,26 +28,19 @@ html{scroll-behavior:smooth}
 body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
-.tb{position:sticky;top:0;z-index:200;background:var(--ink);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid rgba(255,255,255,.05)}
-.tb-brand{display:flex;align-items:center;gap:10px}
-.tb-brand b{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.4px}
-.tb-brand small{font-size:9px;color:#64748B;font-weight:600;letter-spacing:.12em;text-transform:uppercase;display:block;margin-top:-2px}
-.tb-r{display:flex;align-items:center;gap:10px}
-.tb-link{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:7px;padding:6px 12px;cursor:pointer;text-decoration:none;transition:all .18s;white-space:nowrap}
-.tb-link:hover{color:#fff;background:rgba(255,255,255,.1)}
-.tb-av{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
-.tb-name{font-size:13px;color:#CBD5E1;font-weight:500}
-.cart-btn{display:flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:\'DM Sans\',sans-serif}
-.cart-btn:hover{background:var(--blue-d);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,87,255,.4)}
-.cart-cnt{background:#fff;color:var(--blue);font-size:10px;font-weight:900;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px}
-.bc{background:var(--white);border-bottom:1px solid var(--line);padding:0 32px;height:42px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--slate);position:sticky;top:58px;z-index:190}
+/* ── LAZADA-STYLE FIXED-WIDTH CONTAINER ── */
+.page-wrap{width:100%;min-width:320px}
+.container{max-width:1280px;margin:0 auto;width:100%}
+.bc{background:var(--white);border-bottom:1px solid var(--line);height:42px;font-size:12px;color:var(--slate);position:sticky;top:58px;z-index:190}
+.bc-inner{max-width:1280px;margin:0 auto;height:100%;display:flex;align-items:center;gap:6px;padding:0 32px}
 .bc-item{cursor:pointer;font-weight:600;transition:color .15s;white-space:nowrap}
 .bc-item:hover{color:var(--blue)}
 .bc-active{color:var(--ink)!important;cursor:default}
 .bc-sep{opacity:.35;font-size:10px}
-.layout{display:flex;min-height:calc(100vh - 100px)}
+.layout{display:flex;min-height:calc(100vh - 100px);max-width:1280px;margin:0 auto;width:100%}
 .main{flex:1;padding:28px 32px;min-width:0}
-.sidebar{width:340px;flex-shrink:0;background:var(--white);border-left:1px solid var(--line);padding:20px;position:sticky;top:100px;max-height:calc(100vh - 100px);overflow-y:auto;display:flex;flex-direction:column}
+.layout-wrap{width:100%;background:var(--surf)}
+
 .hero h1{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.5px;margin-bottom:6px}
 .hero p{font-size:14px;color:var(--slate);margin-bottom:26px}
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
@@ -62,6 +58,21 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
 .sub-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surf);color:var(--slate);border:1px solid var(--line)}
 .cat-arrow{position:absolute;top:14px;right:14px;z-index:1;opacity:0;transform:translateX(-6px);transition:all .22s}
 .cat-card:hover .cat-arrow{opacity:1;transform:translateX(0)}
+/* ── FLUENT SIDEBAR NAV ── */
+.cat-layout{display:flex;gap:0;min-height:0;align-items:flex-start}
+.cat-sidebar{width:220px;flex-shrink:0;position:sticky;top:100px;max-height:calc(100vh - 120px);overflow-y:auto;background:var(--white);border:1.5px solid var(--line);border-radius:12px;padding:8px 0;margin-right:20px}
+.cat-sidebar::-webkit-scrollbar{width:3px}
+.cat-sidebar::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
+.cat-sidebar-hd{padding:10px 14px 6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate)}
+.cat-nav-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;cursor:pointer;transition:background .12s;gap:8px;border-left:3px solid transparent;margin:1px 0}
+.cat-nav-item:hover{background:var(--surf)}
+.cat-nav-item.sel{background:var(--blue-bg);border-left-color:var(--blue)}
+.cat-nav-item.sel .cnav-name{color:var(--blue);font-weight:700}
+.cat-nav-item.all-item{border-bottom:1px solid var(--line);margin-bottom:4px;padding-bottom:10px}
+.cnav-name{font-size:13px;font-weight:600;color:var(--ink2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnav-badge{font-size:10px;font-weight:700;color:var(--slate);background:var(--surf);border:1px solid var(--line);border-radius:99px;padding:1px 7px;flex-shrink:0;min-width:24px;text-align:center}
+.cat-nav-item.sel .cnav-badge{background:var(--blue-bg);border-color:#BFDBFE;color:var(--blue)}
+.cat-main-area{flex:1;min-width:0}
 .subcat-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
 .subcat-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:all .18s;font-family:\'DM Sans\',sans-serif}
 .subcat-btn:hover{border-color:var(--blue);box-shadow:0 3px 12px rgba(0,87,255,.1)}
@@ -160,7 +171,56 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
 .succ-title{font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.5px;margin-bottom:7px}
 .succ-sub{font-size:14px;color:var(--slate);max-width:360px;line-height:1.65;margin-bottom:22px}
 .ord-badge{background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:10px 22px;border-radius:10px;font-family:\'DM Mono\',monospace;margin-bottom:22px}
-.toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fu .25s ease;border-left:3px solid var(--green)}
+/* ── SORT & VIEW TOOLBAR ── */
+.shop-toolbar{margin-bottom:18px;background:var(--white);border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.toolbar-row1{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.toolbar-row2{display:flex;align-items:center;gap:10px;padding:8px 14px;flex-wrap:wrap}
+.sort-select-wrap{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.sort-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);white-space:nowrap}
+.sort-select{appearance:none;background:var(--surf);border:1.5px solid var(--line);border-radius:8px;padding:6px 28px 6px 10px;font-size:12px;font-weight:600;color:var(--ink);font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;transition:border .18s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;flex:1;max-width:200px}
+.sort-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.08)}
+.toolbar-sep{width:1px;height:22px;background:var(--line);flex-shrink:0}
+.price-range-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.price-range-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--slate);white-space:nowrap}
+.price-input{width:80px;padding:5px 8px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:border .18s;background:var(--surf)}
+.price-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.08)}
+.price-dash{font-size:12px;color:var(--slate);font-weight:700;padding:0 2px}
+.view-toggle{display:flex;align-items:center;background:var(--surf);border:1.5px solid var(--line);border-radius:9px;overflow:hidden;flex-shrink:0}
+.vt-btn{display:flex;align-items:center;justify-content:center;width:32px;height:30px;border:none;background:none;cursor:pointer;color:var(--slate);transition:all .15s}
+.vt-btn:hover{color:var(--ink);background:rgba(0,0,0,.04)}
+.vt-btn.active{background:var(--blue);color:#fff}
+.vt-btn:first-child{border-radius:7px 0 0 7px}
+.vt-btn:last-child{border-radius:0 7px 7px 0}
+.result-count{font-size:12px;color:var(--slate);font-weight:600;white-space:nowrap}
+
+/* ── LIST VIEW ── */
+.prod-list{display:flex;flex-direction:column;gap:10px}
+.prod-list-item{background:var(--white);border:1.5px solid var(--line);border-radius:12px;overflow:hidden;display:flex;align-items:stretch;transition:all .2s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.prod-list-item:hover{border-color:#BFCFEF;box-shadow:0 6px 22px rgba(0,87,255,.09);transform:translateY(-1px)}
+.pli-img{width:120px;flex-shrink:0;background:var(--surf);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.pli-img img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;padding:8px}
+.pli-body{flex:1;padding:14px 16px;display:flex;align-items:center;gap:16px;min-width:0}
+.pli-info{flex:1;min-width:0}
+.pli-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);margin-bottom:3px}
+.pli-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:2px}
+.pli-sku{font-size:10px;color:var(--slate);font-family:'DM Mono',monospace;margin-bottom:5px}
+.pli-desc{font-size:12px;color:var(--slate);line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.pli-price-block{flex-shrink:0;text-align:right;min-width:120px}
+.pli-price{font-size:19px;font-weight:900;color:var(--ink);letter-spacing:-.4px}
+.pli-uom{font-size:11px;color:var(--slate);margin-top:1px}
+.pli-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:28px;padding-bottom:8px}
+.pg-btn{display:flex;align-items:center;justify-content:center;min-width:36px;height:36px;border-radius:9px;border:1.5px solid var(--line);background:var(--white);color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;padding:0 10px}
+.pg-btn:hover:not(:disabled):not(.active){border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.pg-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(0,87,255,.3)}
+.pg-btn:disabled{opacity:.35;cursor:not-allowed}
+.pg-ellipsis{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--slate);font-weight:700;font-size:14px}
+.pg-info{font-size:11px;color:var(--slate);font-weight:600;margin:0 6px}
+
+.toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.28);animation:toastIn .25s cubic-bezier(.4,0,.2,1);border-left:4px solid var(--green);white-space:nowrap;min-width:220px;max-width:90vw}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .nb-warn{background:#FFF7ED;border:1.5px solid #FB923C;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;animation:fu .2s ease}
 .nb-warn-icon{width:18px;height:18px;background:#FB923C;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .nb-warn-text{font-size:11px;color:#92400E;line-height:1.5;flex:1}
@@ -175,30 +235,63 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
 .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:14px}
 .loader-spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
 
-/* ── QUICK QUOTE SLIDE PANEL ── */
-.qq-backdrop{position:fixed;inset:0;background:rgba(12,18,32,.5);backdrop-filter:blur(3px);z-index:800;animation:fu .2s ease}
-.qq-panel{position:fixed;top:0;right:0;height:100vh;width:480px;max-width:100vw;background:#fff;box-shadow:-12px 0 48px rgba(0,0,0,.18);z-index:801;display:flex;flex-direction:column;animation:qqSlide .25s cubic-bezier(.4,0,.2,1)}
+/* ── QUICK QUOTE SLIDE PANEL — Microsoft Fluent UI ── */
+.qq-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:800;animation:qqFadeIn .2s ease}
+@keyframes qqFadeIn{from{opacity:0}to{opacity:1}}
+.qq-panel{position:fixed;top:0;right:0;height:100vh;width:400px;max-width:100vw;background:#ffffff;box-shadow:-8px 0 32px rgba(0,0,0,.16);z-index:801;display:flex;flex-direction:column;animation:qqSlide .25s cubic-bezier(.1,.9,.2,1);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 @keyframes qqSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
-.qq-hd{background:linear-gradient(135deg,#0C1220 0%,#1A3050 100%);padding:22px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.qq-body{flex:1;overflow-y:auto;padding:22px 24px}
-.qq-ft{padding:16px 24px;border-top:1px solid var(--line);background:#F8FAFC;flex-shrink:0}
-.qq-close{width:30px;height:30px;background:rgba(255,255,255,.1);border:none;border-radius:8px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;transition:background .15s;font-size:16px;font-family:inherit}
-.qq-close:hover{background:rgba(255,255,255,.2)}
-.qq-section{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
-.qq-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--slate);margin-bottom:10px}
-.qq-item-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}
-.qq-item-row:last-child{border-bottom:none}
-.qq-item-name{font-size:13px;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qq-item-meta{font-size:11px;color:var(--slate);margin-top:1px}
-.qq-item-price{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;margin-left:12px}
-.qq-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--ink);border-radius:10px;margin-top:8px}
-.qq-fi{width:100%;padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border .18s}
-.qq-fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.07)}
-.qq-fl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);margin-bottom:5px}
-.qq-send{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
-.qq-send:hover{background:var(--blue-d);box-shadow:0 4px 16px rgba(0,87,255,.35);transform:translateY(-1px)}
-.qq-send:disabled{background:#CBD5E1;cursor:not-allowed;transform:none;box-shadow:none}
-.qq-validity{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--blue-bg);border:1px solid #BFDBFE;border-radius:9px;margin-bottom:16px;font-size:12px;color:#1E40AF;line-height:1.5}
+
+/* Fluent Panel Header */
+.qq-hd{background:#ffffff;padding:20px 24px 16px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;border-bottom:1px solid #edebe9}
+.qq-hd-icon{width:36px;height:36px;background:#EFF6FC;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px}
+.qq-hd-title{font-size:20px;font-weight:600;color:#323130;letter-spacing:-.2px;line-height:1.2;font-family:'Segoe UI',system-ui,sans-serif}
+.qq-hd-sub{font-size:12px;color:#605e5c;margin-top:2px;font-weight:400}
+
+/* Fluent Close Button */
+.qq-close{width:32px;height:32px;background:transparent;border:none;border-radius:2px;cursor:pointer;color:#605e5c;display:flex;align-items:center;justify-content:center;transition:background .1s;flex-shrink:0;margin-top:-2px}
+.qq-close:hover{background:#f3f2f1;color:#323130}
+.qq-close:active{background:#edebe9}
+
+/* Fluent Panel Body */
+.qq-body{flex:1;overflow-y:auto;padding:0;scrollbar-width:thin;scrollbar-color:#c8c6c4 transparent}
+.qq-body::-webkit-scrollbar{width:4px}
+.qq-body::-webkit-scrollbar-thumb{background:#c8c6c4;border-radius:2px}
+
+/* Fluent Section */
+.qq-section{padding:16px 24px;border-bottom:1px solid #edebe9}
+.qq-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#605e5c;margin-bottom:12px;font-family:'Segoe UI',system-ui,sans-serif}
+
+/* Fluent Item Row */
+.qq-item-row{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;gap:12px}
+.qq-item-row+.qq-item-row{border-top:1px solid #f3f2f1}
+.qq-item-name{font-size:14px;font-weight:400;color:#323130;flex:1;min-width:0;line-height:1.4;white-space:normal}
+.qq-item-meta{font-size:12px;color:#605e5c;margin-top:2px;font-weight:400}
+.qq-item-price{font-size:14px;font-weight:600;color:#323130;white-space:nowrap;flex-shrink:0;font-family:'Segoe UI',system-ui,sans-serif}
+
+/* Fluent Total Bar */
+.qq-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0078d4;border-radius:4px;margin-top:12px}
+
+/* Fluent Form Fields */
+.qq-form-section{padding:16px 24px 8px}
+.qq-field{margin-bottom:16px}
+.qq-fi{width:100%;padding:6px 8px;border:1px solid #8a8886;border-radius:2px;font-size:14px;font-family:'Segoe UI',system-ui,sans-serif;color:#323130;background:#ffffff;outline:none;transition:border .1s,box-shadow .1s;height:32px}
+.qq-fi:hover{border-color:#323130}
+.qq-fi:focus{border-color:#0078d4;box-shadow:inset 0 -2px 0 0 #0078d4}
+textarea.qq-fi{height:auto;padding:8px;resize:vertical}
+.qq-fl{display:block;font-size:12px;font-weight:600;color:#323130;margin-bottom:4px;font-family:'Segoe UI',system-ui,sans-serif}
+.qq-field-hint{font-size:11px;color:#605e5c;margin-top:4px}
+
+/* Fluent Panel Footer */
+.qq-ft{padding:16px 24px;border-top:1px solid #edebe9;background:#faf9f8;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+
+/* Fluent Primary Button */
+.qq-send{width:100%;padding:0 20px;height:32px;background:#0078d4;color:#ffffff;border:none;border-radius:2px;font-size:14px;font-weight:600;cursor:pointer;transition:background .1s;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.qq-send:hover{background:#106ebe}
+.qq-send:active{background:#005a9e}
+.qq-send:disabled{background:#c8c6c4;cursor:not-allowed;color:#a19f9d}
+
+/* Fluent Validity Notice */
+.qq-validity{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#eff6fc;border-left:3px solid #0078d4;border-radius:0 2px 2px 0;margin-bottom:0;font-size:12px;color:#004578;line-height:1.5;font-family:'Segoe UI',system-ui,sans-serif}
 .p0{--cc:#0057FF;--cbg:#EEF4FF}.p1{--cc:#059669;--cbg:#ECFDF5}
 .p2{--cc:#D97706;--cbg:#FFFBEB}.p3{--cc:#E11D48;--cbg:#FFF1F2}
 .p4{--cc:#7C3AED;--cbg:#F5F3FF}.p5{--cc:#0284C7;--cbg:#F0F9FF}
@@ -253,8 +346,38 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
 .sug-name{font-size:11px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sug-price{font-size:12px;font-weight:800;color:var(--blue)}
 
+/* ── HERO SLIDER ── */
+.hs-wrap-outer{width:100%}
+.hs-wrap{position:relative;overflow:hidden;background:var(--ink);aspect-ratio:16/5;min-height:160px;max-height:340px;max-width:1280px;margin:0 auto}
+.hs-inner{display:flex;height:100%;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.hs-slide{flex-shrink:0;width:100%;height:100%;position:relative;display:flex;align-items:center;overflow:hidden}
+.hs-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;filter:brightness(1.05) saturate(1.08)}
+/* soft left-side vignette only — keeps image vivid while text stays legible */
+.hs-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,18,32,.62) 0%,rgba(12,18,32,.28) 46%,rgba(12,18,32,0) 100%);z-index:1}
+.hs-overlay-inner{max-width:1280px;margin:0 auto;height:100%;padding:32px 32px;display:flex;flex-direction:column;justify-content:center}
+.hs-badge{display:inline-flex;align-items:center;background:rgba(0,87,255,.75);color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;padding:4px 13px;border-radius:99px;margin-bottom:10px;width:fit-content}
+.hs-title{font-size:clamp(18px,3vw,30px);font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.15;margin-bottom:8px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.hs-sub{font-size:13px;color:rgba(255,255,255,.78);max-width:480px;line-height:1.65}
+.hs-cta{margin-top:16px;display:inline-flex;align-items:center;gap:7px;background:var(--blue);color:#fff;padding:9px 20px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;width:fit-content;transition:background .18s}
+.hs-cta:hover{background:var(--blue-d)}
+.hs-arrow{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .18s;z-index:10;font-size:18px;line-height:1}
+.hs-arrow:hover{background:rgba(255,255,255,.26)}
+.hs-arrow.prev{left:max(12px, calc(50% - 640px + 12px))}
+.hs-arrow.next{right:max(12px, calc(50% - 640px + 12px))}
+.hs-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
+.hs-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);border:none;cursor:pointer;transition:all .2s;padding:0}
+.hs-dot.active{background:#fff;width:20px;border-radius:3px}
+/* ── PROMO BANNERS ── */
+.pb-strip-outer{background:var(--white);border-bottom:1px solid var(--line);padding:12px 0}
+.pb-inner{max-width:1280px;margin:0 auto;padding:0 32px}
+.pb-img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.pb-chip-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pb-chip{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;text-align:center}
+@media(max-width:700px){.pb-img-grid,.pb-chip-row{grid-template-columns:1fr}}
+
 /* ── RECENTLY VIEWED BAR ── */
-.rv-bar{background:var(--white);border-top:1px solid var(--line);padding:14px 32px;display:flex;align-items:center;gap:14px;overflow-x:auto}
+.rv-bar-outer{background:var(--white);border-top:1px solid var(--line)}
+.rv-bar{padding:14px 32px;display:flex;align-items:center;gap:14px;overflow-x:auto;max-width:1280px;margin:0 auto}
 .rv-bar::-webkit-scrollbar{height:3px}
 .rv-bar::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px}
 .rv-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--slate);white-space:nowrap;flex-shrink:0}
@@ -266,7 +389,8 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
 .rv-item-price{font-size:10px;color:var(--slate)}
 
 /* ── FOOTER ── */
-.shop-footer{background:var(--ink);color:#94A3B8;padding:48px 32px 28px;margin-top:0}
+.shop-footer{background:var(--ink);color:#94A3B8;margin-top:0}
+.footer-inner{max-width:1280px;margin:0 auto;padding:48px 32px 28px}
 .footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
 .footer-brand b{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.4px;display:block;margin-bottom:6px}
 .footer-brand p{font-size:12px;line-height:1.7;max-width:220px}
@@ -287,6 +411,99 @@ body{font-family:\'DM Sans\',sans-serif;background:var(--surf);color:var(--ink);
   .tb{padding:0 16px}
   .main{padding:16px}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLUENT TOPBAR  — Microsoft Fluent UI style — shared across all shop pages
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tb{position:sticky;top:0;z-index:300;background:#1f1f1f;height:52px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    box-shadow:0 1px 8px rgba(0,0,0,.35)}
+.tb-inner{max-width:1280px;margin:0 auto;height:100%;
+          display:flex;align-items:center;justify-content:space-between;
+          padding:0 20px;gap:8px}
+.tb-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.tb-brand b{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px;line-height:1}
+.tb-brand small{font-size:9px;color:#888;font-weight:500;letter-spacing:.1em;
+                text-transform:uppercase;display:block;margin-top:1px}
+.tb-nav{display:flex;align-items:center;gap:2px;margin-left:10px}
+.tb-nav-link{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;
+             color:#a0a0a0;padding:6px 12px;border-radius:5px;cursor:pointer;
+             text-decoration:none;transition:color .15s,background .15s;
+             white-space:nowrap;border:none;background:none;font-family:inherit}
+.tb-nav-link:hover{color:#fff;background:rgba(255,255,255,.07)}
+.tb-nav-link.active{color:#fff;background:rgba(255,255,255,.1);font-weight:600}
+.tb-nav-link svg{opacity:.75;flex-shrink:0}
+.tb-nav-link.active svg{opacity:1}
+.tb-spacer{flex:1}
+.tb-quote-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+              color:#a0a0a0;background:none;border:1px solid rgba(255,255,255,.12);
+              border-radius:5px;padding:5px 12px;cursor:pointer;
+              transition:all .15s;white-space:nowrap;font-family:inherit}
+.tb-quote-btn:hover{color:#fff;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.06)}
+.tb-cart-btn{display:flex;align-items:center;gap:7px;background:#0f62fe;color:#fff;
+             padding:6px 14px;border-radius:5px;font-size:13px;font-weight:600;
+             cursor:pointer;border:none;transition:all .15s;
+             font-family:inherit;text-decoration:none;flex-shrink:0}
+.tb-cart-btn:hover{background:#0353e9;box-shadow:0 2px 12px rgba(15,98,254,.45)}
+.tb-cart-cnt{background:rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:800;
+             min-width:17px;height:17px;border-radius:99px;
+             display:flex;align-items:center;justify-content:center;padding:0 3px}
+/* Account dropdown */
+.tb-acct-wrap{position:relative;flex-shrink:0}
+.tb-acct-btn{display:flex;align-items:center;background:none;border:none;cursor:pointer;
+             padding:3px;border-radius:50%;transition:background .15s;outline:none}
+.tb-acct-btn:hover{background:rgba(255,255,255,.08)}
+.tb-acct-btn:focus-visible{outline:2px solid #0f62fe;outline-offset:2px}
+.tb-acct-avatar{width:32px;height:32px;border-radius:50%;
+                background:linear-gradient(135deg,#0f62fe 0%,#4589ff 100%);
+                display:flex;align-items:center;justify-content:center;
+                font-size:13px;font-weight:700;color:#fff;
+                box-shadow:0 0 0 2px #1f1f1f,0 0 0 3.5px rgba(255,255,255,.18);
+                user-select:none}
+.tb-acct-drop{position:absolute;top:calc(100% + 10px);right:0;
+              background:#2c2c2c;border:1px solid rgba(255,255,255,.1);
+              border-radius:8px;width:304px;
+              box-shadow:0 8px 32px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.3);
+              z-index:9999;overflow:hidden;
+              animation:tbDropIn .15s cubic-bezier(.4,0,.2,1)}
+@keyframes tbDropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.tb-drop-hd{padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.tb-drop-managed{font-size:10.5px;color:#888;margin-bottom:4px;
+                 display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tb-drop-managed a{color:#4589ff;text-decoration:none;font-weight:600}
+.tb-drop-managed a:hover{text-decoration:underline}
+.tb-drop-email{font-size:12.5px;color:#d4d4d4;font-weight:500;word-break:break-all}
+.tb-drop-greet{padding:12px 16px 10px;display:flex;align-items:center;gap:13px;
+               border-bottom:1px solid rgba(255,255,255,.07)}
+.tb-drop-av2{width:54px;height:54px;border-radius:50%;flex-shrink:0;
+             background:linear-gradient(135deg,#0f62fe 0%,#4589ff 100%);
+             display:flex;align-items:center;justify-content:center;
+             font-size:21px;font-weight:700;color:#fff}
+.tb-drop-hi{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px}
+.tb-drop-role{font-size:11px;color:#888}
+.tb-drop-manage-btn{display:block;margin:8px 16px 2px;padding:6px 14px;
+                    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                    border-radius:5px;font-size:12px;font-weight:600;color:#c8c8c8;
+                    text-align:center;text-decoration:none;cursor:pointer;
+                    transition:all .15s;font-family:inherit;width:calc(100% - 32px)}
+.tb-drop-manage-btn:hover{background:rgba(255,255,255,.1);color:#fff;
+                           border-color:rgba(255,255,255,.2)}
+.tb-drop-items{padding:6px 0}
+.tb-drop-item{display:flex;align-items:center;gap:10px;padding:8px 16px;
+              font-size:13px;color:#c0c0c0;cursor:pointer;
+              transition:background .12s,color .12s;text-decoration:none;
+              background:none;border:none;width:100%;font-family:inherit;text-align:left}
+.tb-drop-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.tb-drop-item svg{color:#888;flex-shrink:0}
+.tb-drop-item:hover svg{color:#b0b0b0}
+.tb-drop-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.tb-drop-item.signout:hover{background:rgba(220,38,38,.12);color:#f87171}
+.tb-drop-item.signout:hover svg{color:#f87171}
+.tb-drop-ft{padding:8px 16px 10px;display:flex;gap:10px;
+            border-top:1px solid rgba(255,255,255,.06)}
+.tb-drop-ft a{font-size:10px;color:#555;text-decoration:none;transition:color .12s}
+.tb-drop-ft a:hover{color:#999}
+
 </style>
 </head>
 <body>
@@ -322,6 +539,16 @@ const PALETTE=[
 const pal=i=>PALETTE[i%PALETTE.length];
 const getCurrencySymbol=(c)=>({'PHP':'₱','USD':'$','EUR':'€','JPY':'¥','GBP':'£','KRW':'₩','CNY':'¥','AUD':'A$','CAD':'C$','SGD':'S$','HKD':'HK$','THB':'฿','MYR':'RM','IDR':'Rp','VND':'₫'}[c]||(c?c+' ':'₱'));
 
+// ── FX conversion helper ─────────────────────────────────────────────────────
+// Returns { phpPrice, converted, rate } — use in components via closure over fxRates
+const makeConvertToPhp = (fxRates) => (price, currency) => {
+  if (!currency || currency === 'PHP') return { phpPrice: price, converted: false, rate: 1 };
+  const rate = fxRates[currency];
+  if (!rate) return { phpPrice: price, converted: false, rate: null }; // no rate — show original
+  return { phpPrice: price * rate, converted: true, rate };
+};
+
+
 const Ic=({d,s=16,c='currentColor'})=>(
   <svg width={s} height={s} fill="none" stroke={c} strokeWidth="1.8"
     strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d={d}/></svg>
@@ -353,18 +580,108 @@ const Logo=()=>(
   </svg>
 );
 
+/* ── HERO SLIDER COMPONENT ── */
+function HeroSlider({slides}){
+  const s=(slides||[]).filter(sl=>sl.title||sl.imageUrl);
+  const [idx,setIdx]=useState(0);
+  const timer=useRef(null);
+  const resetTimer=()=>{clearInterval(timer.current);if(s.length>1)timer.current=setInterval(()=>setIdx(i=>(i+1)%s.length),5000);};
+  useEffect(()=>{resetTimer();return()=>clearInterval(timer.current);},[s.length]);
+  if(!s.length)return null;
+  const prev=()=>{setIdx(i=>(i-1+s.length)%s.length);resetTimer();};
+  const next=()=>{setIdx(i=>(i+1)%s.length);resetTimer();};
+  return(
+    <div className="hs-wrap-outer">
+    <div className="hs-wrap">
+      <div className="hs-inner" style={{transform:`translateX(-${idx*100}%)`}}>
+        {s.map((sl,i)=>(
+          <div key={i} className="hs-slide">
+            {sl.imageUrl&&<img src={sl.imageUrl} alt={sl.title||''} onError={e=>e.target.style.display='none'}/>}
+            {!sl.imageUrl&&<div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0C1220 0%,#1A3050 100%)'}}/>}
+            <div className="hs-overlay">
+              <div className="hs-overlay-inner">
+              {sl.badge&&<div className="hs-badge">{sl.badge}</div>}
+              {sl.title&&<div className="hs-title">{sl.title}</div>}
+              {sl.subtitle&&<div className="hs-sub">{sl.subtitle}</div>}
+              {sl.ctaLabel&&(
+                <a href={sl.ctaUrl||'#'} className="hs-cta" onClick={e=>{if(!sl.ctaUrl||sl.ctaUrl==='#')e.preventDefault();}}>
+                  {sl.ctaLabel} <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </a>
+              )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {s.length>1&&(
+        <>
+          <button className="hs-arrow prev" onClick={prev}>‹</button>
+          <button className="hs-arrow next" onClick={next}>›</button>
+          <div className="hs-dots">
+            {s.map((_,i)=><button key={i} className={`hs-dot${i===idx?' active':''}`} onClick={()=>{setIdx(i);resetTimer();}}/>)}
+          </div>
+        </>
+      )}
+    </div>
+    </div>
+  );
+}
+
+/* ── PROMO BANNERS COMPONENT ── */
+function PromoBanners({banners}){
+  const b=(banners||[]).filter(bn=>bn.text||bn.imageUrl);
+  if(!b.length)return null;
+  const imgBanners=b.filter(bn=>bn.imageUrl&&bn.imageUrl.trim());
+  const chipBanners=b.filter(bn=>bn.text&&(!bn.imageUrl||!bn.imageUrl.trim()));
+  return(
+    <div className="pb-strip-outer">
+      <div className="pb-inner">
+        {imgBanners.length>0&&(
+          <div className="pb-img-grid">
+            {imgBanners.map((bn,i)=>(
+              <div key={i} style={{position:'relative',borderRadius:10,overflow:'hidden',height:90,background:'#0C1220',cursor:bn.ctaUrl&&bn.ctaUrl!=='#'?'pointer':'default'}}
+                onClick={()=>bn.ctaUrl&&bn.ctaUrl!=='#'&&(window.location.href=bn.ctaUrl)}>
+                <img src={bn.imageUrl.trim()} alt={bn.text||''} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} onError={e=>e.target.style.display='none'}/>
+                {bn.text&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.6))',padding:'10px 12px',fontSize:11,fontWeight:700,color:'#fff'}}>{bn.text}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {chipBanners.length>0&&(
+          <div className="pb-chip-row">
+            {chipBanners.map((bn,i)=>(
+              <div key={i} className="pb-chip" style={{background:(bn.color||'#0057FF')+'18',border:`1.5px solid ${(bn.color||'#0057FF')}40`,color:bn.color||'#0057FF'}}>
+                {bn.text}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Toast({msg,onDone}){
   useEffect(()=>{const t=setTimeout(onDone,2600);return()=>clearTimeout(t);});
-  return <div className="toast">✓ {msg}</div>;
+  return(
+    <div className="toast">
+      <span style={{width:20,height:20,background:'var(--green)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        <svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+      </span>
+      {msg} added to cart
+    </div>
+  );
 }
 
 /* ── PRODUCT DETAIL MODAL ── */
-function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltAdjustMap}){
+function ProductDetail({product,allProducts,cart,onAdd,onUpdateQty,onClose,onOpenProduct,ltAdjustMap,fxRates={},showFxRateDetails=true,showSupplierName=true,displayCompanyName=''}){
   const isOut=product.stock===0;
   const isLow=!isOut&&product.stock<=(product.threshold||10);
   const inCart=cart.find(i=>i.id===product.id);
   const {main,sub}=parseCat(product.category);
   const cs=getCurrencySymbol(product.currency);
+  const convertToPhp=makeConvertToPhp(fxRates);
+  const fxResult=convertToPhp(product.price,product.currency||'PHP');
 
   // Suggested: same sub-category, excluding this product
   const suggested=useMemo(()=>
@@ -412,9 +729,21 @@ function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltA
             <div className="pd-name">{product.name}</div>
             <div className="pd-sku">SKU: {product.sku||'—'}</div>
             <div className="pd-price-row">
-              <span className="pd-price">{cs}{fmt(product.price)}</span>
+              <span className="pd-price">₱{fmt(fxResult.phpPrice)}</span>
               <span className="pd-per">per {product.unit||'unit'}</span>
             </div>
+            {showFxRateDetails&&fxResult.converted&&(
+              <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,padding:'5px 10px',background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:6,width:'fit-content'}}>
+                <svg width="12" height="12" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span style={{fontSize:11,color:'#1E40AF',fontWeight:600}}>{cs}{fmt(product.price)} {product.currency} · Today&apos;s rate: 1 {product.currency} = ₱{fmt(fxResult.rate,4)}</span>
+              </div>
+            )}
+            {showFxRateDetails&&!fxResult.converted&&product.currency&&product.currency!=='PHP'&&(
+              <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4,padding:'5px 10px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:6,width:'fit-content'}}>
+                <svg width="12" height="12" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span style={{fontSize:11,color:'#92400E',fontWeight:600}}>No {product.currency}/PHP rate set for today — showing original price</span>
+              </div>
+            )}
 
             <div className="pd-divider"/>
 
@@ -434,9 +763,11 @@ function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltA
                 <div className="pd-spec-lbl">Lead Time</div>
                 <div className="pd-spec-val">{product.leadTime} day{product.leadTime!=1?'s':''}</div>
               </div>}
-              {product.supplier&&<div className="pd-spec">
+              {(product.supplier||(displayCompanyName&&!showSupplierName))&&<div className="pd-spec">
                 <div className="pd-spec-lbl">Supplier</div>
-                <div className="pd-spec-val" style={{fontSize:12}}>{product.supplier}</div>
+                <div className="pd-spec-val" style={{fontSize:12}}>
+                  {showSupplierName ? product.supplier : (displayCompanyName||product.supplier)}
+                </div>
               </div>}
               {product.brand&&<div className="pd-spec">
                 <div className="pd-spec-lbl">Brand</div>
@@ -460,7 +791,14 @@ function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltA
                 {isOut?'Out of stock':isLow?`Only ${product.stock} left`:`${product.stock} in stock`}
               </span>
               {inCart
-                ? <div className="pd-in-cart"><Ic d={P.check} s={14}/>{inCart.quantity} in cart</div>
+                ? <div style={{display:'flex',alignItems:'center',gap:8,flex:1}}>
+                    <div className="qc" style={{flex:1,justifyContent:'space-between'}}>
+                      <button className="qb" style={{width:34,height:34}} onClick={()=>onUpdateQty&&onUpdateQty(product.id,inCart.quantity-1)}>−</button>
+                      <span style={{minWidth:32,textAlign:'center',fontSize:15,fontWeight:900,color:'var(--ink)'}}>{inCart.quantity}</span>
+                      <button className="qb" style={{width:34,height:34}} onClick={()=>onUpdateQty&&onUpdateQty(product.id,inCart.quantity+1)}>+</button>
+                    </div>
+                    <span style={{fontSize:12,fontWeight:600,color:'var(--green)',whiteSpace:'nowrap'}}>in cart</span>
+                  </div>
                 : <button className="pd-add-btn" disabled={isOut} onClick={()=>{onAdd(product,ltAdjustMap);onClose();}}>
                     <Ic d={P.plus} s={14}/>Add to Cart
                   </button>
@@ -489,7 +827,7 @@ function ProductDetail({product,allProducts,cart,onAdd,onClose,onOpenProduct,ltA
                     <div className="sug-body">
                       <div className="sug-name">{p.name}</div>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
-                        <span className="sug-price">{getCurrencySymbol(p.currency)}{fmt(p.price)}</span>
+                        <span className="sug-price">{(()=>{const fx=convertToPhp(p.price,p.currency||'PHP');return '₱'+fmt(fx.phpPrice);})()}</span>
                         {sInCart&&<span style={{fontSize:9,fontWeight:800,color:'var(--green)'}}>✓</span>}
                       </div>
                     </div>
@@ -509,6 +847,7 @@ function ShopFooter({footerData}){
   const fd=footerData||{};
   return(
     <footer className="shop-footer">
+      <div className="footer-inner">
       <div className="footer-top">
         <div className="footer-brand">
           <Logo/>
@@ -550,44 +889,140 @@ function ShopFooter({footerData}){
           <span className="footer-badge">⚡ Fast</span>
         </div>
       </div>
+      </div>
     </footer>
   );
 }
 
 /* ── RECENTLY VIEWED BAR ── */
-function RecentlyViewed({items,onOpen}){
+function RecentlyViewed({items,onOpen,fxRates={}}){
+  const convertToPhp=makeConvertToPhp(fxRates);
   if(!items.length) return null;
   return(
-    <div className="rv-bar">
-      <span className="rv-lbl">Recently Viewed</span>
-      {items.map(p=>(
-        <div key={p.id} className="rv-item" onClick={()=>onOpen(p)}>
-          {p.imageUrl
-            ? <img src={p.imageUrl} alt={p.name}/>
-            : <div className="rv-item-ph"><Ic d={P.box} s={12} c="var(--slate)"/></div>
-          }
-          <div>
-            <div className="rv-item-name">{p.name}</div>
-            <div className="rv-item-price">{getCurrencySymbol(p.currency)}{fmt(p.price)}</div>
+    <div className="rv-bar-outer">
+      <div className="rv-bar">
+        <span className="rv-lbl">Recently Viewed</span>
+        {items.map(p=>(
+          <div key={p.id} className="rv-item" onClick={()=>onOpen(p)}>
+            {p.imageUrl
+              ? <img src={p.imageUrl} alt={p.name}/>
+              : <div className="rv-item-ph"><Ic d={P.box} s={12} c="var(--slate)"/></div>
+            }
+            <div>
+              <div className="rv-item-name">{p.name}</div>
+              <div className="rv-item-price">{(()=>{const fx=convertToPhp(p.price,p.currency||'PHP');return '₱'+fmt(fx.phpPrice);})()}</div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
 
-function computeNeedByDate(product,ltAdjMap){
+/* BUG#17 FIX — toISOString() returns UTC, which is 1 day behind in UTC+8 (PH).
+   Use local year/month/day directly for the correct local date. */
+function toLocalDateStr(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+/* globalMode: 'Working Days' | 'Calendar Days'  (from shopConfig.leadTimeSettings)
+   ltAdjMap:   per-supplier extra adjustment days (from leadTimeAdjust collection) */
+function computeNeedByDate(product,ltAdjMap,globalMode){
   const lt=parseInt(product.leadTime);
   if(!lt||lt<1) return '';
   const rule=ltAdjMap[product.supplier||'']||null;
-  let d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+lt);
+  const mode=globalMode||'Calendar Days';
+  let d=new Date(); d.setHours(0,0,0,0);
+  // Base lead time — respect the global day-count mode
+  if(mode==='Working Days'){
+    let added=0;
+    while(added<lt){d.setDate(d.getDate()+1);const dow=d.getDay();if(dow!==0&&dow!==6)added++;}
+  } else {
+    d.setDate(d.getDate()+lt);
+  }
+  // Per-supplier adjustment on top of base
   if(rule&&rule.adjustDays>0){
     if(rule.dayType==='Working Days'){
       let added=0;
       while(added<rule.adjustDays){d.setDate(d.getDate()+1);const dow=d.getDay();if(dow!==0&&dow!==6)added++;}
     } else { d.setDate(d.getDate()+rule.adjustDays); }
   }
-  return d.toISOString().split('T')[0];
+  return toLocalDateStr(d);
+}
+
+
+/* ─ AccountDropdown component ─ */
+function AccountDropdown({user, userRole, onSignOut, extraItems}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  const initials = React.useMemo(() => {
+    const n = user?.displayName || user?.fullName || user?.email || 'U';
+    return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  }, [user]);
+  const firstName = (user?.displayName || user?.fullName || '').split(' ')[0] || 'there';
+  const email = user?.email || '';
+  const domain = email.includes('@') ? email.split('@')[1] : '';
+  const roleLabel = userRole === 'admin' ? 'Administrator' : userRole === 'master' ? 'Master Admin' : 'User';
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="tb-acct-wrap" ref={ref}>
+      <button className="tb-acct-btn" onClick={() => setOpen(o => !o)} aria-label="Account menu" aria-expanded={open}>
+        <div className="tb-acct-avatar">{initials}</div>
+      </button>
+      {open && (
+        <div className="tb-acct-drop" role="menu">
+          {/* Email + Managed by */}
+          <div className="tb-drop-hd">
+            <div className="tb-drop-managed">
+              {domain && <><span>{email}</span></>}
+              {domain && <><span style={{margin:'0 2px'}}>·</span><span>Managed by</span><a href={'https://'+domain} target="_blank" rel="noopener noreferrer">{domain}</a><svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{color:'#4589ff'}}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></>}
+            </div>
+            {!domain && <div className="tb-drop-email">{email}</div>}
+          </div>
+          {/* Greeting + avatar */}
+          <div className="tb-drop-greet">
+            <div className="tb-drop-av2">{initials}</div>
+            <div>
+              <div className="tb-drop-hi">Hi, {firstName}!</div>
+              <div className="tb-drop-role">{roleLabel}{user?.companyName ? ' · '+user.companyName : ''}</div>
+            </div>
+          </div>
+          {/* Manage account */}
+          <a href="my-profile.html" className="tb-drop-manage-btn" onClick={() => setOpen(false)}>
+            Manage your account
+          </a>
+          {/* Nav items */}
+          <div className="tb-drop-items">
+            {(extraItems||[]).map((item, i) => (
+              <a key={i} href={item.href} className="tb-drop-item" onClick={() => setOpen(false)}>
+                {item.icon}
+                {item.label}
+              </a>
+            ))}
+            {(extraItems||[]).length > 0 && <div className="tb-drop-sep"/>}
+            <button className="tb-drop-item signout" onClick={() => { setOpen(false); onSignOut && onSignOut(); }}>
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign out
+            </button>
+          </div>
+          {/* Footer links */}
+          <div className="tb-drop-ft">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function App(){
@@ -597,6 +1032,9 @@ function App(){
   const [products,setProducts]=useState([]);
   const [invoiceSettings,setIS]=useState({});
   const [shopConfig,setShopConfig]=useState({});
+  const [fxRates,setFxRates]=useState({});  // { 'USD': 56.25, 'JPY': 0.38, ... } — today's PHP rates
+  const [fxRateDate,setFxRateDate]=useState(null);
+  const [fxLoading,setFxLoading]=useState(true);
 
   const [view,setView]=useState('landing');
   const [selMain,setSelMain]=useState(null);
@@ -611,9 +1049,7 @@ function App(){
   const [form,setForm]=useState({customerName:'',customerEmail:'',customerPhone:'',deliveryAddress:'',paymentMethod:'Cash',notes:''});
   const [savedAddresses,setSavedAddresses]=useState([]);
 
-  const [approvalGroup,setApprovalGroup]=useState(null);
-  const [approvalBlocked,setApprovalBlocked]=useState(false);
-  const [approvalChecked,setApprovalChecked]=useState(false);
+  // Approval is handled in Dashboard AutoCreate — not in the shop
   const [ltAdjustMap,setLtAdjustMap]=useState({});
   const [needByWarning,setNeedByWarning]=useState(null);
   const [showQuote,setShowQuote]=useState(false);
@@ -623,6 +1059,13 @@ function App(){
 
   // Product detail modal
   const [detailProduct,setDetailProduct]=useState(null);
+  // Sort / View / Pagination / Price Filter
+  const [sortBy,setSortBy]=useState("best");
+  const [viewMode,setViewMode]=useState("grid");
+  const [currentPage,setCurrentPage]=useState(1);
+  const [priceMin,setPriceMin]=useState("");
+  const [priceMax,setPriceMax]=useState("");
+  const PAGE_SIZE=40;
   // Recently viewed (up to 8, most recent first)
   const [recentlyViewed,setRecentlyViewed]=useState(()=>{try{const s=localStorage.getItem('operix_rv');return s?JSON.parse(s):[]}catch{return[]}});
 
@@ -755,7 +1198,6 @@ function App(){
       if (isMasterRole) {
         // Master sees nothing — not bound to any company
         setProducts([]);
-        setApprovalChecked(true);
         return;
       } else if (role === 'admin') {
         // Collect all admins in the same company
@@ -792,6 +1234,151 @@ function App(){
 
       setProducts(allProducts);
 
+      // ── GL Daily FX Rates for today (from Accounting Setup) ───────────────────────
+      try {
+        const todayStr = toLocalDateStr(new Date());
+        const ratesMap = {};
+        const priority = {Corporate:3,Spot:2,User:1};
+
+        const applyFxDocs = (docs) => {
+          docs.forEach(d => {
+            const r = d.data();
+            if (!r.fromCurrency || !r.rate) return;
+            if (!ratesMap[r.fromCurrency] || (priority[r.rateType]||0) > (priority[ratesMap[r.fromCurrency+'__type']]||0)) {
+              ratesMap[r.fromCurrency] = r.rate;
+              ratesMap[r.fromCurrency+'__type'] = r.rateType;
+            }
+          });
+        };
+
+        if (role === 'user' && assignedAdminId) {
+          let fxLoaded = false;
+
+          // A: adminId + date
+          try {
+            const s = await db.collection('glDailyRates')
+              .where('adminId','==',assignedAdminId)
+              .where('date','==',todayStr).get();
+            console.log('[FX-A] docs:', s.docs.length);
+            const hit = s.docs.filter(d=>(d.data().toCurrency||'PHP')==='PHP');
+            if (hit.length > 0) { applyFxDocs(hit); fxLoaded = true; }
+          } catch(e) { console.error('[FX-A]', e.code, e.message); }
+
+          // B: companyName + date
+          if (!fxLoaded && userData && userData.companyName) {
+            try {
+              const s = await db.collection('glDailyRates')
+                .where('companyName','==',userData.companyName)
+                .where('date','==',todayStr).get();
+              console.log('[FX-B] docs:', s.docs.length);
+              const hit = s.docs.filter(d=>(d.data().toCurrency||'PHP')==='PHP');
+              if (hit.length > 0) { applyFxDocs(hit); fxLoaded = true; }
+            } catch(e) { console.error('[FX-B]', e.code, e.message); }
+          }
+
+          // C: adminId only
+          if (!fxLoaded) {
+            try {
+              const s = await db.collection('glDailyRates')
+                .where('adminId','==',assignedAdminId).get();
+              console.log('[FX-C] docs:', s.docs.length);
+              const php = s.docs.filter(d=>(d.data().toCurrency||'PHP')==='PHP');
+              if (php.length > 0) {
+                php.sort((a,b)=>(b.data().date||'').localeCompare(a.data().date||''));
+                applyFxDocs(php.slice(0,20)); fxLoaded = true;
+              }
+            } catch(e) { console.error('[FX-C]', e.code, e.message); }
+          }
+
+          // D: companyName only
+          if (!fxLoaded && userData && userData.companyName) {
+            try {
+              const s = await db.collection('glDailyRates')
+                .where('companyName','==',userData.companyName).get();
+              console.log('[FX-D] docs:', s.docs.length);
+              const php = s.docs.filter(d=>(d.data().toCurrency||'PHP')==='PHP');
+              if (php.length > 0) {
+                php.sort((a,b)=>(b.data().date||'').localeCompare(a.data().date||''));
+                applyFxDocs(php.slice(0,20)); fxLoaded = true;
+              }
+            } catch(e) { console.error('[FX-D]', e.code, e.message); }
+          }
+
+          // E: exchangeRates/{adminId}
+          if (!fxLoaded) {
+            try {
+              const erDoc = await db.collection('exchangeRates').doc(assignedAdminId).get();
+              console.log('[FX-E] exists:', erDoc.exists);
+              if (erDoc.exists) {
+                const rates = erDoc.data().rates || {};
+                const synth = Object.entries(rates)
+                  .filter(([k,v])=>k&&typeof v==='number')
+                  .map(([c,r])=>({data:()=>({fromCurrency:c,toCurrency:'PHP',rate:r,rateType:'Spot',date:todayStr})}));
+                if (synth.length > 0) { applyFxDocs(synth); fxLoaded = true; }
+              }
+            } catch(e) { console.error('[FX-E]', e.code, e.message); }
+          }
+
+          // F: LAST RESORT — query today's rates for ANY adminId (toCurrency=PHP + date)
+          // This catches rates saved by master or another admin without companyName set.
+          // Works because allow read: if isSignedIn() is now on glDailyRates.
+          if (!fxLoaded) {
+            try {
+              const s = await db.collection('glDailyRates')
+                .where('toCurrency','==','PHP')
+                .where('date','==',todayStr).get();
+              console.log('[FX-F] all PHP rates for today:', s.docs.length,
+                s.docs.map(d=>({adminId:d.data().adminId,from:d.data().fromCurrency,rate:d.data().rate})));
+              if (s.docs.length > 0) { applyFxDocs(s.docs); fxLoaded = true; }
+            } catch(e) { console.error('[FX-F]', e.code, e.message); }
+          }
+
+          // G: Any PHP rate ever saved — absolute last resort
+          if (!fxLoaded) {
+            try {
+              const s = await db.collection('glDailyRates')
+                .where('toCurrency','==','PHP').get();
+              console.log('[FX-G] all PHP rates ever:', s.docs.length,
+                s.docs.map(d=>({adminId:d.data().adminId,date:d.data().date,from:d.data().fromCurrency})));
+              const php = s.docs;
+              if (php.length > 0) {
+                // use most recent
+                php.sort((a,b)=>(b.data().date||'').localeCompare(a.data().date||''));
+                const best = php.filter(d=>d.data().date===todayStr);
+                applyFxDocs(best.length>0 ? best : php.slice(0,20));
+                fxLoaded = true;
+              }
+            } catch(e) { console.error('[FX-G]', e.code, e.message); }
+          }
+
+          if (!fxLoaded) {
+            console.error('[FX] ALL FAILED — glDailyRates collection may be empty.',
+              'Go to Accounting Setup → Daily Rates and save rates as the admin account.');
+          }
+        } else if (adminUids.length > 0) {
+          for (let i = 0; i < adminUids.length; i += 30) {
+            const chunk = adminUids.slice(i, i + 30);
+            try {
+              const fxSnap = await db.collection('glDailyRates')
+                .where('adminId','in',chunk)
+                .where('date','==',todayStr)
+                .where('toCurrency','==','PHP')
+                .get();
+              applyFxDocs(fxSnap.docs);
+            } catch(e) { console.warn('glDailyRates admin chunk:', e.message); }
+          }
+        }
+
+        const cleanMap = {};
+        Object.keys(ratesMap).forEach(k => { if(!k.endsWith('__type')) cleanMap[k]=ratesMap[k]; });
+        if (Object.keys(cleanMap).length > 0) {
+          setFxRates(cleanMap);
+          setFxRateDate(todayStr);
+        }
+      } catch(e) { console.warn('glDailyRates fetch:', e); }
+      setFxLoading(false);
+
+
       // ── Lead time adjustments ─────────────────────────────────────────────
       const adminIdForLt = role==='admin' ? uid : assignedAdminId;
       if(adminIdForLt){
@@ -819,41 +1406,64 @@ function App(){
         }catch(e){console.warn('shopConfig:',e);}
       }
 
-      // ── Approval groups ───────────────────────────────────────────────────
-      try{
-        const agSnap=await db.collection('approvalGroups').where('active','==',true).get();
-        const groups=agSnap.docs.map(d=>({id:d.id,...d.data()}));
-        const match=groups.find(g=>{
-          const cm=!g.companyName||g.companyName===companyName;
-          const rm=!g.appliesTo||g.appliesTo==='both'||(role==='admin'&&g.appliesTo==='admin')||(role==='user'&&g.appliesTo==='user');
-          return cm&&rm;
-        });
-        if(match){setApprovalGroup(match);setApprovalBlocked(false);}
-        else{const bypass=groups.find(g=>g.bypassAllowed&&(!g.companyName||g.companyName===companyName));setApprovalGroup(null);setApprovalBlocked(!bypass);}
-      }catch(e){console.warn('approvalGroups:',e);}
-      setApprovalChecked(true);
-    }catch(e){console.error('load error:',e);setApprovalChecked(true);}
+    }catch(e){console.error('load error:',e);}
   };
 
   const catTree=useMemo(()=>{const t={};products.forEach(p=>{const{main,sub}=parseCat(p.category);if(!t[main])t[main]={};if(!t[main][sub])t[main][sub]=[];t[main][sub].push(p);});return t;},[products]);
   const mainCats=useMemo(()=>Object.keys(catTree).sort(),[catTree]);
   const subCats=useMemo(()=>{if(!selMain)return[];return Object.keys(catTree[selMain]||{}).sort();},[selMain,catTree]);
-  const visibleProds=useMemo(()=>{if(!selMain)return[];const subs=catTree[selMain]||{};let pool=selSub?(subs[selSub]||[]):Object.values(subs).flat();if(searchQ){const q=searchQ.toLowerCase();pool=pool.filter(p=>p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q));}return pool;},[selMain,selSub,catTree,searchQ]);
+  const allFilteredProds=useMemo(()=>{
+    if(!selMain)return[];
+    const subs=catTree[selMain]||{};
+    let pool=selSub?(subs[selSub]||[]):Object.values(subs).flat();
+    if(searchQ){const q=searchQ.toLowerCase();pool=pool.filter(p=>p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q));}
+    // Price filter (uses convertToPhp from closure — already memoized)
+    const mn=parseFloat(priceMin);const mx=parseFloat(priceMax);
+    if(!isNaN(mn))pool=pool.filter(p=>{const fx=makeConvertToPhp(fxRates)(p.price,p.currency||'PHP');return fx.phpPrice>=mn;});
+    if(!isNaN(mx))pool=pool.filter(p=>{const fx=makeConvertToPhp(fxRates)(p.price,p.currency||'PHP');return fx.phpPrice<=mx;});
+    // Sort
+    const sorted=[...pool];
+    if(sortBy==='price_asc')sorted.sort((a,b)=>{const fa=makeConvertToPhp(fxRates)(a.price,a.currency||'PHP');const fb=makeConvertToPhp(fxRates)(b.price,b.currency||'PHP');return fa.phpPrice-fb.phpPrice;});
+    else if(sortBy==='price_desc')sorted.sort((a,b)=>{const fa=makeConvertToPhp(fxRates)(a.price,a.currency||'PHP');const fb=makeConvertToPhp(fxRates)(b.price,b.currency||'PHP');return fb.phpPrice-fa.phpPrice;});
+    else if(sortBy==='name_asc')sorted.sort((a,b)=>a.name.localeCompare(b.name));
+    return sorted;
+  },[selMain,selSub,catTree,searchQ,sortBy,priceMin,priceMax,fxRates]);
 
-  const cartCount=cart.reduce((s,i)=>s+i.quantity,0);
-  const cartTotal=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+  const totalPages=Math.max(1,Math.ceil(allFilteredProds.length/PAGE_SIZE));
+  const safePage=Math.min(currentPage,totalPages);
+  const visibleProds=useMemo(()=>allFilteredProds.slice((safePage-1)*PAGE_SIZE,safePage*PAGE_SIZE),[allFilteredProds,safePage,PAGE_SIZE]);
+
+  // FX conversion — built from today's GL rates
+  const convertToPhp = useMemo(()=>makeConvertToPhp(fxRates),[fxRates]);
+
+  const cartCount=cart.length;
+  const cartTotal=cart.reduce((s,i)=>{
+    const {phpPrice} = convertToPhp(i.price, i.currency||'PHP');
+    return s + phpPrice*i.quantity;
+  },0);
+  // Per-currency totals — so mixed-currency carts display correctly
+  // cartTotal is already PHP-converted (computed above). Display always in PHP.
+  const cartTotalDisplay = '₱'+fmt(cartTotal);
+  const cartCurrency = 'PHP';
+  // Keep per-currency breakdown for the cart line items display
+  const cartCurrencyTotals = cart.reduce((acc,i)=>{
+    const c = i.currency||'PHP';
+    acc[c] = (acc[c]||0) + i.price*i.quantity;
+    return acc;
+  },{});
 
   const addToCart=useCallback((prod,adjMap)=>{
     if(prod.stock===0)return;
-    setCart(prev=>{const ex=prev.find(i=>i.id===prod.id);if(ex)return prev.map(i=>i.id===prod.id?{...i,quantity:Math.min(i.quantity+1,prod.stock)}:i);const autoDate=computeNeedByDate(prod,adjMap||{});return[...prev,{...prod,quantity:1,needByDate:autoDate,tentativeDelivery:autoDate,deliveryAutoComputed:!!autoDate}];});
+    const globalMode=(shopConfig.leadTimeSettings||{}).leadTimeMode||'Calendar Days';
+    setCart(prev=>{const ex=prev.find(i=>i.id===prod.id);if(ex)return prev.map(i=>i.id===prod.id?{...i,quantity:Math.min(i.quantity+1,prod.stock)}:i);const autoDate=computeNeedByDate(prod,adjMap||{},globalMode);return[...prev,{...prod,quantity:1,needByDate:autoDate,tentativeDelivery:autoDate,deliveryAutoComputed:!!autoDate}];});
     setToast(`${prod.name} added`);
-  },[]);
+  },[shopConfig]);
   const updateQty=useCallback((id,qty)=>{const p=products.find(x=>x.id===id);if(!p)return;if(qty<=0){setCart(prev=>prev.filter(i=>i.id!==id));return;}if(qty>p.stock){setToast(`Only ${p.stock} ${p.unit||'units'} available`);return;}setCart(prev=>prev.map(i=>i.id===id?{...i,quantity:qty}:i));},[products]);
   const removeFromCart=useCallback(id=>setCart(prev=>prev.filter(i=>i.id!==id)),[]);
   const updateNeedBy=useCallback((id,d)=>{setCart(prev=>prev.map(i=>{if(i.id!==id)return i;if(d&&i.tentativeDelivery&&d<i.tentativeDelivery)setNeedByWarning({itemId:id,itemName:i.name,needBy:d,tentative:i.tentativeDelivery});else setNeedByWarning(null);return{...i,needByDate:d};}));},[]);
 
-  const goLanding=()=>{setView('landing');setSelMain(null);setSelSub(null);setSearchQ('');};
-  const goCat=main=>{setView('category');setSelMain(main);setSelSub(null);setSearchQ('');};
+  const goLanding=()=>{setView('landing');setSelMain(null);setSelSub(null);setSearchQ('');setCurrentPage(1);};
+  const goCat=main=>{setView('category');setSelMain(main);setSelSub(null);setSearchQ('');setCurrentPage(1);};
 
   const submitOrder=async()=>{
     if(!form.customerName||!form.customerEmail||!form.deliveryAddress){alert('Please fill in Name, Email and Delivery Address.');return;}
@@ -867,50 +1477,13 @@ function App(){
       const prefix=invoiceSettings.invoicePrefix||'ORD';
       const orderNumber=`${prefix}-${String(count).padStart(4,'0')}`;
 
-      // ── Check for Order Approval Group ──────────────────────────────────────
-      // Look for an approval group with docType 'Order' that matches this user's company
-      let approvalGroup = null;
-      let requiresApproval = false;
-      let approvalStep = null;
-      try {
-        const agSnap = await db.collection('approvalGroups')
-          .where('docType','==','Order')
-          .where('active','==',true)
-          .get();
-        const userCompany = user.companyName || '';
-        // Find the most specific matching group: company-specific first, then all-companies
-        const groups = agSnap.docs.map(d=>({id:d.id,...d.data()}));
-        approvalGroup = groups.find(g=>g.companyName===userCompany) ||
-                        groups.find(g=>!g.companyName||g.companyName==='');
-        if (approvalGroup) {
-          // Check applies-to constraint
-          const appliesToMatch = approvalGroup.appliesTo==='both' ||
-            (approvalGroup.appliesTo==='admin' && userRole==='admin') ||
-            (approvalGroup.appliesTo==='user'  && userRole!=='admin');
-          // Check amount range if required
-          const amountMatch = !approvalGroup.requiresAmount ||
-            (cartTotal >= (approvalGroup.minAmount||0) &&
-             (!approvalGroup.maxAmount || cartTotal <= approvalGroup.maxAmount));
-          if (appliesToMatch && amountMatch) {
-            requiresApproval = true;
-            approvalStep = approvalGroup.steps?.[0] || null;
-          }
-        }
-      } catch(e) { console.warn('Could not load order approval groups:', e); }
-
-      // Determine initial status and approval fields
-      const initialStatus = requiresApproval ? 'pending_approval' : 'pending';
-      const approvalFields = requiresApproval ? {
-        orderApprovalGroupId:   approvalGroup.id,
-        orderApprovalGroupName: approvalGroup.name,
-        orderApprovalStepIndex: 0,
-        orderApprovalTotalSteps:approvalGroup.steps?.length||1,
-        assignedApproverId:     approvalStep?.approverAdminId||null,
-        assignedApproverRole:   approvalStep?.approverRole||null,
-        assignedApproverName:   approvalStep?.approverName||null,
-        orderApprovalStatus:    'pending_approval',
-        orderApprovalHistory:   [],
-      } : {};
+      // ── Orders always start as 'pending' → appear in AutoCreate queue ──
+      // The admin reviews and confirms each order in AutoCreate.
+      // The approval group chain runs AFTER the admin clicks Confirm Order in AutoCreate.
+      // This prevents the infinite approval loop where shop pre-routes to pending_approval
+      // which then gets re-approved and loops back to pending/AutoCreate.
+      const initialStatus = 'pending';
+      const approvalFields = {};
 
       const orderData={
         orderNumber, customerId:user.uid, userId:user.uid,
@@ -921,13 +1494,19 @@ function App(){
           productId:item.id, name:item.name, sku:item.sku||'', imageUrl:item.imageUrl||'',
           quantity:item.quantity, price:item.price, unit:item.unit||'',
           currency:item.currency||'PHP', subtotal:item.price*item.quantity,
+          // PHP-converted fields for GL / reporting
+          phpPrice:(()=>{const fx=convertToPhp(item.price,item.currency||'PHP');return fx.phpPrice;})(),
+          phpSubtotal:(()=>{const fx=convertToPhp(item.price,item.currency||'PHP');return fx.phpPrice*item.quantity;})(),
+          fxRate:(()=>{const fx=convertToPhp(item.price,item.currency||'PHP');return fx.rate||null;})(),
+          fxDate:fxRateDate||null,
           needByDate:item.needByDate||null, tentativeDelivery:item.tentativeDelivery||null,
           deliveryAutoComputed:item.deliveryAutoComputed||false,
           category:item.category||'', moq:item.moq||null, leadTime:item.leadTime||null
         })),
-        totalAmount:cartTotal, currency:cart[0]?.currency||'PHP',
+        totalAmount:cartTotal, currency:cartCurrency,
+        totalAmountPhp:cartTotal, fxRateDate:fxRateDate||null,
         status:initialStatus,
-        requiresOrderApproval:requiresApproval,
+        requiresOrderApproval:false,
         ...approvalFields,
         createdAt:firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -937,74 +1516,36 @@ function App(){
       await orderRef.set(orderData);
 
       // ── Notifications ────────────────────────────────────────────────────────
+      // ── Notify all admins of new order in AutoCreate queue ──
       try {
         const nb = db.batch();
-        if (requiresApproval) {
-          // Notify the assigned approver (by ID if set, otherwise all admins with matching role)
-          if (approvalStep?.approverAdminId) {
-            nb.set(db.collection('notifications').doc(), {
-              type:'order-approval-request',
-              message:`Order ${orderNumber} from ${form.customerName} requires your approval`,
-              details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending_approval',orderId:orderRef.id},
-              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-              read:false, userId:approvalStep.approverAdminId, userRole:'admin'
-            });
-          } else {
-            // Notify all admins with matching role (or all admins if no role specified)
-            const admSnap = await db.collection('users').where('role','==','admin').get();
-            admSnap.docs.forEach(a => {
-              const matchesRole = !approvalStep?.approverRole ||
-                a.data().assignedRoleName===approvalStep.approverRole;
-              if (matchesRole) {
-                nb.set(db.collection('notifications').doc(), {
-                  type:'order-approval-request',
-                  message:`Order ${orderNumber} from ${form.customerName} requires approval`,
-                  details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending_approval',orderId:orderRef.id},
-                  timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-                  read:false, userId:a.id, userRole:'admin'
-                });
-              }
-            });
-          }
-          // Notify the customer that order is pending approval
+        const admSnap = await db.collection('users').where('role','==','admin').get();
+        admSnap.docs.forEach(a => {
           nb.set(db.collection('notifications').doc(), {
-            type:'order-pending-approval',
-            message:`Your order ${orderNumber} has been submitted and is awaiting approval`,
-            details:{orderNumber,totalAmount:cartTotal,status:'pending_approval'},
+            type:'order',
+            message:`New order ${orderNumber} from ${form.customerName} is waiting in AutoCreate`,
+            details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending'},
             timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-            read:false, userId:user.uid, userRole
+            read:false, userId:a.id, userRole:'admin'
           });
-        } else {
-          // Normal flow — notify all admins
-          const admSnap = await db.collection('users').where('role','==','admin').get();
-          admSnap.docs.forEach(a => {
-            nb.set(db.collection('notifications').doc(), {
-              type:'order',
-              message:`New order ${orderNumber} from ${form.customerName}`,
-              details:{orderNumber,customerName:form.customerName,totalAmount:cartTotal,status:'pending'},
-              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-              read:false, userId:a.id, userRole:'admin'
-            });
-          });
-          if (userRole!=='admin') {
-            nb.set(db.collection('notifications').doc(), {
-              type:'order',
-              message:`Order ${orderNumber} placed successfully`,
-              details:{orderNumber,totalAmount:cartTotal,status:'pending'},
-              timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-              read:false, userId:user.uid, userRole
-            });
-          }
-        }
+        });
+        // Notify the customer — order placed and pending admin confirmation
+        nb.set(db.collection('notifications').doc(), {
+          type:'order',
+          message:`Your order ${orderNumber} has been placed and is pending confirmation`,
+          details:{orderNumber,totalAmount:cartTotal,status:'pending'},
+          timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+          read:false, userId:user.uid, userRole
+        });
         await nb.commit();
       } catch(e){ console.warn('notification non-fatal:',e); }
 
-      try{await fetch(`${RENDER}/webhook/send-invoice`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({orderNumber,customerEmail:form.customerEmail,customerName:form.customerName,items:cart.map(i=>({name:i.name,quantity:i.quantity,price:i.price.toFixed(2)})),total:cartTotal.toFixed(2)})});}catch(e){console.warn(e);}
+      try{await fetch(`${RENDER}/webhook/send-invoice`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({orderNumber,customerEmail:form.customerEmail,customerName:form.customerName,items:cart.map(i=>({name:i.name,quantity:i.quantity,price:i.price.toFixed(2),currency:i.currency||'PHP',currencySymbol:getCurrencySymbol(i.currency||'PHP')})),total:cartTotal.toFixed(2),currency:cartCurrency,currencySymbol:getCurrencySymbol(cartCurrency)})});}catch(e){console.warn(e);}
 
       setSuccess({
-        orderNumber, total:cartTotal, currency:cart[0]?.currency||'PHP',
-        items:[...cart], pendingApproval:requiresApproval,
-        approvalGroupName:approvalGroup?.name
+        orderNumber, total:cartTotal, currency:cartCurrency,
+        items:[...cart], pendingApproval:false,
+        approvalGroupName:null
       });
       setCart([]);setShowCO(false);
       try{localStorage.removeItem('operix_cart');}catch{}
@@ -1022,30 +1563,175 @@ function App(){
     try{
       const db=firebase.firestore();
       const expiry=new Date();expiry.setDate(expiry.getDate()+30);
-      const quoteNumber='QT-'+Date.now().toString().slice(-8);
-      await db.collection('quotes').add({
+      // ── Generate quote number ──────────────────────────────────────────────
+      let quoteCount=1;
+      try{
+        const cr=db.collection('counters').doc('quoteCounter');
+        const cd=await cr.get();
+        if(cd.exists){quoteCount=cd.data().count+1;await cr.update({count:firebase.firestore.FieldValue.increment(1)});}
+        else await cr.set({count:1});
+      }catch{quoteCount=Date.now();}
+      const quoteNumber='QT-'+String(quoteCount).padStart(6,'0');
+
+      // ── Look up active Quotation Approval Group for this company ──────────
+      let approvalGroup=null;
+      let approvalStatus='active'; // default: no approval needed
+      let assignedApproverId=null;
+      let assignedApproverName=null;
+      let approvalGroupId=null;
+      let approvalGroupName=null;
+      let approvalStepIndex=0;
+      let approvalTotalSteps=0;
+
+      try{
+        const myCompany=user?.companyName||'';
+        const agSnap=await db.collection('approvalGroups')
+          .where('docType','==','Quotation')
+          .where('active','==',true)
+          .get();
+        // Find best match: company-specific first, then global
+        const groups=agSnap.docs.map(d=>({id:d.id,...d.data()}));
+        approvalGroup=groups.find(g=>g.companyName===myCompany)||groups.find(g=>!g.companyName)||null;
+      }catch(e){console.warn('approvalGroups lookup:',e);}
+
+      if(approvalGroup&&approvalGroup.steps?.length>0&&!approvalGroup.bypassAllowed){
+        approvalStatus='pending_approval';
+        approvalGroupId=approvalGroup.id;
+        approvalGroupName=approvalGroup.name;
+        approvalTotalSteps=approvalGroup.steps.length;
+        const firstStep=approvalGroup.steps[0];
+        if(firstStep.approverAdminId){
+          assignedApproverId=firstStep.approverAdminId;
+          assignedApproverName=firstStep.approverName||firstStep.approverAdminId;
+        } else if(firstStep.approverRole){
+          // Find any admin with that role in the same company
+          try{
+            const adminSnap=await db.collection('users')
+              .where('role','==','admin')
+              .where('isAdmin','==',true)
+              .get();
+            const myCompany=user?.companyName||'';
+            const match=adminSnap.docs
+              .map(d=>({id:d.id,...d.data()}))
+              .find(a=>(a.companyName===myCompany||!myCompany)&&(a.assignedRoleName===firstStep.approverRole||a.assignedRole===firstStep.approverRole.toLowerCase().replace(/ /g,'_')));
+            if(match){assignedApproverId=match.id;assignedApproverName=match.fullName;}
+          }catch(e){console.warn('approver lookup:',e);}
+        }
+      }
+
+      // ── Save to BOTH collections for backwards compatibility ──────────────
+      // Primary: 'quotations' (approval-aware, used by Dashboard worklist)
+      // Legacy:  'quotes' (used by my-orders page)
+      const quoteData={
         quoteNumber,
         userId:           user.uid,
-        userName:         user.displayName || user.fullName || user.email,
-        senderFullName:   user.fullName    || user.displayName || user.email,
-        senderOwnCompany: user.ownCompanyName || '',
-        senderPosition:   user.position    || '',
-        senderDepartment: user.department  || '',
-        senderPhone:      user.phoneNumber || '',
-        senderEmail:      user.email       || '',
+        createdBy:        user.uid,
+        createdByName:    user.displayName||user.fullName||user.email,
+        userName:         user.displayName||user.fullName||user.email,
+        senderFullName:   user.fullName||user.displayName||user.email,
+        senderOwnCompany: user.ownCompanyName||user.companyName||'',
+        senderPosition:   user.position||'',
+        senderDepartment: user.department||'',
+        senderPhone:      user.phoneNumber||'',
+        senderEmail:      user.email||'',
         recipientEmail:   quoteForm.email.trim(),
-        recipientName:    quoteForm.recipientName?.trim() || '',
+        recipientName:    quoteForm.recipientName?.trim()||'',
+        recipientCompany: quoteForm.recipientCompany?.trim()||'',
         reference:        quoteForm.reference.trim(),
         notes:            quoteForm.notes.trim(),
-        items:            cart.map(i=>({productId:i.id,name:i.name,sku:i.sku||'',quantity:i.quantity,unitPrice:i.price,lineTotal:i.price*i.quantity,unit:i.unit||'unit'})),
-        subtotal:         cartTotal,
-        currency:         'PHP',
-        status:           'active',
-        validUntil:       firebase.firestore.Timestamp.fromDate(expiry),
-        createdAt:        firebase.firestore.FieldValue.serverTimestamp()
-      });
-      try{await fetch(`${RENDER}/webhook/send-quote`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({quoteNumber,recipientEmail:quoteForm.email.trim(),reference:quoteForm.reference.trim(),notes:quoteForm.notes.trim(),validUntil:expiry.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),items:cart.map(i=>({name:i.name,sku:i.sku||'',quantity:i.quantity,unitPrice:i.price.toFixed(2),lineTotal:(i.price*i.quantity).toFixed(2),unit:i.unit||'unit'})),subtotal:cartTotal.toFixed(2)})})}catch(e){console.warn(e);}
-      setQuoteSuccess(true);
+        items: cart.map(i=>{
+          const fx=convertToPhp(i.price,i.currency||'PHP');
+          return {
+            productId:i.id,name:i.name,sku:i.sku||'',
+            quantity:i.quantity,
+            unitPrice:i.price,          // original price in source currency
+            lineTotal:i.price*i.quantity, // original line total in source currency
+            currency:i.currency||'PHP',
+            // PHP-converted fields (same as order flow — used by dashboard preview)
+            phpPrice:   fx.phpPrice,
+            phpSubtotal:fx.phpPrice*i.quantity,
+            fxRate:     fx.rate||null,
+            fxDate:     fxRateDate||null,
+            unit:i.unit||'unit',
+          };
+        }),
+        subtotal:    cartTotal,   // always PHP-converted total
+        grandTotal:  cartTotal,   // always PHP-converted total
+        currency:    cartCurrency, // always 'PHP'
+        // Approval fields
+        status:           approvalStatus,
+        approvalStatus:   approvalStatus,
+        approvalGroupId,
+        approvalGroupName,
+        approvalStepIndex,
+        approvalTotalSteps,
+        assignedApproverId,
+        assignedApproverName,
+        approvalHistory:  [],
+        validUntil:  firebase.firestore.Timestamp.fromDate(expiry),
+        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Write to quotations collection (primary)
+      const quotRef=db.collection('quotations').doc();
+      await quotRef.set(quoteData);
+      // Also mirror to quotes collection for legacy my-orders support
+      await db.collection('quotes').add({...quoteData});
+
+      // ── Notifications ───────────────────────────────────────────────────────
+      const batch=db.batch();
+      if(approvalStatus==='pending_approval'&&assignedApproverId){
+        // Notify the assigned approver
+        batch.set(db.collection('notifications').doc(),{
+          type:'quotation_approval',
+          title:'Quotation Pending Your Approval',
+          message:`Quotation ${quoteNumber} — "${quoteForm.reference.trim()}" requires your approval`,
+          quoteNumber,
+          quoteId:quotRef.id,
+          approvalGroupName,
+          createdByName:user.displayName||user.fullName||user.email,
+          userId:assignedApproverId,
+          read:false,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        // Notify the requester that quote is pending approval
+        batch.set(db.collection('notifications').doc(),{
+          type:'quotation_approval',
+          title:'Quote Submitted for Approval',
+          message:`Your quotation ${quoteNumber} has been submitted and is awaiting approval from ${assignedApproverName||'an approver'}`,
+          quoteNumber,
+          quoteId:quotRef.id,
+          userId:user.uid,
+          userRole:'user',
+          read:false,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      } else {
+        // No approval needed — notify requester quote is active
+        batch.set(db.collection('notifications').doc(),{
+          type:'quotation_approval',
+          title:'Quotation Ready',
+          message:`Your quotation ${quoteNumber} has been created and is ready to send`,
+          quoteNumber,
+          quoteId:quotRef.id,
+          userId:user.uid,
+          userRole:'user',
+          read:false,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+
+      // ── Email webhook (only if approved/active) ────────────────────────────
+      if(approvalStatus==='active'){
+        try{await fetch(`${RENDER}/webhook/send-quote`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SECRET}`},body:JSON.stringify({quoteNumber,recipientEmail:quoteForm.email.trim(),reference:quoteForm.reference.trim(),notes:quoteForm.notes.trim(),validUntil:expiry.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),items:cart.map(i=>({name:i.name,sku:i.sku||'',quantity:i.quantity,unitPrice:i.price.toFixed(2),lineTotal:(i.price*i.quantity).toFixed(2),unit:i.unit||'unit',currency:i.currency||'PHP',currencySymbol:getCurrencySymbol(i.currency||'PHP')})),subtotal:cartTotal.toFixed(2),currency:cartCurrency,currencySymbol:getCurrencySymbol(cartCurrency)})})}catch(e){console.warn(e);}
+      }
+
+      setQuoteSuccess({quoteNumber,approvalStatus,approvalGroupName,assignedApproverName});
     }catch(e){console.error(e);alert('Error: '+e.message);}
     setQuoteSending(false);
   };
@@ -1054,56 +1740,105 @@ function App(){
 
   const heroTitle=shopConfig.heroTitle||'What are you looking for?';
   const heroSub=shopConfig.heroSubtitle||'Select a category to browse products and submit a requisition.';
+  const ds=shopConfig.displaySettings||{};
+  const showFxRateDetails = ds.showFxRateDetails!==false; // default true
+  const showSupplierName  = ds.showSupplierName!==false;  // default true
+  const displayCompanyName= ds.displayCompanyName||'';
 
   return(
     <>
       {/* TOPBAR */}
       <header className="tb">
-        <div className="tb-brand">
-          <Logo/>
-          <div><b>Operix</b><small>Procurement Shop</small></div>
-        </div>
-        <div className="tb-r">
-          <a href="my-profile.html" className="tb-link">
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-            My Profile
+        <div className="tb-inner">
+          {/* Brand */}
+          <a href="shop.html" className="tb-brand">
+            <Logo/>
+            <div><b>Operix</b><small>Procurement</small></div>
           </a>
-          <a href="my-orders.html" className="tb-link"><Ic d={P.orders} s={13}/> My Orders</a>
-          {userRole==='admin' && (user?.assignedRole==='admin_approver' || user?.permissions?.includes('*')) &&(
-            <a href="shop-admin.html" className="tb-link" style={{color:'#FBBF24',borderColor:'rgba(251,191,36,.3)',background:'rgba(251,191,36,.08)'}}>
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-              Edit Shop
+          {/* Nav links */}
+          <nav className="tb-nav">
+            <a href="shop.html" className="tb-nav-link active">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 7h13M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z"/></svg>
+              Shop
             </a>
-          )}
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div className="tb-av">{(user?.displayName||'U').charAt(0).toUpperCase()}</div>
-            <span className="tb-name">{user?.displayName?.split(' ')[0]}</span>
-          </div>
-          <button onClick={()=>{setQuoteForm({email:'',recipientName:'',reference:user?.displayName||user?.fullName||'',notes:''});setQuoteSuccess(false);setShowQuote(true);}}
-            style={{display:'flex',alignItems:'center',gap:7,background:'rgba(255,255,255,.06)',color:'#CBD5E1',border:'1px solid rgba(255,255,255,.13)',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .18s',whiteSpace:'nowrap'}}
-            onMouseOver={e=>{e.currentTarget.style.color='#fff';e.currentTarget.style.background='rgba(255,255,255,.12)'}}
-            onMouseOut={e=>{e.currentTarget.style.color='#CBD5E1';e.currentTarget.style.background='rgba(255,255,255,.06)'}}>
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <a href="my-orders.html" className="tb-nav-link">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              My Orders
+            </a>
+            {userRole==='admin' && (user?.assignedRole==='admin_approver' || user?.permissions?.includes('*')) && (
+              <a href="shop-admin.html" className="tb-nav-link" style={{color:'#FBBF24'}}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                Edit Shop
+              </a>
+            )}
+          </nav>
+          <div className="tb-spacer"/>
+          {/* Quick Quote */}
+          <button className="tb-quote-btn"
+            onClick={()=>{setQuoteForm({email:'',recipientName:'',reference:user?.displayName||user?.fullName||'',notes:''});setQuoteSuccess(false);setShowQuote(true);}}>
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Quick Quote
           </button>
-          <button className="cart-btn" onClick={()=>setShowCO(true)}>
-            <Ic d={P.cart} s={15}/>Cart
-            <span className="cart-cnt">{cartCount}</span>
-          </button>
+          {/* Cart */}
+          <a href="cart.html" className="tb-cart-btn">
+            <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            Cart
+            <span className="tb-cart-cnt">{cartCount}</span>
+          </a>
+          {/* Account dropdown */}
+          <AccountDropdown
+            user={user}
+            userRole={userRole}
+            onSignOut={()=>firebase.auth().signOut().then(()=>{window.location.href='login.html';})}
+            extraItems={[
+              {href:'my-orders.html', label:'My Orders', icon:<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>},
+              {href:'cart.html',      label:'View Cart',  icon:<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>},
+            ]}
+          />
         </div>
       </header>
 
       {/* BREADCRUMB */}
       <div className="bc">
+        <div className="bc-inner">
         <span className="bc-item" style={{color:view==='landing'?'var(--ink)':'var(--blue)'}} onClick={goLanding}>Shop</span>
         {selMain&&(<><span className="bc-sep">›</span><span className="bc-item" style={{color:selSub?'var(--blue)':'var(--ink)'}} onClick={()=>{setSelSub(null);setSearchQ('')}}>{selMain}</span></>)}
         {selSub&&(<><span className="bc-sep">›</span><span className="bc-item bc-active">{selSub}</span></>)}
         <span style={{marginLeft:'auto',fontSize:11,color:'var(--slate)'}}>{products.length} products · {products.filter(p=>p.stock>0).length} available</span>
+        </div>
       </div>
 
+      {/* HERO SLIDER — full width, landing view only */}
+      {view==='landing'&&<HeroSlider slides={shopConfig.slides}/>}
+
+      {/* PROMO BANNERS — full width, landing view only */}
+      {view==='landing'&&<PromoBanners banners={shopConfig.banners}/>}
+
       {/* BODY */}
+      <div className="layout-wrap">
       <div className="layout">
         <main className="main">
+
+          {/* FX RATES BANNER */}
+          {showFxRateDetails&&fxRateDate&&Object.keys(fxRates).length>0&&(
+            <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 14px',background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:8,marginBottom:14,flexWrap:'wrap'}}>
+              <svg width="13" height="13" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+              <span style={{fontSize:11,fontWeight:700,color:'#1E40AF'}}>All prices shown in PHP</span>
+              <span style={{fontSize:11,color:'#3B82F6'}}>·</span>
+              {Object.entries(fxRates).map(([cur,rate])=>(
+                <span key={cur} style={{fontSize:11,color:'#1D4ED8',fontWeight:600,background:'#DBEAFE',padding:'2px 8px',borderRadius:4}}>
+                  1 {cur} = ₱{fmt(rate,4)}
+                </span>
+              ))}
+              <span style={{fontSize:10,color:'#60A5FA',marginLeft:'auto'}}>GL rate · {fxRateDate}</span>
+            </div>
+          )}
+          {!fxLoading&&fxRateDate===null&&products.some(p=>p.currency&&p.currency!=='PHP')&&(
+            <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 14px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,marginBottom:14}}>
+              <svg width="13" height="13" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span style={{fontSize:11,fontWeight:600,color:'#92400E'}}>Exchange rates are not configured for today. Foreign-currency items are shown in their original currency. Please contact your administrator.</span>
+            </div>
+          )}
 
           {/* LANDING */}
           {view==='landing'&&(
@@ -1149,179 +1884,321 @@ function App(){
           {/* CATEGORY VIEW */}
           {view==='category'&&selMain&&(
             <>
-              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12,marginBottom:22}}>
-                <div>
-                  <button onClick={goLanding} style={{display:'flex',alignItems:'center',gap:5,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:8,padding:'5px 12px',font:'600 12px DM Sans,sans-serif',cursor:'pointer',color:'var(--slate)',marginBottom:8}}>
-                    <Ic d={P.back} s={12}/> All Categories
-                  </button>
-                  <h2 style={{fontSize:22,fontWeight:900,color:'var(--ink)',letterSpacing:'-.4px'}}>{selMain}</h2>
-                  <p style={{fontSize:13,color:'var(--slate)',marginTop:3}}>{subCats.length} subcategor{subCats.length===1?'y':'ies'} · {Object.values(catTree[selMain]||{}).flat().length} total items</p>
+              {/* Top bar: back + title + search */}
+              <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18,flexWrap:'wrap'}}>
+                <button onClick={goLanding} style={{display:'flex',alignItems:'center',gap:5,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:8,padding:'6px 13px',font:'600 12px DM Sans,sans-serif',cursor:'pointer',color:'var(--slate)',flexShrink:0}}>
+                  <Ic d={P.back} s={12}/> All Categories
+                </button>
+                <div style={{flex:1,minWidth:0}}>
+                  <h2 style={{fontSize:20,fontWeight:900,color:'var(--ink)',letterSpacing:'-.4px',lineHeight:1.2}}>{selMain}</h2>
+                  <p style={{fontSize:12,color:'var(--slate)',marginTop:1}}>{subCats.length} subcategor{subCats.length===1?'y':'ies'} · {Object.values(catTree[selMain]||{}).flat().length} items</p>
+                </div>
+                {/* Search inline with header */}
+                <div className="sbar" style={{maxWidth:340,margin:0,flex:'0 0 auto',minWidth:200}}>
+                  <Ic d={P.search} s={14} c="var(--slate)"/>
+                  <input type="text" placeholder={`Search in ${selSub||selMain}…`} value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
+                  {searchQ&&<button onClick={()=>setSearchQ('')} style={{border:'none',background:'none',cursor:'pointer',color:'var(--slate)',display:'flex',padding:2}}><Ic d={P.x} s={12}/></button>}
                 </div>
               </div>
-              {subCats.length>1&&(
-                <div style={{marginBottom:22}}>
-                  <div className="sec-lbl">Subcategories</div>
-                  <div className="subcat-strip">
-                    <div className={`subcat-btn ${!selSub?'sel':''}`} onClick={()=>{setSelSub(null);setSearchQ('');}}>
-                      <div className="subcat-icon" style={{background:'var(--surf)'}}><Ic d={P.grid} s={16} c="var(--slate)"/></div>
-                      <div><div className="subcat-name">All</div><div className="subcat-count">{Object.values(catTree[selMain]||{}).flat().length} items</div></div>
+
+              {/* Fluent two-column: sidebar nav + product grid */}
+              <div className="cat-layout">
+
+                {/* ── LEFT SIDEBAR ── */}
+                {subCats.length>1&&(
+                  <nav className="cat-sidebar">
+                    <div className="cat-sidebar-hd">Subcategories</div>
+
+                    {/* All */}
+                    <div className={`cat-nav-item all-item ${!selSub?'sel':''}`} onClick={()=>{setSelSub(null);setSearchQ('');setCurrentPage(1);}}>
+                      <span className="cnav-name">All Items</span>
+                      <span className="cnav-badge">{Object.values(catTree[selMain]||{}).flat().length}</span>
                     </div>
-                    {subCats.map((sub,si)=>{const{cc,cbg}=pal(si+1);const cnt=(catTree[selMain]||{})[sub]?.length||0;return(
-                      <div key={sub} className={`subcat-btn ${selSub===sub?'sel':''}`} onClick={()=>{setSelSub(selSub===sub?null:sub);setSearchQ('');}}>
-                        <div className="subcat-icon" style={{background:cbg}}><Ic d={P.box} s={16} c={cc}/></div>
-                        <div><div className="subcat-name">{sub}</div><div className="subcat-count">{cnt} item{cnt!==1?'s':''}</div></div>
-                      </div>
-                    );})}
-                  </div>
-                </div>
-              )}
-              <div className="sbar">
-                <Ic d={P.search} s={15} c="var(--slate)"/>
-                <input type="text" placeholder={`Search in ${selSub||selMain}…`} value={searchQ} onChange={e=>setSearchQ(e.target.value)}/>
-                {searchQ&&<button onClick={()=>setSearchQ('')} style={{border:'none',background:'none',cursor:'pointer',color:'var(--slate)',display:'flex',padding:3}}><Ic d={P.x} s={13}/></button>}
-              </div>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-                <div className="sec-lbl" style={{flex:1,marginBottom:0}}>{selSub?`${selMain} › ${selSub}`:`All in ${selMain}`}</div>
-                <span style={{fontSize:12,color:'var(--slate)',marginLeft:12,fontWeight:600,flexShrink:0}}>{visibleProds.length} item{visibleProds.length!==1?'s':''}</span>
-              </div>
-              {visibleProds.length===0&&(
-                <div style={{textAlign:'center',padding:'60px 20px',color:'var(--slate)'}}>
-                  <div style={{width:60,height:60,background:'var(--surf)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}><Ic d={P.box} s={26} c="var(--slate)"/></div>
-                  <p style={{fontSize:15,fontWeight:700,color:'var(--ink)',marginBottom:5}}>No products found</p>
-                  <p style={{fontSize:13}}>Try adjusting your search or selecting a different subcategory</p>
-                </div>
-              )}
-              <div className="prod-grid">
-                {visibleProds.map(product=>{
-                  const{sub}=parseCat(product.category);
-                  const inCart=cart.find(i=>i.id===product.id);
-                  const isOut=product.stock===0;
-                  const isLow=!isOut&&product.stock<=(product.threshold||10);
-                  return(
-                    <div key={product.id} className="prod-card" onClick={()=>openProduct(product)}>
-                      <div className="prod-img">
-                        {product.imageUrl
-                          ? <img src={product.imageUrl} alt={product.name} onError={e=>e.target.style.display='none'}/>
-                          : <div style={{opacity:.3}}><Ic d={P.box} s={34} c="var(--slate)"/></div>
-                        }
-                        {isOut&&<div className="badge-out">OUT OF STOCK</div>}
-                        {!isOut&&isLow&&<div className="badge-low">LOW STOCK</div>}
-                      </div>
-                      <div className="prod-body">
-                        {!selSub&&subCats.length>1&&<div className="prod-sub">{sub}</div>}
-                        <div className="prod-name">{product.name}</div>
-                        <div className="prod-sku">{product.sku}</div>
-                        {product.description&&<div className="prod-desc">{product.description}</div>}
-                        <div className="prod-price">{getCurrencySymbol(product.currency)}{fmt(product.price)}</div>
-                        <div className="prod-uom">per {product.unit||'unit'}</div>
-                        {(product.moq||product.leadTime)&&(
-                          <div className="prod-specs">
-                            {product.moq&&<span className="spec-tag">MOQ <b>{product.moq} {product.unit||'unit'}</b></span>}
-                            {product.leadTime&&<span className="spec-tag">Lead Time <b>{product.leadTime} day{product.leadTime!=1?'s':''}</b></span>}
-                          </div>
+
+                    {subCats.map(sub=>{
+                      const cnt=(catTree[selMain]||{})[sub]?.length||0;
+                      return(
+                        <div key={sub} className={`cat-nav-item ${selSub===sub?'sel':''}`} onClick={()=>{setSelSub(selSub===sub?null:sub);setSearchQ('');setCurrentPage(1);}}>
+                          <span className="cnav-name" title={sub}>{sub}</span>
+                          <span className="cnav-badge">{cnt}</span>
+                        </div>
+                      );
+                    })}
+                  </nav>
+                )}
+
+                {/* ── MAIN PRODUCT AREA ── */}
+                <div className="cat-main-area">
+
+                                    {/* ── SORT / VIEW / PRICE TOOLBAR ── */}
+                  <div className="shop-toolbar">
+
+                    {/* Row 1: Category label + Sort + View toggle */}
+                    <div className="toolbar-row1">
+                      {/* Category label + clear */}
+                      <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                        <span style={{fontSize:13,fontWeight:800,color:'var(--ink)',whiteSpace:'nowrap'}}>
+                          {selSub||`All in ${selMain}`}
+                        </span>
+                        {selSub&&(
+                          <button onClick={()=>{setSelSub(null);setSearchQ('');setCurrentPage(1);}}
+                            style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,color:'var(--blue)',background:'var(--blue-bg)',border:'none',borderRadius:99,padding:'2px 9px',cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                            <Ic d={P.x} s={9} c="var(--blue)"/> Clear
+                          </button>
                         )}
-                        <div className="prod-footer" onClick={e=>e.stopPropagation()}>
-                          {isOut
-                            ? <span className="stk-out"><span className="dot"/>Out of stock</span>
-                            : isLow
-                            ? <span className="stk-low"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
-                            : <span className="stk-ok"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
-                          }
-                          {inCart
-                            ? <div className="in-cart"><Ic d={P.check} s={12}/>{inCart.quantity} in cart</div>
-                            : <button className="add-btn" disabled={isOut} onClick={e=>{e.stopPropagation();addToCart(product,ltAdjustMap);}}>
-                                <Ic d={P.plus} s={12}/>Add
-                              </button>
-                          }
+                      </div>
+
+                      <div className="toolbar-sep"/>
+
+                      {/* Sort By */}
+                      <div className="sort-select-wrap">
+                        <span className="sort-lbl">Sort:</span>
+                        <select className="sort-select" value={sortBy} onChange={e=>{setSortBy(e.target.value);setCurrentPage(1);}}>
+                          <option value="best">Best Match</option>
+                          <option value="price_asc">Price: Low to High</option>
+                          <option value="price_desc">Price: High to Low</option>
+                          <option value="name_asc">Name A–Z</option>
+                        </select>
+                      </div>
+
+                      {/* Spacer */}
+                      <div style={{flex:1}}/>
+
+                      {/* Result count */}
+                      <span className="result-count">{allFilteredProds.length} item{allFilteredProds.length!==1?'s':''}</span>
+
+                      <div className="toolbar-sep"/>
+
+                      {/* View Toggle */}
+                      <div style={{display:'flex',alignItems:'center',gap:7,flexShrink:0}}>
+                        <span className="sort-lbl">View:</span>
+                        <div className="view-toggle">
+                          <button className={`vt-btn ${viewMode==='grid'?'active':''}`} title="Grid view" onClick={()=>setViewMode('grid')}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                          </button>
+                          <button className={`vt-btn ${viewMode==='list'?'active':''}`} title="List view" onClick={()=>setViewMode('list')}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                          </button>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Row 2: Price Range filter */}
+                    <div className="toolbar-row2">
+                      <span className="price-range-lbl">₱ Price:</span>
+                      <input type="number" className="price-input" placeholder="Min" value={priceMin}
+                        onChange={e=>{setPriceMin(e.target.value);setCurrentPage(1);}} min="0"/>
+                      <span className="price-dash">—</span>
+                      <input type="number" className="price-input" placeholder="Max" value={priceMax}
+                        onChange={e=>{setPriceMax(e.target.value);setCurrentPage(1);}} min="0"/>
+                      {(priceMin||priceMax)&&(
+                        <button onClick={()=>{setPriceMin('');setPriceMax('');setCurrentPage(1);}}
+                          style={{display:'flex',alignItems:'center',gap:5,padding:'4px 10px',border:'none',background:'var(--red-bg)',borderRadius:6,cursor:'pointer',color:'var(--red)',fontFamily:'DM Sans,sans-serif',fontSize:11,fontWeight:700,flexShrink:0}}>
+                          <Ic d={P.x} s={9} c="var(--red)"/> Clear price
+                        </button>
+                      )}
+                      {!priceMin&&!priceMax&&(
+                        <span style={{fontSize:11,color:'var(--slate)',fontStyle:'italic'}}>Enter a min and/or max to filter by price</span>
+                      )}
+                    </div>
+
+                  </div>
+
+                  {/* Empty state */}
+                  {visibleProds.length===0&&allFilteredProds.length===0&&(
+                    <div style={{textAlign:'center',padding:'60px 20px',color:'var(--slate)'}}>
+                      <div style={{width:60,height:60,background:'var(--surf)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}><Ic d={P.box} s={26} c="var(--slate)"/></div>
+                      <p style={{fontSize:15,fontWeight:700,color:'var(--ink)',marginBottom:5}}>No products found</p>
+                      <p style={{fontSize:13}}>Try adjusting your search, price range, or selecting a different subcategory</p>
+                    </div>
+                  )}
+
+                  {/* ── GRID VIEW ── */}
+                  {viewMode==='grid'&&(
+                  <div className="prod-grid">
+                    {visibleProds.map(product=>{
+                      const{sub}=parseCat(product.category);
+                      const inCart=cart.find(i=>i.id===product.id);
+                      const isOut=product.stock===0;
+                      const isLow=!isOut&&product.stock<=(product.threshold||10);
+                      return(
+                        <div key={product.id} className="prod-card" onClick={()=>openProduct(product)}>
+                          <div className="prod-img">
+                            {product.imageUrl
+                              ? <img src={product.imageUrl} alt={product.name} onError={e=>e.target.style.display='none'}/>
+                              : <div style={{opacity:.3}}><Ic d={P.box} s={34} c="var(--slate)"/></div>
+                            }
+                            {isOut&&<div className="badge-out">OUT OF STOCK</div>}
+                            {!isOut&&isLow&&<div className="badge-low">LOW STOCK</div>}
+                          </div>
+                          <div className="prod-body">
+                            {!selSub&&subCats.length>1&&<div className="prod-sub">{sub}</div>}
+                            <div className="prod-name">{product.name}</div>
+                            <div className="prod-sku">{product.sku}</div>
+                            {product.description&&<div className="prod-desc">{product.description}</div>}
+                            {(()=>{
+                              const fx=convertToPhp(product.price,product.currency||'PHP');
+                              return(<>
+                                <div className="prod-price">₱{fmt(fx.phpPrice)}</div>
+                                {showFxRateDetails&&fx.converted&&<div style={{fontSize:10,color:'var(--slate)',marginTop:1,fontWeight:500}}>{getCurrencySymbol(product.currency)}{fmt(product.price)} {product.currency} · rate {fmt(fx.rate,4)}</div>}
+                                {showFxRateDetails&&!fx.converted&&product.currency&&product.currency!=='PHP'&&<div style={{fontSize:10,color:'#F59E0B',marginTop:1,fontWeight:600}}>No rate for {product.currency} today</div>}
+                              </>);
+                            })()}
+                            <div className="prod-uom">per {product.unit||'unit'}</div>
+                            {(product.moq||product.leadTime)&&(
+                              <div className="prod-specs">
+                                {product.moq&&<span className="spec-tag">MOQ <b>{product.moq} {product.unit||'unit'}</b></span>}
+                                {product.leadTime&&<span className="spec-tag">Lead Time <b>{product.leadTime} day{product.leadTime!=1?'s':''}</b></span>}
+                              </div>
+                            )}
+                            <div className="prod-footer" onClick={e=>e.stopPropagation()}>
+                              {isOut
+                                ? <span className="stk-out"><span className="dot"/>Out of stock</span>
+                                : isLow
+                                ? <span className="stk-low"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
+                                : <span className="stk-ok"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>
+                              }
+                              {inCart
+                                ? <div style={{display:'flex',alignItems:'center',gap:4}} onClick={e=>e.stopPropagation()}>
+                                    <div className="qc">
+                                      <button className="qb" onClick={e=>{e.stopPropagation();updateQty(product.id,inCart.quantity-1);}}>−</button>
+                                      <span className="qi" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--ink)'}}>{inCart.quantity}</span>
+                                      <button className="qb" onClick={e=>{e.stopPropagation();updateQty(product.id,inCart.quantity+1);}}>+</button>
+                                    </div>
+                                  </div>
+                                : <button className="add-btn" disabled={isOut} onClick={e=>{e.stopPropagation();addToCart(product,ltAdjustMap);}}>
+                                    <Ic d={P.plus} s={12}/>Add
+                                  </button>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  )}
+
+                  {/* ── LIST VIEW ── */}
+                  {viewMode==='list'&&(
+                  <div className="prod-list">
+                    {visibleProds.map(product=>{
+                      const{sub}=parseCat(product.category);
+                      const inCart=cart.find(i=>i.id===product.id);
+                      const isOut=product.stock===0;
+                      const isLow=!isOut&&product.stock<=(product.threshold||10);
+                      const fx=convertToPhp(product.price,product.currency||'PHP');
+                      return(
+                        <div key={product.id} className="prod-list-item" onClick={()=>openProduct(product)}>
+                          <div className="pli-img" style={{background:'var(--surf)'}}>
+                            {product.imageUrl
+                              ? <img src={product.imageUrl} alt={product.name} style={{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',padding:8}} onError={e=>e.target.style.display='none'}/>
+                              : <div style={{opacity:.3}}><Ic d={P.box} s={28} c="var(--slate)"/></div>
+                            }
+                            {isOut&&<div className="badge-out" style={{top:8,right:8,fontSize:8}}>OUT</div>}
+                            {!isOut&&isLow&&<div className="badge-low" style={{top:8,right:8,fontSize:8}}>LOW</div>}
+                          </div>
+                          <div className="pli-body">
+                            <div className="pli-info">
+                              {!selSub&&subCats.length>1&&<div className="pli-sub">{sub}</div>}
+                              <div className="pli-name">{product.name}</div>
+                              <div className="pli-sku">{product.sku}</div>
+                              {product.description&&<div className="pli-desc">{product.description}</div>}
+                              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>
+                                {isOut?<span className="stk-out"><span className="dot"/>Out of stock</span>:isLow?<span className="stk-low"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>:<span className="stk-ok"><span className="dot"/>{product.stock} {product.unit||'unit'}</span>}
+                                {product.moq&&<span className="spec-tag">MOQ <b>{product.moq}</b></span>}
+                                {product.leadTime&&<span className="spec-tag">Lead <b>{product.leadTime}d</b></span>}
+                              </div>
+                            </div>
+                            <div className="pli-price-block">
+                              <div className="pli-price">₱{fmt(fx.phpPrice)}</div>
+                              <div className="pli-uom">per {product.unit||'unit'}</div>
+                              {showFxRateDetails&&fx.converted&&<div style={{fontSize:10,color:'var(--slate)',marginTop:2,fontWeight:500}}>{getCurrencySymbol(product.currency)}{fmt(product.price)} {product.currency}</div>}
+                            </div>
+                            <div className="pli-actions" onClick={e=>e.stopPropagation()}>
+                              {inCart
+                                ? <div className="qc">
+                                    <button className="qb" onClick={e=>{e.stopPropagation();updateQty(product.id,inCart.quantity-1);}}>−</button>
+                                    <span className="qi" style={{display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'var(--ink)'}}>{inCart.quantity}</span>
+                                    <button className="qb" onClick={e=>{e.stopPropagation();updateQty(product.id,inCart.quantity+1);}}>+</button>
+                                  </div>
+                                : <button className="add-btn" disabled={isOut} onClick={e=>{e.stopPropagation();addToCart(product,ltAdjustMap);}}>
+                                    <Ic d={P.plus} s={12}/>Add
+                                  </button>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  )}
+
+                  {/* ── PAGINATION ── */}
+                  {totalPages>1&&(
+                    <div className="pagination">
+                      <button className="pg-btn" disabled={safePage<=1} onClick={()=>{setCurrentPage(p=>Math.max(1,p-1));window.scrollTo({top:100,behavior:'smooth'});}}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6"/></svg>
+                      </button>
+                      {(()=>{
+                        const pages=[];
+                        const range=2;
+                        for(let n=1;n<=totalPages;n++){
+                          if(n===1||n===totalPages||Math.abs(n-safePage)<=range){
+                            pages.push(n);
+                          } else if(pages[pages.length-1]!=='...'){
+                            pages.push('...');
+                          }
+                        }
+                        return pages.map((n,i)=>n==='...'
+                          ? <span key={'e'+i} className="pg-ellipsis">…</span>
+                          : <button key={n} className={`pg-btn ${n===safePage?'active':''}`}
+                              onClick={()=>{setCurrentPage(n);window.scrollTo({top:100,behavior:'smooth'});}}>
+                              {n}
+                            </button>
+                        );
+                      })()}
+                      <button className="pg-btn" disabled={safePage>=totalPages} onClick={()=>{setCurrentPage(p=>Math.min(totalPages,p+1));window.scrollTo({top:100,behavior:'smooth'});}}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/></svg>
+                      </button>
+                      <span className="pg-info">Page {safePage} of {totalPages} · {allFilteredProds.length} products</span>
+                    </div>
+                  )}
+                </div>{/* end cat-main-area */}
+              </div>{/* end cat-layout */}
             </>
           )}
         </main>
 
-        {/* CART SIDEBAR */}
-        <aside className="sidebar">
-          <div className="cart-hd">
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <div className="cart-title">Your Cart</div>
-              {cart.length>0&&<button className="clr-btn" onClick={()=>{setCart([]);try{localStorage.removeItem('operix_cart');}catch{}}}>Clear all</button>}
+        {/* FLOATING CART PILL — links to cart.html */}
+        {cart.length>0&&(
+          <a href="cart.html" style={{
+            position:'fixed',bottom:28,right:28,zIndex:500,
+            display:'flex',alignItems:'center',gap:10,
+            background:'var(--ink)',color:'#fff',
+            padding:'13px 20px',borderRadius:14,
+            textDecoration:'none',
+            boxShadow:'0 8px 28px rgba(0,0,0,.28)',
+            transition:'all .2s',fontFamily:'DM Sans,sans-serif',
+            border:'1px solid rgba(255,255,255,.1)'
+          }}
+          onMouseOver={e=>{e.currentTarget.style.background='#1E2D45';e.currentTarget.style.transform='translateY(-2px)';}}
+          onMouseOut={e=>{e.currentTarget.style.background='var(--ink)';e.currentTarget.style.transform='translateY(0)';}}>
+            <div style={{position:'relative'}}>
+              <Ic d={P.cart} s={18} c="#fff"/>
+              <span style={{position:'absolute',top:-8,right:-10,background:'var(--blue)',color:'#fff',fontSize:9,fontWeight:900,minWidth:17,height:17,borderRadius:99,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',border:'2px solid var(--ink)'}}>{cartCount}</span>
             </div>
-            <div className="cart-sub">{cartCount} item{cartCount!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</div>
-          </div>
-          {cart.length===0?(
-            <div className="cart-empty">
-              <div style={{width:56,height:56,background:'var(--surf)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12}}><Ic d={P.cart} s={26} c="var(--slate)"/></div>
-              <p style={{fontSize:14,fontWeight:700,color:'var(--ink)',marginBottom:5}}>Cart is empty</p>
-              <p style={{fontSize:12,color:'var(--slate)',lineHeight:1.6}}>Browse categories and add items to your requisition</p>
+            <div>
+              <div style={{fontSize:13,fontWeight:800,letterSpacing:'-.2px'}}>View Cart</div>
+              <div style={{fontSize:11,color:'#94A3B8',marginTop:1}}>{cart.length} item{cart.length!==1?'s':''} · {cartTotalDisplay}</div>
             </div>
-          ):(
-            <div style={{flex:1,overflowY:'auto'}}>
-              {needByWarning&&(
-                <div className="nb-warn">
-                  <div className="nb-warn-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
-                  <div style={{flex:1}}>
-                    <div className="nb-warn-title">⚠ Need By Date is Earlier Than Tentative Delivery</div>
-                    <div className="nb-warn-text"><strong>{needByWarning.itemName}</strong>: your requested date <strong>{new Date(needByWarning.needBy+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</strong> is before the estimated delivery of <strong>{new Date(needByWarning.tentative+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</strong>.</div>
-                  </div>
-                  <button onClick={()=>setNeedByWarning(null)} style={{background:'none',border:'none',cursor:'pointer',color:'#FB923C',fontSize:14,fontWeight:900,lineHeight:1,padding:'0 2px',flexShrink:0}}>✕</button>
-                </div>
-              )}
-              {cart.map(item=>(
-                <div key={item.id} className="c-item">
-                  <div style={{display:'flex',gap:10,marginBottom:8,alignItems:'flex-start'}}>
-                    {item.imageUrl?<img src={item.imageUrl} alt={item.name} className="c-img"/>:<div className="c-img-ph"><Ic d={P.box} s={18} c="var(--slate)"/></div>}
-                    <div style={{flex:1,minWidth:0}}>
-                      <div className="c-name" style={{paddingRight:4}}>{item.name}</div>
-                      <div className="c-meta">{getCurrencySymbol(item.currency)}{fmt(item.price)} / {item.unit||'unit'} · {item.sku}{item.moq&&<span style={{marginLeft:4,color:'var(--blue)',fontWeight:600}}>· MOQ {item.moq}</span>}{item.leadTime&&<span style={{marginLeft:4,color:'var(--amber)',fontWeight:600}}>· {item.leadTime}d lead</span>}</div>
-                    </div>
-                    <button className="rm-btn" onClick={()=>removeFromCart(item.id)}><Ic d={P.x} s={12}/></button>
-                  </div>
-                  <div className="qty-row">
-                    <div className="qc">
-                      <button className="qb" onClick={()=>updateQty(item.id,item.quantity-1)}>−</button>
-                      <input className="qi" type="number" min="1" max={item.stock} value={item.quantity} onChange={e=>updateQty(item.id,parseInt(e.target.value)||1)}/>
-                      <button className="qb" onClick={()=>updateQty(item.id,item.quantity+1)}>+</button>
-                    </div>
-                    <span className="c-uom">{item.unit||'unit'}</span>
-                    <span className="c-sub">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span>
-                  </div>
-                  {item.deliveryAutoComputed&&item.tentativeDelivery&&(
-                    <div className="tent-row">
-                      <Ic d={P.cal} s={11} c="var(--blue)"/>
-                      <span style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--blue)',whiteSpace:'nowrap'}}>Tentative Delivery</span>
-                      <div className="tent-badge">🚚 {new Date(item.tentativeDelivery+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
-                    </div>
-                  )}
-                  <div className="need-row">
-                    <Ic d={P.cal} s={11} c="var(--slate)"/>
-                    <span className="need-lbl">Need by</span>
-                    <input type="date" className="need-input" value={item.needByDate||''} min={new Date().toISOString().split('T')[0]} onChange={e=>updateNeedBy(item.id,e.target.value)} style={{borderColor:item.needByDate&&item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FB923C':'var(--line)',background:item.needByDate&&item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FFF7ED':'#fff'}}/>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {cart.length>0&&(
-            <>
-              <div className="divider"/>
-              <div>
-                <div className="ttl-row"><span className="ttl-lbl">Subtotal ({cartCount} items)</span><span className="ttl-val">{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
-                <div className="ttl-row"><span className="ttl-lbl">Shipping</span><span style={{fontSize:12,color:'var(--green)',fontWeight:600}}>TBD at checkout</span></div>
-                <div className="grand-row"><span className="grand-lbl">Estimated Total</span><span className="grand-val">{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
-              </div>
-              {approvalBlocked&&approvalChecked&&(<div style={{background:'#FFF7ED',border:'1.5px solid #FED7AA',borderRadius:8,padding:'10px 12px',marginBottom:10,fontSize:11,color:'#92400E',lineHeight:1.5}}>⚠️ <strong>No approval workflow</strong> set up. Contact your administrator.</div>)}
-              <button className="co-btn" onClick={()=>setShowCO(true)} disabled={!cart.length}><Ic d={P.cart} s={16}/>Proceed to Checkout</button>
-            </>
-          )}
-        </aside>
+            <svg width="14" height="14" fill="none" stroke="#64748B" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+          </a>
+        )}
       </div>
+      </div>{/* end layout-wrap */}
 
       {/* RECENTLY VIEWED */}
-      <RecentlyViewed items={recentlyViewed.filter(p=>p.id!==detailProduct?.id)} onOpen={openProduct}/>
+      <RecentlyViewed items={recentlyViewed.filter(p=>p.id!==detailProduct?.id)} onOpen={openProduct} fxRates={fxRates}/>
 
       {/* FOOTER */}
       <ShopFooter footerData={shopConfig.footer}/>
@@ -1333,9 +2210,14 @@ function App(){
           allProducts={products}
           cart={cart}
           onAdd={addToCart}
+          onUpdateQty={updateQty}
           onClose={()=>setDetailProduct(null)}
           onOpenProduct={p=>{setDetailProduct(null);setTimeout(()=>setDetailProduct(p),80);}}
           ltAdjustMap={ltAdjustMap}
+          fxRates={fxRates}
+          showFxRateDetails={showFxRateDetails}
+          showSupplierName={showSupplierName}
+          displayCompanyName={displayCompanyName}
         />
       )}
 
@@ -1344,7 +2226,7 @@ function App(){
         <div className="ov" onClick={e=>e.target===e.currentTarget&&setShowCO(false)}>
           <div className="modal">
             <div className="m-hd">
-              <div><div className="m-title">Checkout</div><div className="m-sub">{cartCount} item{cartCount!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</div></div>
+              <div><div className="m-title">Checkout</div><div className="m-sub">{cartCount} item{cartCount!==1?'s':''} · {cartTotalDisplay}</div></div>
               <button className="m-close" onClick={()=>setShowCO(false)}><Ic d={P.x} s={16}/></button>
             </div>
             <div className="m-body">
@@ -1354,12 +2236,12 @@ function App(){
                   <div key={item.id} className="ord-item">
                     <div>
                       <div className="ord-name">{item.name}</div>
-                      <div className="ord-meta">{item.quantity} × {getCurrencySymbol(item.currency)}{fmt(item.price)}{item.unit&&` · ${item.unit}`}{item.moq&&` · MOQ: ${item.moq}`}{item.leadTime&&` · Lead: ${item.leadTime}d`}{item.tentativeDelivery&&<span style={{color:'var(--blue)',fontWeight:600}}>{` · 🚚 ${new Date(item.tentativeDelivery+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`}</span>}{item.needByDate&&<span style={{color:item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FB923C':'inherit'}}>{` · Need by: ${new Date(item.needByDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?' ⚠':''}`}</span>}</div>
+                      <div className="ord-meta">{item.quantity} × {(()=>{const fx=convertToPhp(item.price,item.currency||'PHP');return fx.converted?'₱'+fmt(fx.phpPrice)+' ('+getCurrencySymbol(item.currency)+fmt(item.price)+' '+item.currency+')':getCurrencySymbol(item.currency)+fmt(item.price);})()}{item.unit&&` · ${item.unit}`}{item.moq&&` · MOQ: ${item.moq}`}{item.leadTime&&` · Lead: ${item.leadTime}d`}{item.tentativeDelivery&&<span style={{color:'var(--blue)',fontWeight:600}}>{` · 🚚 ${new Date(item.tentativeDelivery+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`}</span>}{item.needByDate&&<span style={{color:item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?'#FB923C':'inherit'}}>{` · Need by: ${new Date(item.needByDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${item.tentativeDelivery&&item.needByDate<item.tentativeDelivery?' ⚠':''}`}</span>}</div>
                     </div>
-                    <span className="ord-total">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span>
+                    <span className="ord-total">{(()=>{const fx=convertToPhp(item.price,item.currency||'PHP');return '₱'+fmt(fx.phpPrice*item.quantity);})()}</span>
                   </div>
                 ))}
-                <div className="grand-box"><span>Grand Total</span><span>{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span></div>
+                <div className="grand-box"><span>Grand Total</span><span>{cartTotalDisplay}</span></div>
               </div>
               <div className="divider"/>
               <div className="f-sec">
@@ -1424,7 +2306,7 @@ function App(){
                 </div>
               </div>
               <button className="co-btn" onClick={submitOrder} disabled={submitting}>
-                {submitting?<><div className="spin-anim"/>Placing Order…</>:<><Ic d={P.check} s={16}/>Confirm Order · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</>}
+                {submitting?<><div className="spin-anim"/>Placing Order…</>:<><Ic d={P.check} s={16}/>Confirm Order · {cartTotalDisplay}</>}
               </button>
             </div>
           </div>
@@ -1437,109 +2319,140 @@ function App(){
           <div className="qq-backdrop" onClick={()=>{if(!quoteSending){setShowQuote(false);setQuoteSuccess(false);}}}/>
           <div className="qq-panel">
 
-            {/* Header */}
+            {/* Fluent UI Panel Header */}
             <div className="qq-hd">
-              <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:40,height:40,background:'rgba(96,165,250,.15)',borderRadius:11,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <svg width="20" height="20" fill="none" stroke="#60A5FA" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <div style={{display:'flex',alignItems:'flex-start',flex:1,minWidth:0}}>
+                <div className="qq-hd-icon">
+                  <svg width="18" height="18" fill="none" stroke="#0078d4" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </div>
-                <div>
-                  <div style={{fontSize:16,fontWeight:800,color:'#fff',letterSpacing:'-.3px'}}>Quick Quote</div>
-                  <div style={{fontSize:11,color:'#94A3B8',marginTop:2}}>
-                    {cart.length} item{cart.length!==1?'s':''} · {getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)} est. total
-                  </div>
+                <div style={{minWidth:0}}>
+                  <div className="qq-hd-title">Quick Quote</div>
+                  <div className="qq-hd-sub">{cart.length} item{cart.length!==1?'s':''} · {cartTotalDisplay} estimated total</div>
                 </div>
               </div>
-              <button className="qq-close" onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} disabled={quoteSending}>✕</button>
+              <button className="qq-close" onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} disabled={quoteSending} title="Close">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
             </div>
 
             {quoteSuccess?(
-              /* ── SUCCESS STATE ── */
-              <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'48px 32px',textAlign:'center'}}>
-                <div style={{width:72,height:72,background:'var(--green-bg)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:20,border:'2px solid rgba(5,150,105,.2)'}}>
-                  <svg width="34" height="34" fill="none" stroke="#059669" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <div style={{fontSize:20,fontWeight:900,color:'var(--ink)',letterSpacing:'-.4px',marginBottom:8}}>Quote Sent!</div>
-                <div style={{fontSize:13,color:'var(--slate)',lineHeight:1.7,marginBottom:8}}>
-                  A quote has been sent to<br/><strong style={{color:'var(--ink)'}}>{quoteForm.email}</strong>
-                </div>
-                <div style={{display:'flex',alignItems:'center',gap:6,background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,padding:'8px 14px',marginBottom:28,fontSize:12,color:'#92400E',fontWeight:600}}>
-                  <svg width="13" height="13" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  Prices fixed and valid for 30 days
-                </div>
-                <button onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} style={{width:'100%',maxWidth:280,padding:'12px',background:'var(--ink)',color:'#fff',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
-                  Done
-                </button>
-                <a href="my-orders.html" style={{marginTop:10,fontSize:12,color:'var(--blue)',fontWeight:600,textDecoration:'none'}}>View My Quotes →</a>
+              /* ── SUCCESS STATE — approval-aware ── */
+              <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 24px',textAlign:'center',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+                {quoteSuccess.approvalStatus==='pending_approval'?(
+                  <>
+                    <div style={{width:64,height:64,background:'#f3f2f1',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16}}>
+                      <svg width="30" height="30" fill="none" stroke="#7C3AED" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <div style={{fontSize:18,fontWeight:600,color:'#323130',marginBottom:8,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Submitted for Approval</div>
+                    <div style={{background:'#eff6fc',borderLeft:'3px solid #0078d4',borderRadius:'0 2px 2px 0',padding:'10px 14px',marginBottom:12,width:'100%',textAlign:'left'}}>
+                      <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#004578',marginBottom:4}}>Quote Number</div>
+                      <div style={{fontFamily:'monospace',fontSize:15,fontWeight:700,color:'#323130'}}>{quoteSuccess.quoteNumber}</div>
+                    </div>
+                    <div style={{background:'#f3f2f1',border:'1px solid #edebe9',borderRadius:2,padding:'12px 14px',marginBottom:18,width:'100%',textAlign:'left'}}>
+                      <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#7C3AED',marginBottom:4,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Approval Required</div>
+                      <div style={{fontSize:12,color:'#4C1D95',lineHeight:1.65,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+                        {quoteSuccess.approvalGroupName&&<>Routed through <strong>{quoteSuccess.approvalGroupName}</strong>. </>}
+                        {quoteSuccess.assignedApproverName&&<>Assigned to <strong>{quoteSuccess.assignedApproverName}</strong>.</>}
+                        {' '}The recipient will receive the quote email only after all approval steps are completed.
+                      </div>
+                    </div>
+                    <div style={{fontSize:12,color:'#605e5c',lineHeight:1.65,marginBottom:20,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>You'll be notified once the quotation is approved. Track its status in My Quotes.</div>
+                  </>
+                ):(
+                  <>
+                    <div style={{width:64,height:64,background:'#dff6dd',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16}}>
+                      <svg width="28" height="28" fill="none" stroke="#107c10" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div style={{fontSize:18,fontWeight:600,color:'#323130',marginBottom:8,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Quote Sent!</div>
+                    <div style={{background:'#eff6fc',borderLeft:'3px solid #0078d4',borderRadius:'0 2px 2px 0',padding:'10px 14px',marginBottom:12,width:'100%',textAlign:'left'}}>
+                      <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'#004578',marginBottom:4,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Quote Number</div>
+                      <div style={{fontFamily:'monospace',fontSize:15,fontWeight:700,color:'#323130'}}>{quoteSuccess.quoteNumber}</div>
+                    </div>
+                    <div style={{fontSize:13,color:'#605e5c',lineHeight:1.6,marginBottom:8,fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Sent to <strong style={{color:'#323130'}}>{quoteForm.email}</strong></div>
+                    <div style={{display:'flex',alignItems:'center',gap:8,background:'#fff4ce',borderLeft:'3px solid #ffb900',borderRadius:'0 2px 2px 0',padding:'8px 12px',marginBottom:20,fontSize:12,color:'#605e5c',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+                      <svg width="14" height="14" fill="none" stroke="#797673" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0}}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      Prices fixed and valid for 30 days
+                    </div>
+                  </>
+                )}
+                <button onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}}
+                  style={{width:'100%',maxWidth:280,height:32,background:'#0078d4',color:'#fff',border:'none',borderRadius:2,fontSize:14,fontWeight:600,cursor:'pointer',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Done</button>
+                <a href="my-orders.html" style={{marginTop:12,fontSize:12,color:'#0078d4',fontWeight:600,textDecoration:'none',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>View My Quotes →</a>
               </div>
             ):(
               <>
                 {/* ── BODY ── */}
                 <div className="qq-body">
 
-                  {/* Validity notice */}
-                  <div className="qq-validity">
-                    <svg width="16" height="16" fill="none" stroke="#2563EB" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0}}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span><strong>Quick Quote</strong> — prices will be <strong>fixed for 30 days</strong>. The recipient can redeem this quote directly from the email.</span>
+                  {/* Fluent Validity Notice */}
+                  <div style={{padding:'12px 24px',background:'#f3f2f1',borderBottom:'1px solid #edebe9'}}>
+                    <div className="qq-validity">
+                      <svg width="14" height="14" fill="none" stroke="#0078d4" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0,marginTop:1}}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span>Prices will be <strong>fixed for 30 days</strong>. The recipient can redeem this quote directly from the email.</span>
+                    </div>
                   </div>
 
-                  {/* Items in quote */}
+                  {/* Items in Quote — Fluent List */}
                   <div className="qq-section">
                     <div className="qq-section-title">Items in this Quote ({cart.length})</div>
                     {cart.map(item=>(
                       <div key={item.id} className="qq-item-row">
-                        <div style={{flex:1,minWidth:0,marginRight:12}}>
+                        <div style={{flex:1,minWidth:0}}>
                           <div className="qq-item-name">{item.name}</div>
-                          <div className="qq-item-meta">{item.quantity} {item.unit||'unit'} × {getCurrencySymbol(item.currency)}{fmt(item.price)}{item.sku&&` · ${item.sku}`}</div>
+                          <div className="qq-item-meta">{item.quantity} {item.unit||'unit'} × {'₱'+fmt(convertToPhp(item.price,item.currency||'PHP').phpPrice)}{item.sku&&` · ${item.sku}`}</div>
                         </div>
-                        <div className="qq-item-price">{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</div>
+                        <div className="qq-item-price">{'₱'+fmt(convertToPhp(item.price,item.currency||'PHP').phpPrice*item.quantity)}</div>
                       </div>
                     ))}
                     <div className="qq-total-row">
-                      <span style={{fontSize:13,fontWeight:700,color:'#F59E0B'}}>Estimated Total</span>
-                      <span style={{fontSize:17,fontWeight:900,color:'#F59E0B'}}>{getCurrencySymbol(cart[0]?.currency)}{fmt(cartTotal)}</span>
+                      <span style={{fontSize:13,fontWeight:600,color:'#ffffff',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>Estimated Total</span>
+                      <span style={{fontSize:16,fontWeight:700,color:'#ffffff',fontFamily:"'Segoe UI',system-ui,sans-serif"}}>{cartTotalDisplay}</span>
                     </div>
                   </div>
 
-                  {/* Recipient details */}
-                  <div style={{marginBottom:14}}>
-                    <label className="qq-fl">Recipient Name <span style={{color:'var(--red)'}}>*</span></label>
-                    <input type="text" className="qq-fi" value={quoteForm.recipientName} placeholder="e.g. Maria Santos"
-                      onChange={e=>setQuoteForm(f=>({...f,recipientName:e.target.value}))}/>
-                    <div style={{fontSize:11,color:'var(--slate)',marginTop:4}}>Full name of the person receiving this quote</div>
-                  </div>
+                  {/* Recipient Details — Fluent Form */}
+                  <div className="qq-form-section">
+                    <div className="qq-field">
+                      <label className="qq-fl">Recipient Name <span style={{color:'#a4262c'}}>*</span></label>
+                      <input type="text" className="qq-fi" value={quoteForm.recipientName} placeholder="e.g. Maria Santos"
+                        onChange={e=>setQuoteForm(f=>({...f,recipientName:e.target.value}))}/>
+                      <div className="qq-field-hint">Full name of the person receiving this quote</div>
+                    </div>
 
-                  <div style={{marginBottom:14}}>
-                    <label className="qq-fl">Send To — Email Address <span style={{color:'var(--red)'}}>*</span></label>
-                    <input type="email" className="qq-fi" value={quoteForm.email} placeholder="recipient@company.com"
-                      onChange={e=>setQuoteForm(f=>({...f,email:e.target.value}))}/>
-                  </div>
+                    <div className="qq-field">
+                      <label className="qq-fl">Email Address <span style={{color:'#a4262c'}}>*</span></label>
+                      <input type="email" className="qq-fi" value={quoteForm.email} placeholder="recipient@company.com"
+                        onChange={e=>setQuoteForm(f=>({...f,email:e.target.value}))}/>
+                    </div>
 
-                  <div style={{marginBottom:14}}>
-                    <label className="qq-fl">Your Reference / Name <span style={{color:'var(--red)'}}>*</span></label>
-                    <input type="text" className="qq-fi" value={quoteForm.reference} placeholder="e.g. Q1 Supplies — Maria Santos"
-                      onChange={e=>setQuoteForm(f=>({...f,reference:e.target.value}))}/>
-                    <div style={{fontSize:11,color:'var(--slate)',marginTop:4}}>This appears as the quote reference on the email</div>
-                  </div>
+                    <div className="qq-field">
+                      <label className="qq-fl">Your Reference / Name <span style={{color:'#a4262c'}}>*</span></label>
+                      <input type="text" className="qq-fi" value={quoteForm.reference} placeholder="e.g. Q1 Supplies — Maria Santos"
+                        onChange={e=>setQuoteForm(f=>({...f,reference:e.target.value}))}/>
+                      <div className="qq-field-hint">This appears as the quote reference on the email</div>
+                    </div>
 
-                  <div style={{marginBottom:6}}>
-                    <label className="qq-fl">Notes to Recipient</label>
-                    <textarea className="qq-fi" rows={3} value={quoteForm.notes} placeholder="Additional instructions, terms, or remarks…"
-                      onChange={e=>setQuoteForm(f=>({...f,notes:e.target.value}))} style={{resize:'vertical'}}/>
+                    <div className="qq-field">
+                      <label className="qq-fl">Notes to Recipient</label>
+                      <textarea className="qq-fi" rows={3} value={quoteForm.notes} placeholder="Additional instructions, terms, or remarks…"
+                        onChange={e=>setQuoteForm(f=>({...f,notes:e.target.value}))} style={{resize:'vertical',height:'auto'}}/>
+                    </div>
                   </div>
 
                 </div>
 
-                {/* ── FOOTER ── */}
+                {/* ── FOOTER — Fluent Primary + Default buttons ── */}
                 <div className="qq-ft">
                   <button className="qq-send" onClick={sendQuote} disabled={quoteSending||!cart.length}>
                     {quoteSending
                       ? <><div className="spin-anim"/>Sending Quote…</>
-                      : <><svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Quote</>
+                      : <><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send Quote</>
                     }
                   </button>
                   <button onClick={()=>{setShowQuote(false);setQuoteSuccess(false);}} disabled={quoteSending}
-                    style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',border:'none',color:'var(--slate)',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                    style={{width:'100%',height:32,background:'transparent',border:'1px solid #8a8886',borderRadius:2,color:'#323130',fontSize:14,fontWeight:400,cursor:'pointer',fontFamily:"'Segoe UI',system-ui,sans-serif",transition:'background .1s'}}
+                    onMouseOver={e=>e.currentTarget.style.background='#f3f2f1'}
+                    onMouseOut={e=>e.currentTarget.style.background='transparent'}>
                     Cancel
                   </button>
                 </div>
@@ -1554,34 +2467,22 @@ function App(){
         <div className="ov">
           <div className="modal">
             <div className="succ">
-              {success.pendingApproval ? (
-                <>
-                  <div className="succ-icon" style={{background:'#FFF7ED',border:'2px solid #FED7AA'}}>
-                    <Ic d={P.clock} s={32} c="var(--amber)"/>
-                  </div>
-                  <div className="succ-title" style={{color:'#92400E'}}>Pending Approval</div>
-                  <div className="succ-sub">Your order has been submitted and is awaiting approval{success.approvalGroupName?` via "${success.approvalGroupName}"`:''} before it enters processing. You'll be notified once it's approved.</div>
-                </>
-              ) : (
-                <>
-                  <div className="succ-icon"><Ic d={P.check} s={32} c="var(--green)"/></div>
-                  <div className="succ-title">Order Placed!</div>
-                  <div className="succ-sub">Your requisition has been submitted. You'll receive a confirmation email shortly.</div>
-                </>
-              )}
-              <div className="ord-badge" style={success.pendingApproval?{background:'#FFF7ED',color:'#92400E',border:'1.5px solid #FED7AA'}:{}}>{success.orderNumber}</div>
-              {success.pendingApproval&&(
-                <div style={{width:'100%',background:'#FFF7ED',border:'1.5px solid #FED7AA',borderRadius:10,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'flex-start',gap:10,textAlign:'left'}}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <div style={{fontSize:12,color:'#92400E',lineHeight:1.5}}>
-                    <strong>What happens next?</strong> An approver will review your order. You can track its status in <strong>My Orders</strong>. You'll receive a notification when it's approved or if there's any issue.
-                  </div>
+              <>
+                <div className="succ-icon"><Ic d={P.check} s={32} c="var(--green)"/></div>
+                <div className="succ-title">Order Placed!</div>
+                <div className="succ-sub">Your order has been submitted and is awaiting admin review. You'll be notified once it's confirmed and moved to processing.</div>
+              </>
+              <div className="ord-badge">{success.orderNumber}</div>
+              <div style={{width:'100%',background:'#F0FDF4',border:'1.5px solid #A7F3D0',borderRadius:10,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'flex-start',gap:10,textAlign:'left'}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                <div style={{fontSize:12,color:'#065F46',lineHeight:1.5}}>
+                  <strong>What happens next?</strong> An admin will review and confirm your order in the system. You'll receive a notification once it's confirmed and your order enters processing.
                 </div>
-              )}
+              </div>
               <div style={{width:'100%',background:'var(--surf)',borderRadius:12,padding:'14px 16px',marginBottom:20}}>
                 <div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--slate)',marginBottom:10}}>Items Ordered</div>
-                {success.items.map(item=><div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:6,color:'var(--ink2)'}}><span>{item.name} × {item.quantity}</span><span style={{fontWeight:700}}>{getCurrencySymbol(item.currency)}{fmt(item.price*item.quantity)}</span></div>)}
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:800,color:'var(--ink)',paddingTop:10,borderTop:'1.5px solid var(--line)',marginTop:8}}><span>Total</span><span>{getCurrencySymbol(success.currency)}{fmt(success.total)}</span></div>
+                {success.items.map(item=>{const fx=convertToPhp(item.price,item.currency||'PHP');return(<div key={item.id} style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:6,color:'var(--ink2)'}}><span>{item.name} × {item.quantity}</span><span style={{fontWeight:700}}>₱{fmt(fx.phpPrice*item.quantity)}</span></div>);})}
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:800,color:'var(--ink)',paddingTop:10,borderTop:'1.5px solid var(--line)',marginTop:8}}><span>Total</span><span>₱{fmt(success.total)}</span></div>
               </div>
               <div style={{display:'flex',gap:10,width:'100%'}}>
                 <button onClick={()=>{setSuccess(null);goLanding();}} style={{flex:1,padding:11,borderRadius:9,border:'1.5px solid var(--line)',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'DM Sans,sans-serif',color:'var(--ink)'}}>Continue Shopping</button>

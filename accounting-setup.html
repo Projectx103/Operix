@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operix GL — Accounting Setup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:   #0C1A3B;
+  --navy2:  #162347;
+  --blue:   #1A56DB;
+  --blue2:  #1D4ED8;
+  --blue-l: #EFF6FF;
+  --blue-m: #BFDBFE;
+  --ink:    #0F1724;
+  --ink2:   #1E2D45;
+  --ink3:   #374B65;
+  --muted:  #64748B;
+  --line:   #E2E8F0;
+  --line2:  #F1F5F9;
+  --bg:     #F0F4F8;
+  --white:  #FFFFFF;
+  --green:  #059669;
+  --green-l:#ECFDF5;
+  --red:    #DC2626;
+  --red-l:  #FEF2F2;
+  --amber:  #D97706;
+  --amber-l:#FFFBEB;
+  --purple: #7C3AED;
+  --purple-l:#F5F3FF;
+  --gray-l: #F8FAFC;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:13px; }
+body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+
+/* TOPBAR */
+.topbar { height:50px; background:var(--navy); display:flex; align-items:center; justify-content:space-between; padding:0 20px; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+.topbar-logo { display:flex; align-items:center; gap:10px; }
+.topbar-title { font-size:13px; font-weight:600; color:#fff; letter-spacing:.01em; }
+.topbar-sub { font-size:10px; color:rgba(255,255,255,.45); font-weight:500; margin-top:1px; }
+.topbar-badge { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#60A5FA; background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.25); padding:2px 8px; border-radius:4px; }
+.back-btn { display:flex; align-items:center; gap:6px; padding:6px 14px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:6px; color:rgba(255,255,255,.8); font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; }
+.back-btn:hover { background:rgba(255,255,255,.14); color:#fff; }
+
+/* LAYOUT */
+.layout { display:flex; height:calc(100vh - 50px); }
+.sidebar { width:220px; flex-shrink:0; background:var(--navy2); border-right:1px solid rgba(255,255,255,.07); display:flex; flex-direction:column; overflow-y:auto; }
+.sidebar-section { padding:16px 14px 6px; font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.3); }
+.sidebar-item { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; border-left:3px solid transparent; transition:all .15s; font-size:12px; font-weight:500; color:rgba(255,255,255,.55); position:relative; }
+.sidebar-item:hover { background:rgba(255,255,255,.05); color:rgba(255,255,255,.85); }
+.sidebar-item.active { background:rgba(26,86,219,.25); border-left-color:#60A5FA; color:#fff; font-weight:600; }
+.sidebar-item.active .sico { color:#60A5FA; }
+.sico { color:rgba(255,255,255,.35); flex-shrink:0; transition:color .15s; }
+
+/* MAIN */
+.main { flex:1; overflow-y:auto; padding:20px 24px; }
+
+/* CARDS */
+.card { background:var(--white); border:1px solid var(--line); border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.05); overflow:hidden; margin-bottom:16px; }
+.card-hd { padding:12px 18px; border-bottom:1px solid var(--line2); display:flex; align-items:center; justify-content:space-between; background:var(--gray-l); }
+.card-hd-left { display:flex; align-items:center; gap:10px; }
+.card-hd-title { font-size:13px; font-weight:700; color:var(--ink); }
+.card-hd-sub { font-size:10px; color:var(--muted); margin-top:1px; }
+.card-body { padding:18px; }
+
+/* TABS */
+.tab-bar { display:flex; gap:2px; background:rgba(0,0,0,.04); border-radius:8px; padding:3px; margin-bottom:20px; }
+.tab { flex:1; padding:8px 10px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; text-align:center; border:none; background:transparent; font-family:inherit; color:var(--muted); transition:all .15s; }
+.tab.active { background:var(--white); color:var(--blue2); box-shadow:0 1px 4px rgba(0,0,0,.1); font-weight:700; }
+.tab:hover:not(.active) { background:rgba(255,255,255,.5); color:var(--ink3); }
+
+/* BUTTONS */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:7px; font-size:11px; font-weight:700; cursor:pointer; border:none; font-family:inherit; transition:all .15s; }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-primary:hover { background:var(--blue2); box-shadow:0 3px 10px rgba(26,86,219,.3); }
+.btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+.btn-secondary { background:var(--white); color:var(--ink3); border:1.5px solid var(--line); }
+.btn-secondary:hover { background:var(--line2); }
+.btn-danger { background:var(--red-l); color:var(--red); border:1.5px solid #FECACA; }
+.btn-danger:hover { background:#FEE2E2; }
+.btn-green { background:var(--green-l); color:var(--green); border:1.5px solid #A7F3D0; }
+.btn-green:hover { background:#D1FAE5; }
+.btn-amber { background:var(--amber-l); color:var(--amber); border:1.5px solid #FDE68A; }
+.btn-amber:hover { background:#FEF3C7; }
+.btn-sm { padding:5px 11px; font-size:10px; }
+.btn-icon { width:28px; height:28px; padding:0; justify-content:center; border-radius:6px; }
+
+/* FORM ELEMENTS */
+.label { display:block; font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+.label.req::after { content:' *'; color:var(--red); }
+.input, .select, .textarea { width:100%; padding:8px 11px; border:1.5px solid var(--line); border-radius:7px; font-size:12px; font-weight:500; color:var(--ink); font-family:'IBM Plex Sans',sans-serif; outline:none; transition:border-color .14s, box-shadow .14s; background:#fff; }
+.input:focus, .select:focus, .textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,86,219,.08); }
+.input::placeholder { color:#B0C0D4; font-weight:400; }
+.select { cursor:pointer; }
+.mono { font-family:'IBM Plex Mono',monospace; }
+.fg { margin-bottom:14px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.grid4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+
+/* TABLE */
+.tbl { width:100%; border-collapse:collapse; font-size:11.5px; }
+.tbl th { padding:9px 14px; text-align:left; font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); background:var(--gray-l); border-bottom:1.5px solid var(--line); white-space:nowrap; }
+.tbl th.r { text-align:right; }
+.tbl td { padding:10px 14px; border-bottom:1px solid var(--line2); vertical-align:middle; }
+.tbl td.r { text-align:right; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:#F8FBFF; }
+.tbl-empty { padding:48px; text-align:center; color:var(--muted); font-size:12px; }
+
+/* BADGES */
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; border:1px solid; }
+.badge-open    { background:#DCFCE7; color:#166534; border-color:#86EFAC; }
+.badge-closed  { background:#FEE2E2; color:#991B1B; border-color:#FCA5A5; }
+.badge-perm    { background:#FEE2E2; color:#7F1D1D; border-color:#F87171; }
+.badge-future  { background:#EFF6FF; color:#1D4ED8; border-color:#93C5FD; }
+.badge-never   { background:#F1F5F9; color:#64748B; border-color:#CBD5E1; }
+.badge-draft   { background:#FFFBEB; color:#92400E; border-color:#FDE68A; }
+.badge-posted  { background:#DCFCE7; color:#166534; border-color:#86EFAC; }
+.badge-corp    { background:#F0FDF4; color:#15803D; border-color:#86EFAC; }
+.badge-spot    { background:#EFF6FF; color:#1D4ED8; border-color:#93C5FD; }
+.badge-user    { background:var(--purple-l); color:var(--purple); border-color:#C4B5FD; }
+.badge-period  { background:#FEFCE8; color:#854D0E; border-color:#FDE047; }
+.badge-error   { background:#FEF2F2; color:var(--red); border-color:#FECACA; }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal { background:#fff; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.2); width:100%; max-width:560px; overflow:hidden; animation:slideUp .22s cubic-bezier(.4,0,.2,1); }
+.modal-lg { max-width:720px; }
+.modal-hd { padding:16px 22px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+.modal-hd-title { font-size:14px; font-weight:800; color:var(--ink); }
+.modal-hd-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+.modal-body { padding:22px; }
+.modal-footer { padding:14px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; background:var(--gray-l); }
+.modal-close { width:28px; height:28px; border-radius:7px; border:1.5px solid var(--line); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:all .12s; }
+.modal-close:hover { background:var(--red-l); border-color:#FECACA; color:var(--red); }
+
+/* ALERTS */
+.alert { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; }
+.alert-err  { background:var(--red-l); border:1px solid #FECACA; color:#991B1B; }
+.alert-warn { background:var(--amber-l); border:1px solid #FDE68A; color:#92400E; }
+.alert-ok   { background:var(--green-l); border:1px solid #A7F3D0; color:#065F46; }
+.alert-info { background:var(--blue-l); border:1px solid var(--blue-m); color:#1E40AF; }
+
+/* TOAST */
+.toast-wrap { position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+.toast { display:flex; align-items:center; gap:9px; padding:10px 16px; border-radius:9px; font-size:12px; font-weight:600; color:#fff; box-shadow:0 6px 20px rgba(0,0,0,.22); animation:slideInRight .2s ease; min-width:220px; }
+.toast-ok   { background:#059669; }
+.toast-err  { background:#DC2626; }
+.toast-warn { background:#D97706; }
+.toast-info { background:var(--navy); }
+
+/* STAT CARD */
+.stat-card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; }
+.stat-label { font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.stat-val   { font-size:22px; font-weight:800; color:var(--ink); font-family:'IBM Plex Mono',monospace; }
+.stat-sub   { font-size:10px; color:var(--muted); margin-top:4px; }
+
+/* FX DISPLAY */
+.fx-box { background:var(--gray-l); border:1.5px solid var(--line); border-radius:8px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; }
+.fx-rate { font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:700; color:var(--blue2); }
+.fx-note { font-size:10px; color:var(--muted); margin-top:2px; }
+
+/* CALC BOX */
+.calc-box { background:linear-gradient(135deg,#EFF6FF,#F0FDF4); border:1.5px solid #BFDBFE; border-radius:8px; padding:14px 16px; }
+
+/* JOURNAL LINE */
+.je-line { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 28px; gap:8px; align-items:center; margin-bottom:8px; }
+.je-line-hd { font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+
+/* AUDIT ROW */
+.audit-row { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--line2); font-size:11px; }
+.audit-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+
+/* DIVIDER */
+.divider { height:1px; background:var(--line); margin:16px 0; }
+
+/* STEP INDICATOR */
+.step-row { display:flex; align-items:center; gap:0; margin-bottom:20px; }
+.step-item { display:flex; align-items:center; gap:8px; }
+.step-circle { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.step-circle.done { background:var(--green); color:#fff; }
+.step-circle.active { background:var(--blue); color:#fff; }
+.step-circle.pending { background:var(--line); color:var(--muted); }
+.step-label { font-size:11px; font-weight:600; }
+.step-connector { flex:1; height:1px; background:var(--line); margin:0 8px; min-width:20px; }
+
+/* ANIMATIONS */
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideInRight { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; display:inline-block; }
+.spinner-dark { border-color:rgba(0,0,0,.12); border-top-color:var(--blue); }
+.content-section { animation:fadeIn .25s ease; }
+
+/* TOOLTIP-LIKE WARN INLINE */
+.inline-warn { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:600; color:var(--amber); background:var(--amber-l); border:1px solid #FDE68A; padding:3px 9px; border-radius:5px; }
+
+/* SEARCH BAR */
+.search-wrap { position:relative; }
+.search-ico { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+.search-in { padding-left:32px !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+// ── Firebase Config ──────────────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+  authDomain: "operix-c8a8c.firebaseapp.com",
+  projectId: "operix-c8a8c",
+  storageBucket: "operix-c8a8c.firebasestorage.app",
+  messagingSenderId: "794223223499",
+  appId: "1:794223223499:web:f059007b909cc15766f14e",
+};
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const RATE_TYPES = ['Corporate','Spot','User'];
+const CURRENCIES = [
+  { code:'PHP', name:'Philippine Peso', symbol:'₱' },
+  { code:'USD', name:'US Dollar',       symbol:'$' },
+  { code:'EUR', name:'Euro',            symbol:'€' },
+  { code:'JPY', name:'Japanese Yen',    symbol:'¥' },
+  { code:'GBP', name:'British Pound',   symbol:'£' },
+  { code:'SGD', name:'Singapore Dollar',symbol:'S$'},
+  { code:'AUD', name:'Australian Dollar',symbol:'A$'},
+  { code:'CNY', name:'Chinese Yuan',    symbol:'¥' },
+  { code:'HKD', name:'Hong Kong Dollar',symbol:'HK$'},
+  { code:'KRW', name:'Korean Won',      symbol:'₩' },
+];
+const EXPENSE_ACCOUNTS = [
+  '6001 - Cost of Goods Sold','6002 - Operating Expenses','6003 - Administrative Expenses',
+  '6004 - Salary & Wages','6005 - Rent Expense','6006 - Utilities Expense','6007 - Other Expenses',
+];
+const LIABILITY_ACCOUNTS = [
+  '2001 - Accounts Payable','2002 - Accrued Liabilities','2003 - Taxes Payable','2004 - Other Current Liabilities',
+];
+
+// ── SVG Icons ─────────────────────────────────────────────────────────────────
+const Ico = ({ d, size=14, color='currentColor', sw=2 }) => (
+  <svg width={size} height={size} fill="none" stroke={color} strokeWidth={sw} viewBox="0 0 24 24" style={{flexShrink:0}}>
+    <path strokeLinecap="round" strokeLinejoin="round" d={d}/>
+  </svg>
+);
+const I = {
+  calendar:  'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+  fx:        'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  invoice:   'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  journal:   'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+  audit:     'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  cog:       'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+  back:      'M10 19l-7-7m0 0l7-7m-7 7h18',
+  plus:      'M12 4v16m8-8H4',
+  edit:      'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+  trash:     'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+  check:     'M5 13l4 4L19 7',
+  x:         'M6 18L18 6M6 6l12 12',
+  warn:      'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+  info:      'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  refresh:   'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+  lock:      'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+  search:    'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0',
+  flash:     'M13 10V3L4 14h7v7l9-11h-7z',
+  down:      'M19 9l-7 7-7-7',
+};
+
+// ── Toast System ──────────────────────────────────────────────────────────────
+function ToastSystem({ toasts }) {
+  return (
+    <div className="toast-wrap">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast toast-${t.type}`}>
+          {t.type==='ok'   && <Ico d={I.check} size={13} color="#fff" sw={2.5}/>}
+          {t.type==='err'  && <Ico d={I.x}     size={13} color="#fff" sw={2.5}/>}
+          {t.type==='warn' && <Ico d={I.warn}  size={13} color="#fff"/>}
+          {t.type==='info' && <Ico d={I.info}  size={13} color="#fff"/>}
+          {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
+const fmtNum  = (n,d=2) => Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:d,maximumFractionDigits:d});
+const today   = () => new Date().toISOString().split('T')[0];
+const nowTs   = () => new Date().toISOString();
+
+function getPeriodForDate(periods, dateStr) {
+  if (!dateStr) return null;
+  return periods.find(p => p.startDate <= dateStr && p.endDate >= dateStr) || null;
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+function AccountingSetupApp() {
+  const [user,    setUser]   = useState(null);
+  const [loading, setLoading]= useState(true);
+  const [activeTab, setTab]  = useState('periods');
+  const [toasts,  setToasts] = useState([]);
+  const db = useRef(null);
+
+  // DATA STATE
+  const [periods,      setPeriods]      = useState([]);
+  const [rates,        setRates]        = useState([]);
+  const [invoices,     setInvoices]     = useState([]);
+  const [journals,     setJournals]     = useState([]);
+  const [auditLog,     setAuditLog]     = useState([]);
+  const [dataLoading,  setDataLoading]  = useState(false);
+
+  const toast = useCallback((msg, type='ok') => {
+    const id = Date.now() + Math.random();
+    setToasts(p => [...p, {id, msg, type}]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
+  }, []);
+
+  // ── Firebase Auth ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    firebase.auth().onAuthStateChanged(async cu => {
+      if (!cu) { window.location.href = 'login.html'; return; }
+      const firestore = firebase.firestore();
+      db.current = firestore;
+      try {
+        const uDoc = await firestore.collection('users').doc(cu.uid).get();
+        if (!uDoc.exists || uDoc.data().role !== 'admin') {
+          window.location.href = 'Dashboard.html'; return;
+        }
+        const uData = uDoc.data();
+        setUser({ uid: cu.uid, email: cu.email, name: uData.fullName || uData.displayName || cu.email, ...uData });
+        await loadAll(firestore, cu.uid, uData.companyName || '');
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    });
+  }, []);
+
+  // ── Load All Data ─────────────────────────────────────────────────────────
+  // Strategy:
+  // 1. Look up ALL admin UIDs that share the same companyName (including self)
+  // 2. Fetch GL docs where adminId is ANY of those UIDs — works even on old docs
+  //    that were saved before the companyName field was added.
+  // 3. Also fetch by companyName for newer docs. Deduplicate by doc ID.
+  const loadAll = async (firestore, uid, companyName) => {
+    setDataLoading(true);
+    try {
+      // Step 1: gather all admin UIDs in the same company
+      let companyAdminUids = [uid];
+      if (companyName) {
+        try {
+          const adminsSnap = await firestore.collection('users')
+            .where('companyName', '==', companyName)
+            .where('role', '==', 'admin')
+            .get();
+          adminsSnap.docs.forEach(d => {
+            if (!companyAdminUids.includes(d.id)) companyAdminUids.push(d.id);
+          });
+        } catch(e) { console.warn('Company admins lookup failed:', e); }
+      }
+
+      // Step 2: fetch a GL collection across all company UIDs, deduplicated
+      const fetchCompanyCol = async (col) => {
+        const allDocs = new Map();
+        // Firestore 'in' supports up to 30 values; chunk if needed
+        for (let i = 0; i < companyAdminUids.length; i += 30) {
+          const chunk = companyAdminUids.slice(i, i + 30);
+          const snap = await firestore.collection(col)
+            .where('adminId', 'in', chunk)
+            .get().catch(() => ({ docs: [] }));
+          snap.docs.forEach(d => allDocs.set(d.id, { id: d.id, ...d.data() }));
+        }
+        // Also catch newer docs saved with companyName field
+        if (companyName) {
+          const snap2 = await firestore.collection(col)
+            .where('companyName', '==', companyName)
+            .get().catch(() => ({ docs: [] }));
+          snap2.docs.forEach(d => allDocs.set(d.id, { id: d.id, ...d.data() }));
+        }
+        return Array.from(allDocs.values());
+      };
+
+      // Step 3: audit log — same approach, sorted client-side
+      const fetchAuditLog = async () => {
+        const allDocs = new Map();
+        for (let i = 0; i < companyAdminUids.length; i += 30) {
+          const chunk = companyAdminUids.slice(i, i + 30);
+          const snap = await firestore.collection('glAuditLog')
+            .where('adminId', 'in', chunk)
+            .get().catch(() => ({ docs: [] }));
+          snap.docs.forEach(d => allDocs.set(d.id, { id: d.id, ...d.data() }));
+        }
+        return Array.from(allDocs.values())
+          .sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0))
+          .slice(0, 100);
+      };
+
+      const [periods, rates, invoices, journals, auditEntries] = await Promise.all([
+        fetchCompanyCol('glPeriods'),
+        fetchCompanyCol('glDailyRates'),
+        fetchCompanyCol('glInvoices'),
+        fetchCompanyCol('glJournals'),
+        fetchAuditLog(),
+      ]);
+
+      setPeriods( periods.sort((a,b) => (b.startDate||'').localeCompare(a.startDate||'')) );
+      setRates(   rates.sort((a,b) => (b.date||'').localeCompare(a.date||'')) );
+      setInvoices(invoices.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)) );
+      setJournals(journals.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)) );
+      setAuditLog(auditEntries);
+    } catch(e) { console.error('loadAll error:', e); }
+    setDataLoading(false);
+  };
+
+  const reload = () => user && loadAll(db.current, user.uid, user.companyName || '');
+
+  const addAudit = async (action, details) => {
+    if (!db.current || !user) return;
+    try {
+      await db.current.collection('glAuditLog').add({
+        adminId: user.uid, action, details, by: user.name || user.email,
+        ts: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch(e) { console.error(e); }
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (loading) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#F0F4F8'}}>
+      <div style={{textAlign:'center'}}>
+        <div style={{width:40,height:40,border:'3px solid #E2E8F0',borderTopColor:'#1A56DB',borderRadius:'50%',animation:'spin .8s linear infinite',margin:'0 auto 14px'}}/>
+        <p style={{color:'#64748B',fontWeight:600,fontSize:12}}>Loading GL Setup…</p>
+      </div>
+    </div>
+  );
+
+  const TABS = [
+    { id:'periods',   label:'GL Periods',     icon: I.calendar },
+    { id:'rates',     label:'Daily Rates',     icon: I.fx       },
+    { id:'audit',     label:'Audit Trail',     icon: I.audit    },
+    { id:'settings',  label:'Configuration',   icon: I.cog      },
+  ];
+
+  const openCount   = periods.filter(p=>p.status==='Open').length;
+  const openPeriod  = periods.find(p=>p.status==='Open');
+  const todayRates  = rates.filter(r=>r.date===today());
+
+  return (
+    <div style={{minHeight:'100vh',background:'var(--bg)'}}>
+      <ToastSystem toasts={toasts}/>
+
+      {/* TOPBAR */}
+      <nav className="topbar">
+        <div className="topbar-logo">
+          <svg width="28" height="28" viewBox="0 0 40 40"><rect width="40" height="40" rx="7" fill="#1A56DB"/>
+            <path d="M20 9C25.5 9 29 12.5 29 18C29 23.5 25.5 27 20 27C14.5 27 11 23.5 11 18C11 12.5 14.5 9 20 9ZM20 13C16.5 13 15 15 15 18C15 21 16.5 23 20 23C23.5 23 25 21 25 18C25 15 23.5 13 20 13Z" fill="white"/>
+            <rect x="18" y="27" width="4" height="4" fill="white"/>
+          </svg>
+          <div>
+            <div className="topbar-title">Operix GL — Accounting Setup</div>
+            <div className="topbar-sub">GL Periods · Exchange Rates · Configuration</div>
+          </div>
+          <span className="topbar-badge">ERP MODULE</span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          {openPeriod && (
+            <div style={{display:'flex',alignItems:'center',gap:7,background:'rgba(5,150,105,.15)',border:'1px solid rgba(5,150,105,.3)',borderRadius:6,padding:'5px 12px'}}>
+              <span style={{width:7,height:7,borderRadius:'50%',background:'#34D399',animation:'spin 3s linear infinite'}}/>
+              <span style={{fontSize:10,fontWeight:700,color:'#6EE7B7',letterSpacing:'.04em'}}>OPEN PERIOD: {openPeriod.periodName}</span>
+            </div>
+          )}
+          <button className="back-btn" onClick={()=>window.location.href='Dashboard.html'}>
+            <Ico d={I.back} size={12} color="rgba(255,255,255,.8)"/> Dashboard
+          </button>
+        </div>
+      </nav>
+
+      <div className="layout">
+        {/* SIDEBAR */}
+        <aside className="sidebar">
+          <div className="sidebar-section">General Ledger</div>
+          {TABS.map(t => (
+            <div key={t.id} className={`sidebar-item ${activeTab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>
+              <span className="sico"><Ico d={t.icon} size={14}/></span>
+              {t.label}
+            </div>
+          ))}
+          <div style={{flex:1}}/>
+          <div style={{padding:'14px',borderTop:'1px solid rgba(255,255,255,.07)'}}>
+            <div style={{fontSize:10,color:'rgba(255,255,255,.3)',fontWeight:600,marginBottom:6}}>QUICK STATS</div>
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              {[
+                {label:'Open Periods',  val:openCount,      color:'#34D399'},
+                {label:'Daily Rates',   val:todayRates.length, color:'#60A5FA'},
+              ].map(s=>(
+                <div key={s.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:10,color:'rgba(255,255,255,.45)'}}>
+                  <span>{s.label}</span>
+                  <span style={{fontFamily:'IBM Plex Mono',fontWeight:700,color:s.color,fontSize:12}}>{s.val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* MAIN */}
+        <main className="main">
+          {activeTab==='periods'  && <PeriodsTab  periods={periods}  db={db} user={user} toast={toast} reload={reload} addAudit={addAudit} dataLoading={dataLoading}/>}
+          {activeTab==='rates'    && <RatesTab    rates={rates}      db={db} user={user} toast={toast} reload={reload} addAudit={addAudit} dataLoading={dataLoading}/>}
+          {activeTab==='audit'    && <AuditTab    auditLog={auditLog} dataLoading={dataLoading}/>}
+          {activeTab==='settings' && <SettingsTab periods={periods} db={db} user={user} toast={toast} reload={reload} addAudit={addAudit}/>}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: GL PERIODS
+// ══════════════════════════════════════════════════════════════════════════════
+function PeriodsTab({ periods, db, user, toast, reload, addAudit, dataLoading }) {
+  const [showForm,   setShowForm]   = useState(false);
+  const [editP,      setEditP]      = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
+  const empty = () => ({ periodName:'', startDate:'', endDate:'', status:'Future', fiscalYear:new Date().getFullYear().toString() });
+  const [form, setForm] = useState(empty());
+
+  const openPeriod  = periods.find(p=>p.status==='Open');
+  const openEdit = p => { setEditP(p); setForm({periodName:p.periodName,startDate:p.startDate,endDate:p.endDate,status:p.status,fiscalYear:p.fiscalYear||''}); setShowForm(true); };
+
+  const save = async () => {
+    if (!form.periodName.trim() || !form.startDate || !form.endDate) { toast('Period Name, Start Date, End Date required.','err'); return; }
+    if (form.startDate >= form.endDate) { toast('End Date must be after Start Date.','err'); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, adminId:user.uid, companyName:user.companyName||'', updatedAt:firebase.firestore.FieldValue.serverTimestamp(), updatedBy:user.name||user.email };
+      if (editP) {
+        await db.current.collection('glPeriods').doc(editP.id).update(payload);
+        await addAudit('PERIOD_UPDATED', `Period "${form.periodName}" updated`);
+        toast('Period updated.');
+      } else {
+        payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        payload.createdBy = user.name||user.email;
+        await db.current.collection('glPeriods').add(payload);
+        await addAudit('PERIOD_CREATED', `Period "${form.periodName}" created`);
+        toast('Period created.');
+      }
+      setShowForm(false); setEditP(null); setForm(empty());
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setSaving(false);
+  };
+
+  const changeStatus = async (p, newStatus) => {
+    const action = newStatus==='Open'?'open':newStatus==='Closed'?'close':'permanently close';
+    if (!window.confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} period "${p.periodName}"?`)) return;
+    if (newStatus==='Permanently Closed' && p.status!=='Closed') { toast('Can only permanently close a Closed period.','err'); return; }
+    setActionLoading(p.id);
+    try {
+      const batch = db.current.batch();
+      if (newStatus==='Open' && openPeriod && openPeriod.id !== p.id) {
+        batch.update(db.current.collection('glPeriods').doc(openPeriod.id), {
+          status:'Closed', closedAt:firebase.firestore.FieldValue.serverTimestamp(), closedBy:user.name||user.email,
+        });
+      }
+      const updateData = { status:newStatus, updatedAt:firebase.firestore.FieldValue.serverTimestamp(), updatedBy:user.name||user.email };
+      if (newStatus==='Open')   { updateData.openedAt=firebase.firestore.FieldValue.serverTimestamp(); updateData.openedBy=user.name||user.email; }
+      if (newStatus==='Closed') { updateData.closedAt=firebase.firestore.FieldValue.serverTimestamp(); updateData.closedBy=user.name||user.email; }
+      if (newStatus==='Permanently Closed') { updateData.permClosedAt=firebase.firestore.FieldValue.serverTimestamp(); updateData.permClosedBy=user.name||user.email; }
+      batch.update(db.current.collection('glPeriods').doc(p.id), updateData);
+      await batch.commit();
+      await addAudit(`PERIOD_${newStatus.toUpperCase().replace(' ','_')}`, `Period "${p.periodName}" → ${newStatus}`);
+      toast(`Period "${p.periodName}" is now ${newStatus}.`);
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setActionLoading(null);
+  };
+
+  const deletePeriod = async p => {
+    if (p.status==='Open') { toast('Cannot delete an Open period.','err'); return; }
+    if (!window.confirm(`Delete period "${p.periodName}"?`)) return;
+    try {
+      await db.current.collection('glPeriods').doc(p.id).delete();
+      await addAudit('PERIOD_DELETED', `Period "${p.periodName}" deleted`);
+      toast('Period deleted.','warn');
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+  };
+
+  const badgeCls = s => s==='Open'?'badge-open':s==='Closed'?'badge-closed':s==='Permanently Closed'?'badge-perm':s==='Future'?'badge-future':'badge-never';
+
+  const grouped = useMemo(() => {
+    const g = {};
+    periods.forEach(p => { const fy = p.fiscalYear||'Unknown'; if (!g[fy]) g[fy]=[]; g[fy].push(p); });
+    return Object.entries(g).sort((a,b)=>b[0].localeCompare(a[0]));
+  }, [periods]);
+
+  // Summary stats
+  const stats = [
+    { label:'Total Periods',    val:periods.length,                           color:'#1A56DB', bg:'#EFF6FF' },
+    { label:'Open',             val:periods.filter(p=>p.status==='Open').length,   color:'#059669', bg:'#ECFDF5' },
+    { label:'Closed',           val:periods.filter(p=>p.status==='Closed').length,  color:'#DC2626', bg:'#FEF2F2' },
+    { label:'Future',           val:periods.filter(p=>p.status==='Future').length,  color:'#3B82F6', bg:'#EFF6FF' },
+  ];
+
+  return (
+    <div className="content-section">
+      {/* Header */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>GL Periods</h1>
+          <p style={{fontSize:12,color:'var(--muted)'}}>Manage fiscal periods · Control posting windows · Oracle EBS-style period lifecycle</p>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-secondary" onClick={reload} disabled={dataLoading}>
+            <Ico d={I.refresh} size={12}/> Refresh
+          </button>
+          <button className="btn btn-primary" onClick={()=>{setEditP(null);setForm(empty());setShowForm(true);}}>
+            <Ico d={I.plus} size={12} color="#fff"/> New Period
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
+        {stats.map(s=>(
+          <div key={s.label} style={{background:s.bg,border:`1px solid`,borderColor:s.color+'33',borderRadius:10,padding:'14px 16px'}}>
+            <div style={{fontSize:9.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:s.color,marginBottom:4,opacity:.8}}>{s.label}</div>
+            <div style={{fontSize:24,fontWeight:900,color:s.color,fontFamily:'IBM Plex Mono'}}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      {dataLoading ? <div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>Loading…</div> : grouped.map(([fy, plist]) => (
+        <div key={fy} className="card" style={{marginBottom:16}}>
+          <div className="card-hd" style={{background:'var(--navy)',borderRadius:'10px 10px 0 0'}}>
+            <div className="card-hd-left">
+              <Ico d={I.calendar} size={14} color="rgba(255,255,255,.6)"/>
+              <div>
+                <div className="card-hd-title" style={{color:'#fff'}}>Fiscal Year {fy}</div>
+                <div className="card-hd-sub" style={{color:'rgba(255,255,255,.45)'}}>{plist.length} periods</div>
+              </div>
+            </div>
+          </div>
+          <div style={{overflowX:'auto'}}>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  {['Period Name','Start Date','End Date','Status','Entry Type','Actions'].map(h=>(
+                    <th key={h}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {plist.map(p=>(
+                  <tr key={p.id}>
+                    <td><span style={{fontFamily:'IBM Plex Mono',fontWeight:700,color:'var(--ink2)'}}>{p.periodName}</span></td>
+                    <td style={{color:'var(--ink3)'}}>{fmtDate(p.startDate)}</td>
+                    <td style={{color:'var(--ink3)'}}>{fmtDate(p.endDate)}</td>
+                    <td><span className={`badge ${badgeCls(p.status)}`}>{p.status}</span></td>
+                    <td><span style={{fontSize:11,color:'var(--muted)'}}>{p.entryType||'Any'}</span></td>
+                    <td>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                        {(p.status==='Future'||p.status==='Never Opened') && (
+                          <button className="btn btn-green btn-sm" onClick={()=>changeStatus(p,'Open')} disabled={actionLoading===p.id}>
+                            {actionLoading===p.id?<span className="spinner" style={{borderTopColor:'var(--green)'}}/>:<Ico d={I.check} size={10}/>} Open
+                          </button>
+                        )}
+                        {p.status==='Open' && (
+                          <button className="btn btn-amber btn-sm" onClick={()=>changeStatus(p,'Closed')} disabled={actionLoading===p.id}>
+                            {actionLoading===p.id?<span className="spinner" style={{borderTopColor:'var(--amber)'}}/>:<Ico d={I.lock} size={10}/>} Close
+                          </button>
+                        )}
+                        {p.status==='Closed' && (
+                          <button className="btn btn-danger btn-sm" onClick={()=>changeStatus(p,'Permanently Closed')} disabled={actionLoading===p.id} title="Cannot be undone">
+                            {actionLoading===p.id?<span className="spinner" style={{borderTopColor:'var(--red)'}}/>:<Ico d={I.lock} size={10}/>} Perm. Close
+                          </button>
+                        )}
+                        {p.status!=='Open' && p.status!=='Permanently Closed' && (
+                          <button className="btn btn-secondary btn-sm btn-icon" onClick={()=>openEdit(p)} title="Edit">
+                            <Ico d={I.edit} size={11}/>
+                          </button>
+                        )}
+                        {p.status!=='Open' && p.status!=='Permanently Closed' && (
+                          <button className="btn btn-secondary btn-sm btn-icon" onClick={()=>deletePeriod(p)} title="Delete" style={{color:'var(--red)'}}>
+                            <Ico d={I.trash} size={11}/>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+
+      {periods.length===0 && !dataLoading && (
+        <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
+          <Ico d={I.calendar} size={36} color="#CBD5E1"/><br/>
+          <p style={{marginTop:14,fontWeight:600}}>No periods defined yet.</p>
+          <p style={{fontSize:11,marginTop:4}}>Create your first period or auto-generate a full year below.</p>
+          <button className="btn btn-primary" style={{marginTop:16}} onClick={()=>{setEditP(null);setForm(empty());setShowForm(true);}}>
+            <Ico d={I.plus} size={12} color="#fff"/> Create First Period
+          </button>
+        </div>
+      )}
+
+      {/* FORM MODAL */}
+      {showForm && (
+        <div className="modal-overlay" onClick={()=>!saving&&setShowForm(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-hd">
+              <div>
+                <div className="modal-hd-title">{editP?'Edit GL Period':'New GL Period'}</div>
+                <div className="modal-hd-sub">Define a new fiscal accounting period</div>
+              </div>
+              <button className="modal-close" onClick={()=>!saving&&setShowForm(false)}><Ico d={I.x} size={12}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Period Name</label>
+                  <input className="input mono" value={form.periodName} onChange={e=>setForm(p=>({...p,periodName:e.target.value}))} placeholder="e.g. Feb-2026"/>
+                </div>
+                <div className="fg">
+                  <label className="label">Fiscal Year</label>
+                  <input className="input" value={form.fiscalYear} onChange={e=>setForm(p=>({...p,fiscalYear:e.target.value}))} placeholder="2026"/>
+                </div>
+              </div>
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Start Date</label>
+                  <input className="input" type="date" value={form.startDate} onChange={e=>setForm(p=>({...p,startDate:e.target.value}))}/>
+                </div>
+                <div className="fg">
+                  <label className="label req">End Date</label>
+                  <input className="input" type="date" value={form.endDate} onChange={e=>setForm(p=>({...p,endDate:e.target.value}))}/>
+                </div>
+              </div>
+              <div className="grid2">
+                <div className="fg">
+                  <label className="label">Status</label>
+                  <select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>
+                    <option value="Future">Future</option>
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+                <div className="fg">
+                  <label className="label">Entry Type</label>
+                  <select className="select" value={form.entryType||'Any'} onChange={e=>setForm(p=>({...p,entryType:e.target.value}))}>
+                    <option value="Any">Any</option>
+                    <option value="Journal">Journal Only</option>
+                    <option value="AP/AR">AP/AR Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>setShowForm(false)} disabled={saving}>Cancel</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>
+                {saving?<><span className="spinner"/> Saving…</>:<><Ico d={I.check} size={12} color="#fff"/> {editP?'Update Period':'Create Period'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: DAILY EXCHANGE RATES
+// ══════════════════════════════════════════════════════════════════════════════
+function RatesTab({ rates, db, user, toast, reload, addAudit, dataLoading }) {
+  // ── Daily rate modal state ────────────────────────────────────────────────
+  const [showForm,   setShowForm]   = useState(false);
+  const [editR,      setEditR]      = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [filterDate, setFilterDate] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [deletingAll, setDeletingAll] = useState(false);
+  const emptyDaily = () => ({ fromCurrency:'USD', toCurrency:'PHP', date:today(), rateType:'Corporate', rate:'' });
+  const [form, setForm] = useState(emptyDaily());
+
+  const deleteAll = async () => {
+    if (!window.confirm(`Delete ALL ${rates.length} exchange rate${rates.length!==1?'s':''}? This cannot be undone.`)) return;
+    setDeletingAll(true);
+    try {
+      const chunks = [];
+      for (let i=0; i<rates.length; i+=500) chunks.push(rates.slice(i,i+500));
+      for (const chunk of chunks) {
+        const batch = db.current.batch();
+        chunk.forEach(r => batch.delete(db.current.collection('glDailyRates').doc(r.id)));
+        await batch.commit();
+      }
+      await addAudit('RATES_DELETED_ALL',`All ${rates.length} exchange rates deleted`);
+      toast(`${rates.length} rate${rates.length!==1?'s':''} deleted.`,'warn');
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setDeletingAll(false);
+  };
+
+  // ── Monthly rate modal state ──────────────────────────────────────────────
+  const [showMonthly,  setShowMonthly]  = useState(false);
+  const [savingMonthly,setSavingMonthly]= useState(false);
+  const [monthlyPreview,setMonthlyPreview] = useState([]);
+  const emptyMonthly = () => ({
+    fromCurrency:'USD', toCurrency:'PHP',
+    year: new Date().getFullYear().toString(),
+    month: String(new Date().getMonth()+1).padStart(2,'0'),
+    rateType:'Corporate', rate:'',
+    overwriteExisting: false,
+  });
+  const [mForm, setMForm] = useState(emptyMonthly());
+
+  // Build preview of days for the selected month
+  useEffect(() => {
+    if (!mForm.year || !mForm.month || !mForm.rate || isNaN(parseFloat(mForm.rate)) || parseFloat(mForm.rate)<=0) {
+      setMonthlyPreview([]); return;
+    }
+    const yr = parseInt(mForm.year); const mo = parseInt(mForm.month);
+    const daysInMonth = new Date(yr, mo, 0).getDate();
+    const preview = [];
+    for (let d=1; d<=daysInMonth; d++) {
+      const dateStr = `${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const exists = rates.find(r =>
+        r.fromCurrency===mForm.fromCurrency && r.toCurrency===mForm.toCurrency &&
+        r.date===dateStr && r.rateType===mForm.rateType
+      );
+      preview.push({ date:dateStr, exists:!!exists, existingRate:exists?.rate });
+    }
+    setMonthlyPreview(preview);
+  }, [mForm.fromCurrency, mForm.toCurrency, mForm.year, mForm.month, mForm.rateType, mForm.rate, rates]);
+
+  const monthlyStats = useMemo(() => {
+    const total = monthlyPreview.length;
+    const existing = monthlyPreview.filter(d=>d.exists).length;
+    const toWrite = mForm.overwriteExisting ? total : total - existing;
+    return { total, existing, toWrite };
+  }, [monthlyPreview, mForm.overwriteExisting]);
+
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const saveMonthly = async () => {
+    if (!mForm.fromCurrency||!mForm.toCurrency||!mForm.year||!mForm.month||!mForm.rateType||!mForm.rate) {
+      toast('All fields required.','err'); return;
+    }
+    if (mForm.fromCurrency===mForm.toCurrency) { toast('From and To currencies must differ.','err'); return; }
+    const rateVal = parseFloat(mForm.rate);
+    if (isNaN(rateVal)||rateVal<=0) { toast('Rate must be a positive number.','err'); return; }
+    if (monthlyStats.toWrite===0) { toast('No new dates to write — all days already have a rate. Enable "Overwrite existing" to replace them.','warn'); return; }
+
+    setSavingMonthly(true);
+    try {
+      const yr = parseInt(mForm.year); const mo = parseInt(mForm.month);
+      const daysInMonth = new Date(yr, mo, 0).getDate();
+      // Firestore batches are limited to 500 ops; a month is max 31 so one batch is fine
+      const batch = db.current.batch();
+      let written = 0;
+      for (let d=1; d<=daysInMonth; d++) {
+        const dateStr = `${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const existing = rates.find(r =>
+          r.fromCurrency===mForm.fromCurrency && r.toCurrency===mForm.toCurrency &&
+          r.date===dateStr && r.rateType===mForm.rateType
+        );
+        if (existing && !mForm.overwriteExisting) continue;
+        const payload = {
+          fromCurrency:mForm.fromCurrency, toCurrency:mForm.toCurrency,
+          date:dateStr, rateType:mForm.rateType, rate:rateVal,
+          adminId:user.uid, companyName:user.companyName||'',
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy:user.name||user.email,
+        };
+        if (existing) {
+          batch.update(db.current.collection('glDailyRates').doc(existing.id), payload);
+        } else {
+          payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          payload.createdBy = user.name||user.email;
+          batch.set(db.current.collection('glDailyRates').doc(), payload);
+        }
+        written++;
+      }
+      await batch.commit();
+      const label = `${MONTH_NAMES[mo-1]} ${yr}`;
+      await addAudit('MONTHLY_RATE_SET',`Period rate ${mForm.fromCurrency}→${mForm.toCurrency} ${mForm.rateType} for ${label}: ${rateVal} (${written} days written)`);
+      toast(`${written} daily rates set for ${label}.`);
+      setShowMonthly(false); setMForm(emptyMonthly());
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setSavingMonthly(false);
+  };
+
+  // ── Single daily rate save ────────────────────────────────────────────────
+  const openEdit = r => { setEditR(r); setForm({fromCurrency:r.fromCurrency,toCurrency:r.toCurrency,date:r.date,rateType:r.rateType,rate:r.rate}); setShowForm(true); };
+
+  const save = async () => {
+    if (!form.fromCurrency||!form.toCurrency||!form.date||!form.rateType||!form.rate) { toast('All fields required.','err'); return; }
+    if (form.fromCurrency===form.toCurrency) { toast('From and To currencies must differ.','err'); return; }
+    if (isNaN(parseFloat(form.rate))||parseFloat(form.rate)<=0) { toast('Rate must be a positive number.','err'); return; }
+    const dup = rates.find(r =>
+      r.fromCurrency===form.fromCurrency && r.toCurrency===form.toCurrency &&
+      r.date===form.date && r.rateType===form.rateType && (!editR||r.id!==editR.id)
+    );
+    if (dup) { toast(`Duplicate: ${form.fromCurrency}→${form.toCurrency} ${form.date} ${form.rateType} already exists.`,'err'); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, rate:parseFloat(form.rate), adminId:user.uid, companyName:user.companyName||'', updatedAt:firebase.firestore.FieldValue.serverTimestamp(), updatedBy:user.name||user.email };
+      if (editR) {
+        await db.current.collection('glDailyRates').doc(editR.id).update(payload);
+        await addAudit('RATE_UPDATED',`Rate ${form.fromCurrency}→${form.toCurrency} on ${form.date} updated to ${form.rate}`);
+        toast('Rate updated.');
+      } else {
+        payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        payload.createdBy = user.name||user.email;
+        await db.current.collection('glDailyRates').add(payload);
+        await addAudit('RATE_ADDED',`Rate ${form.fromCurrency}→${form.toCurrency} on ${form.date}: ${form.rate} (${form.rateType})`);
+        toast('Rate added.');
+      }
+      setShowForm(false); setEditR(null); setForm(emptyDaily());
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setSaving(false);
+  };
+
+  const del = async r => {
+    if (!window.confirm(`Delete ${r.fromCurrency}→${r.toCurrency} rate for ${r.date}?`)) return;
+    try {
+      await db.current.collection('glDailyRates').doc(r.id).delete();
+      await addAudit('RATE_DELETED',`Rate ${r.fromCurrency}→${r.toCurrency} on ${r.date} deleted`);
+      toast('Rate deleted.','warn'); await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+  };
+
+  const filtered = rates.filter(r =>
+    (!filterDate || r.date===filterDate) &&
+    (!filterType || r.rateType===filterType)
+  );
+
+  const rateBadge = t => t==='Corporate'?'badge-corp':t==='Spot'?'badge-spot':'badge-user';
+
+  return (
+    <div className="content-section">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>Exchange Rates</h1>
+          <p style={{fontSize:12,color:'var(--muted)'}}>Corporate · Spot · User defined rates · Set by day or by full month</p>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button className="btn btn-danger" onClick={deleteAll} disabled={deletingAll||rates.length===0} title="Delete all exchange rates">
+            {deletingAll?<><span className="spinner" style={{borderTopColor:'var(--red)'}}/> Deleting…</>:<><Ico d={I.trash} size={12}/> Delete All ({rates.length})</>}
+          </button>
+          <button className="btn btn-secondary" onClick={()=>{setMForm(emptyMonthly());setShowMonthly(true);}}>
+            <Ico d={I.calendar} size={12}/> Set Monthly Rate
+          </button>
+          <button className="btn btn-primary" onClick={()=>{setEditR(null);setForm(emptyDaily());setShowForm(true);}}>
+            <Ico d={I.plus} size={12} color="#fff"/> Add Daily Rate
+          </button>
+        </div>
+      </div>
+
+      {/* Oracle EBS info banner */}
+      <div className="alert alert-info" style={{marginBottom:16}}>
+        <Ico d={I.info} size={14} color="var(--blue2)"/>
+        <span><strong>Oracle EBS-style:</strong> Use <em>Set Monthly Rate</em> to apply one rate across every day of a period — equivalent to GL Period Average/End Rates. Use <em>Add Daily Rate</em> for spot overrides on a specific date.</span>
+      </div>
+
+      {/* Filters */}
+      <div style={{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+        <input className="input" type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} style={{width:160}} title="Filter by date"/>
+        <select className="select" value={filterType} onChange={e=>setFilterType(e.target.value)} style={{width:150}}>
+          <option value="">All Rate Types</option>
+          {RATE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+        </select>
+        {(filterDate||filterType)&&(
+          <button className="btn btn-secondary" onClick={()=>{setFilterDate('');setFilterType('');}}>Clear</button>
+        )}
+        <span style={{fontSize:11,color:'var(--muted)',alignSelf:'center'}}>{filtered.length} rate{filtered.length!==1?'s':''}</span>
+      </div>
+
+      <div className="card">
+        {dataLoading ? <div style={{padding:40,textAlign:'center',color:'var(--muted)'}}>Loading…</div> : (
+        <div style={{overflowX:'auto'}}>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Date</th><th>From</th><th>To</th><th>Rate Type</th><th className="r">Rate</th><th>Added By</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length===0 ? (
+                <tr><td colSpan={7} className="tbl-empty">No rates found for the selected filters.</td></tr>
+              ) : filtered.map(r=>(
+                <tr key={r.id}>
+                  <td><span className="mono" style={{fontWeight:600,color:'var(--ink2)'}}>{r.date}</span></td>
+                  <td>
+                    <span style={{fontWeight:700,color:'var(--blue2)',fontFamily:'IBM Plex Mono'}}>{r.fromCurrency}</span>
+                    <span style={{fontSize:10,color:'var(--muted)',marginLeft:4}}>{CURRENCIES.find(c=>c.code===r.fromCurrency)?.symbol}</span>
+                  </td>
+                  <td>
+                    <span style={{fontWeight:700,color:'var(--green)',fontFamily:'IBM Plex Mono'}}>{r.toCurrency}</span>
+                    <span style={{fontSize:10,color:'var(--muted)',marginLeft:4}}>{CURRENCIES.find(c=>c.code===r.toCurrency)?.symbol}</span>
+                  </td>
+                  <td><span className={`badge ${rateBadge(r.rateType)}`}>{r.rateType}</span></td>
+                  <td className="r"><span className="mono" style={{fontWeight:700,fontSize:13}}>{fmtNum(r.rate,4)}</span></td>
+                  <td style={{fontSize:10,color:'var(--muted)'}}>{r.createdBy||r.updatedBy||'—'}</td>
+                  <td>
+                    <div style={{display:'flex',gap:6}}>
+                      <button className="btn btn-secondary btn-sm btn-icon" onClick={()=>openEdit(r)}><Ico d={I.edit} size={11}/></button>
+                      <button className="btn btn-secondary btn-sm btn-icon" onClick={()=>del(r)} style={{color:'var(--red)'}}><Ico d={I.trash} size={11}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        )}
+      </div>
+
+      {/* ── DAILY RATE MODAL ────────────────────────────────────────────── */}
+      {showForm && (
+        <div className="modal-overlay" onClick={()=>!saving&&setShowForm(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-hd">
+              <div>
+                <div className="modal-hd-title">{editR?'Edit Rate':'Add Daily Rate'}</div>
+                <div className="modal-hd-sub">Define a GL rate for a specific date</div>
+              </div>
+              <button className="modal-close" onClick={()=>!saving&&setShowForm(false)}><Ico d={I.x} size={12}/></button>
+            </div>
+            <div className="modal-body">
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">From Currency</label>
+                  <select className="select" value={form.fromCurrency} onChange={e=>setForm(p=>({...p,fromCurrency:e.target.value}))}>
+                    {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} – {c.name}</option>)}
+                  </select>
+                </div>
+                <div className="fg">
+                  <label className="label req">To Currency</label>
+                  <select className="select" value={form.toCurrency} onChange={e=>setForm(p=>({...p,toCurrency:e.target.value}))}>
+                    {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} – {c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Date</label>
+                  <input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/>
+                </div>
+                <div className="fg">
+                  <label className="label req">Rate Type</label>
+                  <select className="select" value={form.rateType} onChange={e=>setForm(p=>({...p,rateType:e.target.value}))}>
+                    {RATE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="fg">
+                <label className="label req">Exchange Rate</label>
+                <input className="input mono" type="number" step="0.0001" value={form.rate} onChange={e=>setForm(p=>({...p,rate:e.target.value}))} placeholder="e.g. 56.2500"/>
+                {form.fromCurrency&&form.toCurrency&&form.rate&&(
+                  <p style={{fontSize:10,color:'var(--muted)',marginTop:5}}>
+                    1 {form.fromCurrency} = {fmtNum(parseFloat(form.rate)||0,4)} {form.toCurrency}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>setShowForm(false)} disabled={saving}>Cancel</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>
+                {saving?<><span className="spinner"/> Saving…</>:<><Ico d={I.check} size={12} color="#fff"/> {editR?'Update Rate':'Add Rate'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MONTHLY RATE MODAL ──────────────────────────────────────────── */}
+      {showMonthly && (
+        <div className="modal-overlay" onClick={()=>!savingMonthly&&setShowMonthly(false)}>
+          <div className="modal modal-lg" onClick={e=>e.stopPropagation()}>
+            <div className="modal-hd">
+              <div>
+                <div className="modal-hd-title">Set Monthly Period Rate</div>
+                <div className="modal-hd-sub">Apply one rate to every day of a month — Oracle GL Period Rate style</div>
+              </div>
+              <button className="modal-close" onClick={()=>!savingMonthly&&setShowMonthly(false)}><Ico d={I.x} size={12}/></button>
+            </div>
+            <div className="modal-body">
+
+              {/* Currency pair + rate type */}
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">From Currency</label>
+                  <select className="select" value={mForm.fromCurrency} onChange={e=>setMForm(p=>({...p,fromCurrency:e.target.value}))}>
+                    {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} – {c.name}</option>)}
+                  </select>
+                </div>
+                <div className="fg">
+                  <label className="label req">To Currency</label>
+                  <select className="select" value={mForm.toCurrency} onChange={e=>setMForm(p=>({...p,toCurrency:e.target.value}))}>
+                    {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} – {c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Month / Year / Rate Type / Rate */}
+              <div className="grid4" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Month</label>
+                  <select className="select" value={mForm.month} onChange={e=>setMForm(p=>({...p,month:e.target.value}))}>
+                    {MONTH_NAMES.map((n,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{n}</option>)}
+                  </select>
+                </div>
+                <div className="fg">
+                  <label className="label req">Year</label>
+                  <input className="input" type="number" min="2020" max="2040" value={mForm.year} onChange={e=>setMForm(p=>({...p,year:e.target.value}))}/>
+                </div>
+                <div className="fg">
+                  <label className="label req">Rate Type</label>
+                  <select className="select" value={mForm.rateType} onChange={e=>setMForm(p=>({...p,rateType:e.target.value}))}>
+                    {RATE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="fg">
+                  <label className="label req">Rate</label>
+                  <input className="input mono" type="number" step="0.0001" value={mForm.rate} onChange={e=>setMForm(p=>({...p,rate:e.target.value}))} placeholder="56.2500"/>
+                </div>
+              </div>
+
+              {/* Preview summary */}
+              {mForm.rate && parseFloat(mForm.rate)>0 && monthlyPreview.length>0 && (
+                <>
+                  {/* Stat row */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:14}}>
+                    {[
+                      { label:'Total Days',      val:monthlyStats.total,    color:'var(--blue2)',  bg:'#EFF6FF' },
+                      { label:'Already Have Rate',val:monthlyStats.existing, color:'var(--amber)',  bg:'var(--amber-l)' },
+                      { label:'Will Be Written',  val:monthlyStats.toWrite,  color:'var(--green)',  bg:'var(--green-l)' },
+                    ].map(s=>(
+                      <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}33`,borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
+                        <div style={{fontSize:9,fontWeight:700,letterSpacing:'.07em',textTransform:'uppercase',color:s.color,opacity:.8,marginBottom:3}}>{s.label}</div>
+                        <div style={{fontSize:22,fontWeight:900,color:s.color,fontFamily:'IBM Plex Mono'}}>{s.val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar mini-grid */}
+                  <div style={{background:'var(--gray-l)',border:'1px solid var(--line)',borderRadius:8,padding:'12px 14px',marginBottom:14}}>
+                    <div style={{fontSize:10,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:'var(--muted)',marginBottom:8}}>
+                      Preview — {MONTH_NAMES[parseInt(mForm.month)-1]} {mForm.year}
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+                      {monthlyPreview.map(d=>{
+                        const day = parseInt(d.date.split('-')[2]);
+                        const isExisting = d.exists;
+                        const willWrite = !isExisting || mForm.overwriteExisting;
+                        return (
+                          <div key={d.date} title={d.exists?`Existing: ${fmtNum(d.existingRate,4)}`:'New'} style={{
+                            textAlign:'center',padding:'5px 2px',borderRadius:5,fontSize:10,fontWeight:700,fontFamily:'IBM Plex Mono',
+                            background: willWrite ? (isExisting?'#FEF3C7':'#DCFCE7') : '#FEE2E2',
+                            color:       willWrite ? (isExisting?'#92400E':'#166534') : '#991B1B',
+                            border:`1px solid ${willWrite?(isExisting?'#FDE68A':'#86EFAC'):'#FCA5A5'}`,
+                            cursor:'default',
+                          }}>
+                            {day}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{display:'flex',gap:14,marginTop:10,flexWrap:'wrap'}}>
+                      {[
+                        {color:'#DCFCE7',border:'#86EFAC',text:'New day (will create)'},
+                        {color:'#FEF3C7',border:'#FDE68A',text:'Existing (will overwrite if enabled)'},
+                        {color:'#FEE2E2',border:'#FCA5A5',text:'Existing (will skip)'},
+                      ].map(l=>(
+                        <div key={l.text} style={{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'var(--muted)'}}>
+                          <div style={{width:12,height:12,borderRadius:3,background:l.color,border:`1px solid ${l.border}`}}/>
+                          {l.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Overwrite toggle */}
+                  {monthlyStats.existing > 0 && (
+                    <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:mForm.overwriteExisting?'#FEF3C7':'var(--gray-l)',border:`1px solid ${mForm.overwriteExisting?'#FDE68A':'var(--line)'}`,borderRadius:8,cursor:'pointer'}}
+                      onClick={()=>setMForm(p=>({...p,overwriteExisting:!p.overwriteExisting}))}>
+                      <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${mForm.overwriteExisting?'var(--amber)':'var(--line)'}`,background:mForm.overwriteExisting?'var(--amber)':'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        {mForm.overwriteExisting && <Ico d={I.check} size={10} color="#fff" sw={3}/>}
+                      </div>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:mForm.overwriteExisting?'#92400E':'var(--ink3)'}}>Overwrite existing rates</div>
+                        <div style={{fontSize:10,color:'var(--muted)'}}>Replace the {monthlyStats.existing} day{monthlyStats.existing!==1?'s':''} that already have a {mForm.rateType} rate</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {mForm.rate && parseFloat(mForm.rate)>0 && (
+                <div style={{marginTop:12,padding:'8px 12px',background:'var(--blue-l)',border:'1px solid var(--blue-m)',borderRadius:7,fontSize:11,color:'#1E40AF'}}>
+                  <strong>1 {mForm.fromCurrency} = {fmtNum(parseFloat(mForm.rate)||0,4)} {mForm.toCurrency}</strong>
+                  {' '}will be applied to {monthlyStats.toWrite} day{monthlyStats.toWrite!==1?'s':''} in {MONTH_NAMES[parseInt(mForm.month)-1]} {mForm.year}.
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>setShowMonthly(false)} disabled={savingMonthly}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveMonthly} disabled={savingMonthly||!mForm.rate||monthlyStats.toWrite===0}>
+                {savingMonthly
+                  ? <><span className="spinner"/> Saving {monthlyStats.toWrite} rates…</>
+                  : <><Ico d={I.check} size={12} color="#fff"/> Apply to {monthlyStats.toWrite || '—'} Days</>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: INVOICE ENTRY
+// ══════════════════════════════════════════════════════════════════════════════
+function InvoicesTab({ invoices, periods, rates, db, user, toast, reload, addAudit }) {
+  const [showForm,  setShowForm]  = useState(false);
+  const [form,      setForm]      = useState(emptyForm());
+  const [saving,    setSaving]    = useState(false);
+  const [periodErr, setPeriodErr] = useState(null);
+  const [rateErr,   setRateErr]   = useState(null);
+  const [rateWarn,  setRateWarn]  = useState(false);
+
+  function emptyForm() {
+    return { supplier:'', currency:'USD', amount:'', glDate:today(), exchangeRate:'', overrideRate:false, expenseAccount:EXPENSE_ACCOUNTS[0], liabilityAccount:LIABILITY_ACCOUNTS[0], notes:'' };
+  }
+
+  // GL Date logic
+  useEffect(() => {
+    if (!form.glDate) return;
+    // 1. Find period
+    const period = getPeriodForDate(periods, form.glDate);
+    if (!period) { setPeriodErr('No accounting period found for this GL Date.'); }
+    else if (period.status!=='Open') { setPeriodErr(`GL Period "${period.periodName}" is ${period.status}. Cannot post to this period.`); }
+    else { setPeriodErr(null); }
+    // 2. Find rate
+    if (form.currency==='PHP') { setForm(p=>({...p,exchangeRate:'1'})); setRateErr(null); setRateWarn(false); return; }
+    const rate = rates.find(r => r.fromCurrency===form.currency && r.toCurrency==='PHP' && r.date===form.glDate && r.rateType==='Corporate');
+    if (rate) { setForm(p=>({...p,exchangeRate:String(rate.rate),overrideRate:false})); setRateErr(null); setRateWarn(false); }
+    else {
+      // Try spot
+      const spot = rates.find(r => r.fromCurrency===form.currency && r.toCurrency==='PHP' && r.date===form.glDate);
+      if (spot) { setForm(p=>({...p,exchangeRate:String(spot.rate),overrideRate:false})); setRateErr(null); setRateWarn(true); }
+      else { setRateErr(`No exchange rate found for ${form.currency}/PHP on ${form.glDate}.`); setForm(p=>({...p,exchangeRate:''})); }
+    }
+  }, [form.glDate, form.currency, periods, rates]);
+
+  const functionalAmt = useMemo(() => {
+    const a = parseFloat(form.amount)||0;
+    const r = parseFloat(form.exchangeRate)||0;
+    return a * r;
+  }, [form.amount, form.exchangeRate]);
+
+  const canPost = !periodErr && !rateErr && form.supplier.trim() && form.amount && parseFloat(form.amount)>0 && form.exchangeRate;
+
+  const validate = () => {
+    if (!canPost) { toast('Fix all validation errors before posting.','err'); return; }
+    toast('Validation passed — ready to create accounting entry.','ok');
+  };
+
+  const createAccounting = async () => {
+    if (!canPost) { toast('Cannot post: validation errors exist.','err'); return; }
+    setSaving(true);
+    try {
+      const period = getPeriodForDate(periods, form.glDate);
+      const inv = {
+        supplier: form.supplier.trim(), currency: form.currency,
+        enteredAmount: parseFloat(form.amount), glDate: form.glDate,
+        exchangeRate: parseFloat(form.exchangeRate), functionalAmount: functionalAmt,
+        expenseAccount: form.expenseAccount, liabilityAccount: form.liabilityAccount,
+        notes: form.notes, periodName: period?.periodName||'Unknown',
+        status: 'Posted', rateOverridden: form.overrideRate,
+        adminId: user.uid, companyName: user.companyName||'',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: user.name||user.email,
+      };
+      const invRef = await db.current.collection('glInvoices').add(inv);
+
+      // Journal Entry
+      const je = {
+        source: 'AP Invoice', referenceId: invRef.id,
+        glDate: form.glDate, periodName: period?.periodName||'Unknown',
+        currency: form.currency, exchangeRate: parseFloat(form.exchangeRate),
+        status: 'Posted', adminId: user.uid, companyName: user.companyName||'',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: user.name||user.email,
+        description: `AP Invoice – ${form.supplier} – ${form.glDate}`,
+        lines: [
+          { account: form.expenseAccount, description: `${form.supplier} – Expense`, debit: functionalAmt, credit: 0, enteredDebit: parseFloat(form.amount), enteredCredit: 0 },
+          { account: form.liabilityAccount, description: `${form.supplier} – AP Liability`, debit: 0, credit: functionalAmt, enteredDebit: 0, enteredCredit: parseFloat(form.amount) },
+        ],
+        totalDebit: functionalAmt, totalCredit: functionalAmt,
+      };
+      await db.current.collection('glJournals').add(je);
+      await addAudit('INVOICE_POSTED', `Invoice for ${form.supplier} posted. Functional Amt: ₱${fmtNum(functionalAmt)}`);
+      toast(`Invoice posted. Journal Entry created. Functional Amt: ₱${fmtNum(functionalAmt)}`,'ok');
+      setShowForm(false); setForm(emptyForm()); setPeriodErr(null); setRateErr(null);
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="content-section">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>Invoice Entry</h1>
+          <p style={{fontSize:12,color:'var(--muted)'}}>AP invoice simulation · GL Date validation · Auto exchange rate lookup</p>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowForm(true)}>
+          <Ico d={I.plus} size={12} color="#fff"/> New Invoice
+        </button>
+      </div>
+
+      {/* Invoice Table */}
+      <div className="card">
+        <div className="card-hd">
+          <div className="card-hd-left">
+            <Ico d={I.invoice} size={14} color="var(--blue2)"/>
+            <div><div className="card-hd-title">Posted Invoices</div><div className="card-hd-sub">{invoices.length} total</div></div>
+          </div>
+        </div>
+        <div style={{overflowX:'auto'}}>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Supplier</th><th>GL Date</th><th>Period</th><th>Currency</th>
+                <th className="r">Entered Amt</th><th className="r">FX Rate</th><th className="r">₱ Functional Amt</th>
+                <th>Debit Acct</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.length===0 ? (
+                <tr><td colSpan={9} className="tbl-empty">No invoices posted yet.</td></tr>
+              ) : invoices.map(inv=>(
+                <tr key={inv.id}>
+                  <td style={{fontWeight:600,color:'var(--ink2)'}}>{inv.supplier}</td>
+                  <td><span className="mono" style={{fontSize:11}}>{inv.glDate}</span></td>
+                  <td><span className="badge badge-period">{inv.periodName}</span></td>
+                  <td><span className="mono" style={{fontWeight:700,color:'var(--blue2)'}}>{inv.currency}</span></td>
+                  <td className="r"><span className="mono">{fmtNum(inv.enteredAmount)}</span></td>
+                  <td className="r"><span className="mono" style={{fontSize:11}}>{fmtNum(inv.exchangeRate,4)}</span></td>
+                  <td className="r"><span className="mono" style={{fontWeight:700,color:'var(--green)'}}>₱{fmtNum(inv.functionalAmount)}</span></td>
+                  <td style={{fontSize:10,color:'var(--muted)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{inv.expenseAccount}</td>
+                  <td><span className="badge badge-posted">Posted</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* INVOICE FORM MODAL */}
+      {showForm && (
+        <div className="modal-overlay" onClick={()=>!saving&&(setShowForm(false),setForm(emptyForm()),setPeriodErr(null),setRateErr(null))}>
+          <div className="modal modal-lg" onClick={e=>e.stopPropagation()}>
+            <div className="modal-hd" style={{background:'var(--navy)'}}>
+              <div>
+                <div className="modal-hd-title" style={{color:'#fff'}}>New AP Invoice</div>
+                <div className="modal-hd-sub" style={{color:'rgba(255,255,255,.45)'}}>GL Date → Period Check → Exchange Rate → Accounting Entry</div>
+              </div>
+              <button className="modal-close" style={{borderColor:'rgba(255,255,255,.2)',color:'rgba(255,255,255,.6)'}} onClick={()=>!saving&&(setShowForm(false),setForm(emptyForm()),setPeriodErr(null),setRateErr(null))}><Ico d={I.x} size={12}/></button>
+            </div>
+
+            {/* Step Indicator */}
+            <div style={{padding:'14px 22px',borderBottom:'1px solid var(--line)',background:'var(--gray-l)'}}>
+              <div className="step-row">
+                {[{n:'1',l:'Invoice Details'},{n:'2',l:'GL Date & Period'},{n:'3',l:'Exchange Rate'},{n:'4',l:'Accounting'}].map((s,i,arr)=>(
+                  <React.Fragment key={s.n}>
+                    <div className="step-item">
+                      <div className={`step-circle ${i===0?'done':i===1?(!periodErr?'done':'active'):i===2?(!rateErr&&form.exchangeRate?'done':'active'):'active'}`} style={{fontSize:10}}>{s.n}</div>
+                      <span className="step-label" style={{fontSize:10,color:'var(--ink3)'}}>{s.l}</span>
+                    </div>
+                    {i<arr.length-1&&<div className="step-connector"/>}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-body" style={{maxHeight:'65vh',overflowY:'auto'}}>
+              {/* Supplier + Currency */}
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Supplier Name</label>
+                  <input className="input" value={form.supplier} onChange={e=>setForm(p=>({...p,supplier:e.target.value}))} placeholder="e.g. Global Tech Supplies Inc."/>
+                </div>
+                <div className="fg">
+                  <label className="label req">Currency</label>
+                  <select className="select" value={form.currency} onChange={e=>setForm(p=>({...p,currency:e.target.value,exchangeRate:''}))}>
+                    {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.code} – {c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Amount ({form.currency})</label>
+                  <input className="input mono" type="number" value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} placeholder="0.00"/>
+                </div>
+                <div className="fg">
+                  <label className="label req">GL Date</label>
+                  <input className="input" type="date" value={form.glDate} onChange={e=>setForm(p=>({...p,glDate:e.target.value,exchangeRate:''}))}/>
+                </div>
+              </div>
+
+              {/* Period Status */}
+              {form.glDate && (() => {
+                const period = getPeriodForDate(periods, form.glDate);
+                if (periodErr) return (
+                  <div className="alert alert-err" style={{marginBottom:14}}>
+                    <Ico d={I.warn} size={14} color="var(--red)"/>
+                    <div><strong>Period Error</strong><br/>{periodErr}</div>
+                  </div>
+                );
+                if (period) return (
+                  <div className="alert alert-ok" style={{marginBottom:14}}>
+                    <Ico d={I.check} size={14} color="var(--green)"/>
+                    <div>GL Date maps to period <strong>{period.periodName}</strong> — Status: <strong>{period.status}</strong></div>
+                  </div>
+                );
+                return null;
+              })()}
+
+              {/* Exchange Rate */}
+              {rateErr && (
+                <div className="alert alert-err" style={{marginBottom:14}}>
+                  <Ico d={I.warn} size={14} color="var(--red)"/>
+                  <div><strong>Exchange Rate Error</strong><br/>{rateErr}</div>
+                </div>
+              )}
+              {rateWarn && (
+                <div className="alert alert-warn" style={{marginBottom:14}}>
+                  <Ico d={I.warn} size={14} color="var(--amber)"/>
+                  <div>No Corporate rate found — using Spot rate. You may override manually.</div>
+                </div>
+              )}
+
+              <div className="grid2" style={{marginBottom:14}}>
+                <div className="fg">
+                  <label className="label req">Exchange Rate ({form.currency}→PHP)</label>
+                  <input className="input mono" type="number" step="0.0001" value={form.exchangeRate}
+                    onChange={e=>{setForm(p=>({...p,exchangeRate:e.target.value,overrideRate:true}));setRateErr(null);setRateWarn(true);}}
+                    placeholder="Auto-populated from GL Date"/>
+                  {form.overrideRate&&<p className="inline-warn" style={{marginTop:5}}><Ico d={I.warn} size={10}/>Manual override active</p>}
+                </div>
+                <div className="fg">
+                  <label className="label">Functional Amount (PHP)</label>
+                  <div className="fx-box">
+                    <div>
+                      <div className="fx-rate">₱{fmtNum(functionalAmt)}</div>
+                      <div className="fx-note">{fmtNum(parseFloat(form.amount)||0)} {form.currency} × {fmtNum(parseFloat(form.exchangeRate)||0,4)}</div>
+                    </div>
+                    <Ico d={I.flash} size={18} color="var(--blue2)"/>
+                  </div>
+                </div>
+              </div>
+
+              <div className="divider"/>
+
+              {/* Accounting Distribution */}
+              <div style={{marginBottom:10,fontSize:11,fontWeight:700,color:'var(--ink3)',textTransform:'uppercase',letterSpacing:'.06em'}}>Accounting Distribution</div>
+              <div className="calc-box" style={{marginBottom:14}}>
+                <div style={{display:'grid',gridTemplateColumns:'28px 2fr 1fr 1fr',gap:8,marginBottom:8}}>
+                  <div/>{['Account','Debit (₱)','Credit (₱)'].map(h=><div key={h} style={{fontSize:9.5,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:'.05em'}}>{h}</div>)}
+                </div>
+                {[
+                  {type:'DR',acct:'expenseAccount',list:EXPENSE_ACCOUNTS,  dr:functionalAmt, cr:0},
+                  {type:'CR',acct:'liabilityAccount',list:LIABILITY_ACCOUNTS,dr:0, cr:functionalAmt},
+                ].map(row=>(
+                  <div key={row.type} style={{display:'grid',gridTemplateColumns:'28px 2fr 1fr 1fr',gap:8,marginBottom:8,alignItems:'center'}}>
+                    <span style={{fontSize:10,fontWeight:800,color:row.type==='DR'?'var(--blue2)':'var(--red)',fontFamily:'IBM Plex Mono'}}>{row.type}</span>
+                    <select className="select" style={{fontSize:11}} value={form[row.acct]} onChange={e=>setForm(p=>({...p,[row.acct]:e.target.value}))}>
+                      {row.list.map(a=><option key={a} value={a}>{a}</option>)}
+                    </select>
+                    <span className="mono" style={{fontWeight:700,color:row.type==='DR'?'var(--blue2)':'var(--ink3)',textAlign:'right'}}>₱{fmtNum(row.dr)}</span>
+                    <span className="mono" style={{fontWeight:700,color:row.type==='CR'?'var(--red)':'var(--ink3)',textAlign:'right'}}>₱{fmtNum(row.cr)}</span>
+                  </div>
+                ))}
+                <div style={{borderTop:'1px solid var(--blue-m)',marginTop:6,paddingTop:8,display:'grid',gridTemplateColumns:'28px 2fr 1fr 1fr',gap:8}}>
+                  <div/><div style={{fontSize:10,fontWeight:700,color:'var(--muted)'}}>Totals</div>
+                  <span className="mono" style={{fontWeight:800,color:'var(--blue2)',textAlign:'right'}}>₱{fmtNum(functionalAmt)}</span>
+                  <span className="mono" style={{fontWeight:800,color:'var(--red)',textAlign:'right'}}>₱{fmtNum(functionalAmt)}</span>
+                </div>
+              </div>
+
+              <div className="fg">
+                <label className="label">Notes</label>
+                <textarea className="input" rows={2} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Optional notes…" style={{resize:'vertical'}}/>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>{setShowForm(false);setForm(emptyForm());setPeriodErr(null);setRateErr(null);}} disabled={saving}>Cancel</button>
+              <button className="btn btn-secondary" onClick={validate} disabled={saving} style={{color:'var(--blue2)'}}>
+                <Ico d={I.check} size={12}/> Validate
+              </button>
+              <button className="btn btn-primary" onClick={createAccounting} disabled={saving||!canPost} title={!canPost?'Fix validation errors first':''}>
+                {saving?<><span className="spinner"/> Creating…</>:<><Ico d={I.flash} size={12} color="#fff"/> Create Accounting</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: JOURNAL LEDGER
+// ══════════════════════════════════════════════════════════════════════════════
+function JournalsTab({ journals, dataLoading }) {
+  const [expanded, setExpanded] = useState(null);
+  const [search,   setSearch]   = useState('');
+
+  const filtered = journals.filter(j =>
+    !search || j.description?.toLowerCase().includes(search.toLowerCase()) ||
+    j.periodName?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="content-section">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>Journal Ledger</h1>
+          <p style={{fontSize:12,color:'var(--muted)'}}>All GL journal entries · Debits & Credits · Period-based posting</p>
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center'}}>
+          <span style={{fontSize:11,color:'var(--muted)'}}>{filtered.length} journal{filtered.length!==1?'s':''}</span>
+          <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--green-l)',border:'1px solid #A7F3D0',borderRadius:8,padding:'6px 12px'}}>
+            <Ico d={I.check} size={12} color="var(--green)"/>
+            <span style={{fontSize:11,fontWeight:700,color:'var(--green)'}}>
+              All Balanced: DR = CR
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="search-wrap" style={{marginBottom:14,maxWidth:320}}>
+        <span className="search-ico"><Ico d={I.search} size={13}/></span>
+        <input className="input search-in" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search journals…"/>
+      </div>
+
+      {dataLoading ? <div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>Loading…</div> :
+        filtered.length===0 ? (
+          <div style={{textAlign:'center',padding:'60px 20px',color:'var(--muted)'}}>
+            <Ico d={I.journal} size={36} color="#CBD5E1"/><br/>
+            <p style={{marginTop:14,fontWeight:600}}>No journal entries found.</p>
+            <p style={{fontSize:11,marginTop:4}}>Post an invoice to generate GL journal entries.</p>
+          </div>
+        ) : filtered.map(j => (
+          <div key={j.id} className="card" style={{marginBottom:12}}>
+            <div style={{padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',borderRadius:expanded===j.id?'10px 10px 0 0':'10px'}} onClick={()=>setExpanded(expanded===j.id?null:j.id)}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:32,height:32,borderRadius:8,background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Ico d={I.journal} size={14} color="var(--blue2)"/>
+                </div>
+                <div>
+                  <div style={{fontWeight:700,fontSize:12,color:'var(--ink)'}}>{j.description}</div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:2}}>
+                    GL Date: <span className="mono">{j.glDate}</span> · Period: <strong>{j.periodName}</strong> · Currency: <strong>{j.currency}</strong>
+                  </div>
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{textAlign:'right'}}>
+                  <div className="mono" style={{fontWeight:800,color:'var(--green)',fontSize:13}}>₱{fmtNum(j.totalDebit)}</div>
+                  <div style={{fontSize:10,color:'var(--muted)'}}>Total DR/CR</div>
+                </div>
+                <span className="badge badge-posted">{j.status}</span>
+                <Ico d={I.down} size={13} color="var(--muted)" sw={2.5}/>
+              </div>
+            </div>
+            {expanded===j.id && (
+              <div style={{borderTop:'1px solid var(--line)',padding:'0'}}>
+                <div style={{padding:'4px 16px 4px',background:'var(--gray-l)'}}>
+                  <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8,padding:'8px 0'}}>
+                    {['Account','DR (₱)','CR (₱)','Entered'].map(h=>(
+                      <span key={h} style={{fontSize:9.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:'var(--muted)'}}>{h}</span>
+                    ))}
+                  </div>
+                </div>
+                {(j.lines||[]).map((line,i)=>(
+                  <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8,padding:'10px 16px',borderTop:'1px solid var(--line2)',alignItems:'center'}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:11,color:'var(--ink2)'}}>{line.account}</div>
+                      <div style={{fontSize:10,color:'var(--muted)'}}>{line.description}</div>
+                    </div>
+                    <span className="mono" style={{fontWeight:line.debit>0?700:400,color:line.debit>0?'var(--blue2)':'var(--muted)',fontSize:12}}>{line.debit>0?`₱${fmtNum(line.debit)}`:'—'}</span>
+                    <span className="mono" style={{fontWeight:line.credit>0?700:400,color:line.credit>0?'var(--red)':'var(--muted)',fontSize:12}}>{line.credit>0?`₱${fmtNum(line.credit)}`:'—'}</span>
+                    <span className="mono" style={{fontSize:11,color:'var(--muted)'}}>
+                      {line.enteredDebit>0?`${j.currency} ${fmtNum(line.enteredDebit)}`:line.enteredCredit>0?`${j.currency} ${fmtNum(line.enteredCredit)}`:'—'}
+                    </span>
+                  </div>
+                ))}
+                <div style={{padding:'8px 16px',background:'var(--gray-l)',borderTop:'1.5px solid var(--line)',display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8}}>
+                  <span style={{fontSize:10,fontWeight:800,color:'var(--muted)',textTransform:'uppercase'}}>Total</span>
+                  <span className="mono" style={{fontWeight:800,color:'var(--blue2)'}}>₱{fmtNum(j.totalDebit)}</span>
+                  <span className="mono" style={{fontWeight:800,color:'var(--red)'}}>₱{fmtNum(j.totalCredit)}</span>
+                  <span style={{fontSize:10,color:'var(--muted)'}}>Created by {j.createdBy}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: AUDIT TRAIL
+// ══════════════════════════════════════════════════════════════════════════════
+function AuditTab({ auditLog, dataLoading }) {
+  const actionColor = a => {
+    if (a.includes('DELETED')) return '#DC2626';
+    if (a.includes('CREATED')||a.includes('ADDED')||a.includes('POSTED')) return '#059669';
+    if (a.includes('UPDATED')||a.includes('OPEN')||a.includes('CLOSE')) return '#D97706';
+    return '#6366F1';
+  };
+
+  return (
+    <div className="content-section">
+      <div style={{marginBottom:20}}>
+        <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>Audit Trail</h1>
+        <p style={{fontSize:12,color:'var(--muted)'}}>Complete history of all GL actions · Who did what and when</p>
+      </div>
+
+      <div className="card">
+        <div className="card-hd">
+          <div className="card-hd-left">
+            <Ico d={I.audit} size={14} color="var(--blue2)"/>
+            <div><div className="card-hd-title">Activity Log</div><div className="card-hd-sub">Last {auditLog.length} entries</div></div>
+          </div>
+        </div>
+        <div style={{padding:'8px 18px'}}>
+          {dataLoading ? <div style={{padding:40,textAlign:'center',color:'var(--muted)'}}>Loading…</div> :
+            auditLog.length===0 ? (
+              <div style={{padding:'48px',textAlign:'center',color:'var(--muted)'}}>
+                <Ico d={I.audit} size={32} color="#CBD5E1"/><br/>
+                <p style={{marginTop:12,fontWeight:600}}>No audit entries yet.</p>
+              </div>
+            ) : auditLog.map((a,i) => (
+              <div key={a.id||i} className="audit-row">
+                <div className="audit-dot" style={{background:actionColor(a.action||'')}}/>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
+                    <div>
+                      <span style={{fontFamily:'IBM Plex Mono',fontSize:10,fontWeight:700,color:actionColor(a.action||''),background:actionColor(a.action||'')+'15',padding:'2px 8px',borderRadius:4}}>{a.action}</span>
+                      <span style={{marginLeft:10,fontSize:12,color:'var(--ink3)'}}>{a.details}</span>
+                    </div>
+                    <span style={{fontSize:10,color:'var(--muted)',flexShrink:0}}>
+                      {a.ts?.toDate?.()?.toLocaleString('en-PH')||'—'}
+                    </span>
+                  </div>
+                  <div style={{fontSize:10,color:'var(--muted)',marginTop:4}}>By: <strong style={{color:'var(--ink3)'}}>{a.by}</strong></div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB: SETTINGS / CONFIGURATION
+// ══════════════════════════════════════════════════════════════════════════════
+function SettingsTab({ periods, db, user, toast, reload, addAudit }) {
+  const [autoYear,  setAutoYear]  = useState(new Date().getFullYear().toString());
+  const [generating,setGenerating]= useState(false);
+  const [defaultRT, setDefaultRT] = useState('Corporate');
+
+  const autoGenerate = async () => {
+    const yr = parseInt(autoYear);
+    if (isNaN(yr)||yr<2000||yr>2100) { toast('Enter a valid year (2000–2100).','err'); return; }
+    if (!window.confirm(`Auto-generate 12 monthly periods for ${yr}?`)) return;
+    setGenerating(true);
+    try {
+      const batch = db.current.batch();
+      MONTHS.forEach((m,i) => {
+        const mn = String(i+1).padStart(2,'0');
+        const start = `${yr}-${mn}-01`;
+        const endDay = new Date(yr,i+1,0).getDate();
+        const end = `${yr}-${mn}-${String(endDay).padStart(2,'0')}`;
+        const exists = periods.find(p => p.startDate===start && p.endDate===end);
+        if (!exists) {
+          const ref = db.current.collection('glPeriods').doc();
+          batch.set(ref, {
+            periodName:`${m}-${yr}`, fiscalYear:String(yr),
+            startDate:start, endDate:end, status:'Future', entryType:'Any',
+            adminId:user.uid, companyName:user.companyName||'',
+            createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy:user.name||user.email,
+          });
+        }
+      });
+      await batch.commit();
+      await addAudit('AUTO_GENERATE_PERIODS',`12 periods generated for FY ${yr}`);
+      toast(`12 periods generated for ${yr}.`);
+      await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+    setGenerating(false);
+  };
+
+  const seedSampleRates = async () => {
+    if (!window.confirm('Seed sample USD→PHP rates for all of 2026?')) return;
+    try {
+      const batch = db.current.batch();
+      const baseRate = 56.25;
+      let d = new Date('2026-01-01');
+      let count = 0;
+      while (d <= new Date('2026-12-31') && count < 365) {
+        const dateStr = d.toISOString().split('T')[0];
+        const corpRate = (baseRate + (Math.random()-0.5)*2).toFixed(4);
+        const spotRate = (parseFloat(corpRate) + (Math.random()-0.5)*0.5).toFixed(4);
+        const ref1 = db.current.collection('glDailyRates').doc();
+        batch.set(ref1, { fromCurrency:'USD',toCurrency:'PHP',date:dateStr,rateType:'Corporate',rate:parseFloat(corpRate),adminId:user.uid,companyName:user.companyName||'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:'System Seed' });
+        const ref2 = db.current.collection('glDailyRates').doc();
+        batch.set(ref2, { fromCurrency:'USD',toCurrency:'PHP',date:dateStr,rateType:'Spot',rate:parseFloat(spotRate),adminId:user.uid,companyName:user.companyName||'',createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdBy:'System Seed' });
+        d.setDate(d.getDate()+1); count++;
+        if (count%499===0) { await batch.commit(); }
+      }
+      await batch.commit();
+      await addAudit('SEED_RATES','Sample USD/PHP rates seeded for 2026');
+      toast('Sample USD/PHP rates seeded for 2026.'); await reload();
+    } catch(e) { toast('Error: '+e.message,'err'); }
+  };
+
+  return (
+    <div className="content-section">
+      <div style={{marginBottom:20}}>
+        <h1 style={{fontSize:20,fontWeight:800,color:'var(--ink)',marginBottom:3}}>Configuration</h1>
+        <p style={{fontSize:12,color:'var(--muted)'}}>Auto-generate periods · Seed sample data · Default settings</p>
+      </div>
+
+      {/* Auto-generate Periods */}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-hd">
+          <div className="card-hd-left">
+            <Ico d={I.calendar} size={14} color="var(--blue2)"/>
+            <div><div className="card-hd-title">Auto-Generate Monthly Periods</div><div className="card-hd-sub">Creates Jan–Dec for a full fiscal year</div></div>
+          </div>
+        </div>
+        <div className="card-body">
+          <div style={{display:'flex',gap:12,alignItems:'flex-end'}}>
+            <div style={{flex:'0 0 160px'}}>
+              <label className="label">Fiscal Year</label>
+              <input className="input" type="number" value={autoYear} onChange={e=>setAutoYear(e.target.value)} min="2020" max="2040"/>
+            </div>
+            <button className="btn btn-primary" onClick={autoGenerate} disabled={generating}>
+              {generating?<><span className="spinner"/> Generating…</>:<><Ico d={I.flash} size={12} color="#fff"/> Generate 12 Periods</>}
+            </button>
+          </div>
+          <p style={{fontSize:11,color:'var(--muted)',marginTop:10}}>Existing periods will be skipped. Only missing months will be created.</p>
+        </div>
+      </div>
+
+      {/* Seed Sample Rates */}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-hd">
+          <div className="card-hd-left">
+            <Ico d={I.fx} size={14} color="var(--green)"/>
+            <div><div className="card-hd-title">Seed Sample Exchange Rates</div><div className="card-hd-sub">Populate USD→PHP Corporate + Spot rates for 2026</div></div>
+          </div>
+        </div>
+        <div className="card-body">
+          <div className="alert alert-info" style={{marginBottom:14}}>
+            <Ico d={I.info} size={14} color="var(--blue2)"/>
+            <span>This seeds ~365 Corporate and ~365 Spot daily rates for USD/PHP in 2026 (base ≈ ₱56.25, ±1 variance). Use this to test the invoice entry workflow.</span>
+          </div>
+          <button className="btn btn-green" onClick={seedSampleRates}>
+            <Ico d={I.plus} size={12}/> Seed USD/PHP 2026 Rates
+          </button>
+        </div>
+      </div>
+
+      {/* Default Settings */}
+      <div className="card">
+        <div className="card-hd">
+          <div className="card-hd-left">
+            <Ico d={I.cog} size={14} color="var(--purple)"/>
+            <div><div className="card-hd-title">Default GL Settings</div><div className="card-hd-sub">Configure default rate type and posting rules</div></div>
+          </div>
+        </div>
+        <div className="card-body">
+          <div style={{maxWidth:360}}>
+            <div className="fg">
+              <label className="label">Default Rate Type</label>
+              <select className="select" value={defaultRT} onChange={e=>setDefaultRT(e.target.value)}>
+                {RATE_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
+              <p style={{fontSize:11,color:'var(--muted)',marginTop:6}}>When fetching rates for GL Date, Corporate is checked first, then falls back to Spot.</p>
+            </div>
+            <div className="fg">
+              <label className="label">Functional Currency</label>
+              <div className="fx-box">
+                <span style={{fontWeight:700,fontFamily:'IBM Plex Mono',fontSize:14}}>PHP — Philippine Peso (₱)</span>
+                <span style={{fontSize:10,color:'var(--muted)'}}>Locked</span>
+              </div>
+            </div>
+            <div className="fg">
+              <label className="label">Allow Manual Rate Override</label>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginTop:4}}>
+                <div style={{width:40,height:22,borderRadius:11,background:'var(--green)',display:'flex',alignItems:'center',padding:'2px 3px',cursor:'pointer'}}>
+                  <div style={{width:16,height:16,borderRadius:'50%',background:'#fff',marginLeft:'auto'}}/>
+                </div>
+                <span style={{fontSize:11,color:'var(--muted)'}}>Enabled (with warning)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<AccountingSetupApp/>);
+</script>
+</body>
+</html>

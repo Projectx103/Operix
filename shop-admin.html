@@ -178,6 +178,7 @@ const P={
   tag:'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z',
   gear:'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
   drag:'M4 8h16M4 16h16',
+  clock:'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
 };
 
 function Toast({msg,type,onDone}){
@@ -269,6 +270,14 @@ function App(){
     {text:'🔒 Secure payment — Bank Transfer, GCash, Cash',color:'#7C3AED'},
   ]);
 
+  // ── DISPLAY SETTINGS ──
+  const [showFxRateDetails,setShowFxRateDetails]=useState(true);   // show exchange rate breakdown on cards
+  const [showSupplierName,setShowSupplierName]=useState(true);      // show original supplier or company name
+  const [displayCompanyName,setDisplayCompanyName]=useState('');    // fallback company name when supplier hidden
+
+  // ── LEAD TIME SETTINGS ──
+  const [leadTimeMode,setLeadTimeMode]=useState('Calendar Days');   // 'Calendar Days' | 'Working Days'
+
   const markUnsaved=()=>setUnsaved(true);
 
   useEffect(()=>{
@@ -335,6 +344,16 @@ function App(){
           if(f.copyright) setFooterCopyright(f.copyright);
           if(f.footerLinks) setFooterLinks(f.footerLinks);
         }
+        if(d.displaySettings){
+          const ds=d.displaySettings;
+          if(ds.showFxRateDetails!==undefined) setShowFxRateDetails(ds.showFxRateDetails);
+          if(ds.showSupplierName!==undefined) setShowSupplierName(ds.showSupplierName);
+          if(ds.displayCompanyName!==undefined) setDisplayCompanyName(ds.displayCompanyName);
+        }
+        if(d.leadTimeSettings){
+          const lt=d.leadTimeSettings;
+          if(lt.leadTimeMode) setLeadTimeMode(lt.leadTimeMode);
+        }
       } else if(companyName){
         // Try legacy per-uid doc as fallback (migrate existing data)
         const legacySc=await db.collection('shopConfig').doc(u.uid).get();
@@ -354,6 +373,16 @@ function App(){
             if(f.supportEmail) setFooterSupport(f.supportEmail);
             if(f.copyright) setFooterCopyright(f.copyright);
             if(f.footerLinks) setFooterLinks(f.footerLinks);
+          }
+          if(d.displaySettings){
+            const ds=d.displaySettings;
+            if(ds.showFxRateDetails!==undefined) setShowFxRateDetails(ds.showFxRateDetails);
+            if(ds.showSupplierName!==undefined) setShowSupplierName(ds.showSupplierName);
+            if(ds.displayCompanyName!==undefined) setDisplayCompanyName(ds.displayCompanyName);
+          }
+          if(d.leadTimeSettings){
+            const lt=d.leadTimeSettings;
+            if(lt.leadTimeMode) setLeadTimeMode(lt.leadTimeMode);
           }
         }
       }
@@ -381,6 +410,8 @@ function App(){
         categoryImages:{...categoryImages},
         banners:banners.map(b=>({...b})),
         footer:{companyName:footerCompany,tagline:footerTagline,phone:footerPhone,email:footerEmail,supportEmail:footerSupport,copyright:footerCopyright,footerLinks:[...footerLinks]},
+        displaySettings:{showFxRateDetails,showSupplierName,displayCompanyName:displayCompanyName.trim()},
+        leadTimeSettings:{leadTimeMode},
         updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
         updatedBy:user.uid,
         updatedByName:user.fullName||user.email||'',
@@ -402,7 +433,7 @@ function App(){
   const moveSlide=(from,to)=>{if(to<0||to>=slides.length)return;const arr=[...slides];const[el]=arr.splice(from,1);arr.splice(to,0,el);setSlides(arr);markUnsaved();};
 
   /* ── BANNER HELPERS ── */
-  const addBanner=()=>{setBanners(b=>[...b,{text:'',color:'#0057FF'}]);markUnsaved();};
+  const addBanner=()=>{setBanners(b=>[...b,{text:'',color:'#0057FF',imageUrl:''}]);markUnsaved();};
   const removeBanner=i=>{setBanners(b=>b.filter((_,j)=>j!==i));markUnsaved();};
   const updateBanner=(i,k,v)=>{setBanners(b=>b.map((bn,j)=>j===i?{...bn,[k]:v}:bn));markUnsaved();};
 
@@ -416,10 +447,12 @@ function App(){
   if(loading)return(<div className="loader"><Logo/><div className="loader-spin"/><p style={{fontSize:13,color:'#64748B'}}>Loading Shop Editor…</p></div>);
 
   const sections=[
+    {id:'display',  label:'Display Settings',    icon:P.gear},
     {id:'hero',    label:'Hero & Headline',    icon:P.type},
     {id:'slider',  label:'Hero Slider',         icon:P.img},
     {id:'banners', label:'Promo Banners',       icon:P.tag},
     {id:'categories',label:'Category Images',  icon:P.layout},
+    {id:'leadtime',  label:'Lead Time Control', icon:P.clock},
     {id:'quotation',label:'Quotation Layout',  icon:P.type},
     {id:'footer',  label:'Footer',              icon:P.footer},
   ];
@@ -480,6 +513,163 @@ function App(){
               <Ic d={P.eye} s={13}/>Preview Shop
             </a>
           </div>
+
+          {/* ══ DISPLAY SETTINGS ══ */}
+          {activeSection==='display'&&(
+            <>
+              <div className="page-hd">
+                <h2>Display Settings</h2>
+                <p>Control what information is shown to buyers on product cards and throughout the shop.</p>
+              </div>
+
+              {/* ── Exchange Rate Display ── */}
+              <div className="sec-card" style={{marginBottom:20}}>
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left">
+                    <div style={{width:36,height:36,background:'#EFF6FF',border:'1.5px solid #BFDBFE',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="18" height="18" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                    <div>
+                      <div className="sec-card-title">Exchange Rate Details</div>
+                      <div className="sec-card-sub">Controls the rate breakdown shown on foreign-currency product cards</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="sec-card-body">
+                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:24}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:700,color:'var(--ink)',marginBottom:6}}>Show exchange rate breakdown on product cards</div>
+                      <div style={{fontSize:12,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>
+                        When <strong>ON</strong>, foreign-currency items show the original price and rate details below the converted PHP price — e.g. <span style={{fontFamily:'DM Mono,monospace',fontSize:11,background:'var(--surf)',padding:'1px 6px',borderRadius:4}}>$21.00 USD · rate ₱56.25</span><br/>
+                        When <strong>OFF</strong>, only the converted PHP price is shown — e.g. <span style={{fontFamily:'DM Mono,monospace',fontSize:11,background:'var(--surf)',padding:'1px 6px',borderRadius:4}}>₱1,181.25</span> with no rate details.
+                      </div>
+                      {/* Toggle */}
+                      <div style={{display:'flex',alignItems:'center',gap:14}}>
+                        <button
+                          onClick={()=>{setShowFxRateDetails(v=>!v);markUnsaved();}}
+                          style={{
+                            position:'relative',width:52,height:28,borderRadius:99,border:'none',cursor:'pointer',
+                            background:showFxRateDetails?'var(--blue)':'#CBD5E1',
+                            transition:'background .2s',flexShrink:0,padding:0
+                          }}>
+                          <span style={{
+                            position:'absolute',top:3,left:showFxRateDetails?26:3,
+                            width:22,height:22,borderRadius:'50%',background:'#fff',
+                            transition:'left .2s',boxShadow:'0 1px 4px rgba(0,0,0,.18)',display:'block'
+                          }}/>
+                        </button>
+                        <span style={{fontSize:13,fontWeight:700,color:showFxRateDetails?'var(--blue)':'var(--slate)'}}>
+                          {showFxRateDetails?'Show rate details':'Hide rate details'}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Live preview */}
+                    <div style={{flexShrink:0,width:200,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:12,padding:14,display:'flex',flexDirection:'column',gap:6}}>
+                      <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--slate)',marginBottom:4}}>Preview</div>
+                      <div style={{fontSize:16,fontWeight:800,color:'var(--ink)'}}>₱1,181.25</div>
+                      {showFxRateDetails&&(
+                        <div style={{fontSize:10,color:'var(--slate)',fontWeight:500}}>$21.00 USD · rate ₱56.25</div>
+                      )}
+                      <div style={{fontSize:11,color:'var(--slate)'}}>per PC</div>
+                      {showFxRateDetails&&(
+                        <div style={{marginTop:6,padding:'5px 8px',background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:6,display:'flex',alignItems:'center',gap:5}}>
+                          <svg width="10" height="10" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                          <span style={{fontSize:10,color:'#1E40AF',fontWeight:600}}>1 USD = ₱56.25</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Also controls the top banner */}
+                  <div style={{marginTop:16,padding:'10px 14px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:8,display:'flex',alignItems:'flex-start',gap:8}}>
+                    <svg width="14" height="14" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0,marginTop:1}}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span style={{fontSize:11,color:'#92400E',lineHeight:1.55}}>
+                      This also controls the <strong>"All prices shown in PHP · 1 USD = ₱56.25"</strong> banner at the top of the shop. Turning it off hides both the banner and the per-card rate details.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Supplier Display ── */}
+              <div className="sec-card">
+                <div className="sec-card-hd">
+                  <div className="sec-card-hd-left">
+                    <div style={{width:36,height:36,background:'#ECFDF5',border:'1.5px solid #A7F3D0',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="18" height="18" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    </div>
+                    <div>
+                      <div className="sec-card-title">Supplier Name Display</div>
+                      <div className="sec-card-sub">Controls which supplier name is shown on product detail cards</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="sec-card-body">
+                  <div style={{display:'flex',alignItems:'flex-start',gap:14,marginBottom:16}}>
+                    <button
+                      onClick={()=>{setShowSupplierName(v=>!v);markUnsaved();}}
+                      style={{
+                        position:'relative',width:52,height:28,borderRadius:99,border:'none',cursor:'pointer',
+                        background:showSupplierName?'var(--blue)':'#CBD5E1',
+                        transition:'background .2s',flexShrink:0,padding:0,marginTop:2
+                      }}>
+                      <span style={{
+                        position:'absolute',top:3,left:showSupplierName?26:3,
+                        width:22,height:22,borderRadius:'50%',background:'#fff',
+                        transition:'left .2s',boxShadow:'0 1px 4px rgba(0,0,0,.18)',display:'block'
+                      }}/>
+                    </button>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:'var(--ink)',marginBottom:4}}>Show original source supplier</div>
+                      <div style={{fontSize:12,color:'var(--slate)',lineHeight:1.6}}>
+                        When <strong>ON</strong>, each product card displays the supplier name exactly as entered in your inventory.<br/>
+                        When <strong>OFF</strong>, the supplier field is replaced by the <strong>Company Name</strong> you set below — giving your shop a white-label look.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company name fallback */}
+                  <div style={{background:showSupplierName?'var(--surf)':'var(--white)',border:`1.5px solid ${showSupplierName?'var(--line)':'var(--blue)'}`,borderRadius:12,padding:16,transition:'all .2s'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                      <div style={{width:6,height:6,borderRadius:'50%',background:showSupplierName?'#CBD5E1':'var(--blue)',flexShrink:0}}/>
+                      <span style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.07em',color:showSupplierName?'var(--slate)':'var(--blue)'}}>
+                        {showSupplierName?'Fallback Company Name (inactive)':'Display Company Name (active)'}
+                      </span>
+                    </div>
+                    <div className="field" style={{marginBottom:0}}>
+                      <label className="fl">Company Name shown on all product cards</label>
+                      <input
+                        className="fi"
+                        value={displayCompanyName}
+                        onChange={e=>{setDisplayCompanyName(e.target.value);markUnsaved();}}
+                        placeholder={user?.companyName||'e.g. Operix Supply Co.'}
+                        disabled={showSupplierName}
+                        style={{opacity:showSupplierName?.5:1,transition:'opacity .2s'}}
+                      />
+                      <div className="fi-hint">
+                        {showSupplierName
+                          ? 'This value is ignored while "Show original source supplier" is ON. Turn it OFF to activate.'
+                          : 'This name replaces the supplier on every product card visible to buyers.'
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Side-by-side comparison */}
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:16}}>
+                    <div style={{background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:10,padding:12}}>
+                      <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--slate)',marginBottom:8}}>When ON — source supplier</div>
+                      <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--slate)',marginBottom:2}}>Supplier</div>
+                      <div style={{fontSize:12,fontWeight:700,color:'var(--ink)'}}>Acme Industrial Co.</div>
+                    </div>
+                    <div style={{background:showSupplierName?'var(--surf)':'var(--blue-bg)',border:`1.5px solid ${showSupplierName?'var(--line)':'#BFDBFE'}`,borderRadius:10,padding:12,transition:'all .2s'}}>
+                      <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.07em',color:showSupplierName?'var(--slate)':'var(--blue)',marginBottom:8}}>When OFF — company name</div>
+                      <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--slate)',marginBottom:2}}>Supplier</div>
+                      <div style={{fontSize:12,fontWeight:700,color:'var(--ink)'}}>{displayCompanyName||user?.companyName||'Your Company Name'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* ══ HERO & HEADLINE ══ */}
           {activeSection==='hero'&&(
@@ -614,29 +804,63 @@ function App(){
                 </div>
                 <div className="sec-card-body">
                   {/* Preview */}
-                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
-                    {banners.map((b,i)=>b.text&&(
-                      <div key={i} style={{display:'inline-flex',alignItems:'center',gap:6,background:b.color+'15',border:`1.5px solid ${b.color}40`,borderRadius:8,padding:'6px 14px',fontSize:12,fontWeight:600,color:b.color}}>
-                        {b.text}
+                  <div style={{marginBottom:18}}>
+                    <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.07em',color:'var(--slate)',marginBottom:8}}>Preview</div>
+                    {/* Image banners preview */}
+                    {banners.some(b=>b.imageUrl)&&(
+                      <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:8}}>
+                        {banners.filter(b=>b.imageUrl).map((b,i)=>(
+                          <div key={i} style={{position:'relative',borderRadius:10,overflow:'hidden',height:80,minWidth:200,flex:'1',maxWidth:340,background:'#0C1220'}}>
+                            <img src={b.imageUrl} alt={b.text||''} style={{width:'100%',height:'100%',objectFit:'cover',opacity:.85,display:'block'}} onError={e=>e.target.style.display='none'}/>
+                            {b.text&&<div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.65))',padding:'10px 12px',fontSize:11,fontWeight:700,color:'#fff'}}>{b.text}</div>}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+                    {/* Text chip banners preview */}
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                      {banners.filter(b=>b.text&&!b.imageUrl).map((b,i)=>(
+                        <div key={i} style={{display:'inline-flex',alignItems:'center',gap:6,background:b.color+'15',border:`1.5px solid ${b.color}40`,borderRadius:8,padding:'6px 14px',fontSize:12,fontWeight:600,color:b.color}}>
+                          {b.text}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   {banners.map((b,i)=>(
                     <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:12,background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:10,padding:'12px 14px'}}>
                       <div style={{flex:1}}>
-                        <div className="field" style={{marginBottom:8}}>
-                          <label className="fl">Banner Text</label>
-                          <input className="fi" value={b.text} onChange={e=>{updateBanner(i,'text',e.target.value);}} placeholder="e.g. 🚚 Free delivery on orders above ₱5,000"/>
+                        {/* Type toggle */}
+                        <div style={{display:'flex',gap:6,marginBottom:10}}>
+                          <button onClick={()=>updateBanner(i,'imageUrl','')} style={{flex:1,padding:'5px 10px',borderRadius:7,border:`1.5px solid ${!b.imageUrl?'var(--blue)':'var(--line)'}`,background:!b.imageUrl?'var(--blue-bg)':'#fff',color:!b.imageUrl?'var(--blue)':'var(--slate)',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                            🏷 Text Chip
+                          </button>
+                          <button onClick={()=>{if(!b.imageUrl)updateBanner(i,'imageUrl',' ');}} style={{flex:1,padding:'5px 10px',borderRadius:7,border:`1.5px solid ${b.imageUrl?'var(--blue)':'var(--line)'}`,background:b.imageUrl?'var(--blue-bg)':'#fff',color:b.imageUrl?'var(--blue)':'var(--slate)',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                            🖼 Image Banner
+                          </button>
                         </div>
-                        <div>
-                          <label className="fl">Color</label>
-                          <div className="color-row">
-                            {BANNER_COLORS.map(c=>(
-                              <div key={c} className={`color-swatch ${b.color===c?'sel':''}`} style={{background:c}} onClick={()=>{updateBanner(i,'color',c);}}/>
-                            ))}
-                            <input type="color" value={b.color||'#0057FF'} onChange={e=>updateBanner(i,'color',e.target.value)} style={{width:28,height:28,border:'2px solid var(--line)',borderRadius:7,cursor:'pointer',padding:1}}/>
+                        {/* Image URL field — only if image mode */}
+                        {b.imageUrl!==undefined&&b.imageUrl!==''&&(
+                          <div className="field" style={{marginBottom:8}}>
+                            <label className="fl">Image URL</label>
+                            <input className="fi" value={b.imageUrl.trim()} onChange={e=>updateBanner(i,'imageUrl',e.target.value)} placeholder="https://example.com/promo-banner.jpg"/>
+                            <div style={{fontSize:10,color:'var(--slate)',marginTop:3}}>Recommended: 900×160px or wider, landscape ratio</div>
                           </div>
+                        )}
+                        <div className="field" style={{marginBottom:8}}>
+                          <label className="fl">{b.imageUrl?'Caption (optional)':'Banner Text'}</label>
+                          <input className="fi" value={b.text} onChange={e=>{updateBanner(i,'text',e.target.value);}} placeholder={b.imageUrl?'Short caption shown on image…':'e.g. 🚚 Free delivery on orders above ₱5,000'}/>
                         </div>
+                        {!b.imageUrl&&(
+                          <div>
+                            <label className="fl">Color</label>
+                            <div className="color-row">
+                              {BANNER_COLORS.map(c=>(
+                                <div key={c} className={`color-swatch ${b.color===c?'sel':''}`} style={{background:c}} onClick={()=>{updateBanner(i,'color',c);}}/>
+                              ))}
+                              <input type="color" value={b.color||'#0057FF'} onChange={e=>updateBanner(i,'color',e.target.value)} style={{width:28,height:28,border:'2px solid var(--line)',borderRadius:7,cursor:'pointer',padding:1}}/>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <button onClick={()=>removeBanner(i)} style={{width:30,height:30,background:'var(--red-bg)',border:'1px solid #FECACA',borderRadius:7,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--red)',flexShrink:0,marginTop:18}}>
                         <Ic d={P.x} s={12}/>
@@ -688,6 +912,179 @@ function App(){
               </div>
             </>
           )}
+
+          {/* ══ LEAD TIME CONTROL ══ */}
+          {activeSection==='leadtime'&&(()=>{
+            const isWorking=leadTimeMode==='Working Days';
+            // Live preview: compute example delivery for a 7-day lead time item
+            const previewDays=7;
+            const today=new Date(); today.setHours(0,0,0,0);
+            const previewDate=new Date(today);
+            if(isWorking){
+              let added=0;
+              while(added<previewDays){previewDate.setDate(previewDate.getDate()+1);const dow=previewDate.getDay();if(dow!==0&&dow!==6)added++;}
+            } else {
+              previewDate.setDate(previewDate.getDate()+previewDays);
+            }
+            const fmtPreview=d=>{const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;};
+            const fmtLong=d=>d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+            const todayStr=fmtPreview(today);
+            const resultStr=fmtPreview(previewDate);
+            const resultLong=fmtLong(previewDate);
+            // Count how many calendar days the working-days preview skips over a weekend
+            const calDate=new Date(today); calDate.setDate(calDate.getDate()+previewDays);
+            const calStr=fmtPreview(calDate);
+            const calLong=fmtLong(calDate);
+            return(
+              <>
+                <div className="page-hd">
+                  <h2>Lead Time Control</h2>
+                  <p>Set how the system computes the estimated delivery date shown to buyers in the cart — based on each product's lead time.</p>
+                </div>
+
+                {/* ── Mode selector card ── */}
+                <div className="sec-card" style={{marginBottom:20}}>
+                  <div className="sec-card-hd">
+                    <div className="sec-card-hd-left">
+                      <div style={{width:36,height:36,background:'#EFF6FF',border:'1.5px solid #BFDBFE',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <Ic d={P.clock} s={18} c="#1D4ED8"/>
+                      </div>
+                      <div>
+                        <div className="sec-card-title">Delivery Date Computation Mode</div>
+                        <div className="sec-card-sub">Controls how lead time days are counted when calculating Est. delivery in the cart</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="sec-card-body">
+
+                    {/* Mode toggle buttons */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24}}>
+                      {/* Calendar Days option */}
+                      <button
+                        onClick={()=>{setLeadTimeMode('Calendar Days');markUnsaved();}}
+                        style={{
+                          padding:'20px 20px',borderRadius:14,border:`2px solid ${!isWorking?'var(--blue)':'var(--line)'}`,
+                          background:!isWorking?'var(--blue-bg)':'#fff',cursor:'pointer',textAlign:'left',
+                          fontFamily:'DM Sans,sans-serif',transition:'all .18s',
+                          boxShadow:!isWorking?'0 0 0 4px rgba(0,87,255,.08)':'none'
+                        }}>
+                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+                          <div style={{width:38,height:38,borderRadius:10,background:!isWorking?'#DBEAFE':'var(--surf)',border:`1.5px solid ${!isWorking?'#BFDBFE':'var(--line)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .18s'}}>
+                            <svg width="20" height="20" fill="none" stroke={!isWorking?'#1D4ED8':'#64748B'} strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          </div>
+                          <div>
+                            <div style={{fontSize:14,fontWeight:800,color:!isWorking?'var(--blue)':'var(--ink)',letterSpacing:'-.2px'}}>Calendar Days</div>
+                            <div style={{fontSize:11,color:'var(--slate)',marginTop:1}}>Default · counts all days</div>
+                          </div>
+                          {!isWorking&&(
+                            <div style={{marginLeft:'auto',width:20,height:20,borderRadius:'50%',background:'var(--blue)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                              <Ic d={P.check} s={11} c="#fff"/>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{fontSize:12,color:'var(--slate)',lineHeight:1.6}}>
+                          Lead time counts <strong style={{color:'var(--ink)'}}>every day</strong> including Saturdays and Sundays. A 7-day lead time means exactly 7 days from today regardless of weekends.
+                        </div>
+                        {!isWorking&&(
+                          <div style={{marginTop:12,padding:'8px 12px',background:'#DBEAFE',borderRadius:8,display:'flex',alignItems:'center',gap:7}}>
+                            <svg width="12" height="12" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span style={{fontSize:11,fontWeight:700,color:'#1E40AF'}}>Currently active</span>
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Working Days option */}
+                      <button
+                        onClick={()=>{setLeadTimeMode('Working Days');markUnsaved();}}
+                        style={{
+                          padding:'20px 20px',borderRadius:14,border:`2px solid ${isWorking?'var(--blue)':'var(--line)'}`,
+                          background:isWorking?'var(--blue-bg)':'#fff',cursor:'pointer',textAlign:'left',
+                          fontFamily:'DM Sans,sans-serif',transition:'all .18s',
+                          boxShadow:isWorking?'0 0 0 4px rgba(0,87,255,.08)':'none'
+                        }}>
+                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+                          <div style={{width:38,height:38,borderRadius:10,background:isWorking?'#DBEAFE':'var(--surf)',border:`1.5px solid ${isWorking?'#BFDBFE':'var(--line)'}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .18s'}}>
+                            <svg width="20" height="20" fill="none" stroke={isWorking?'#1D4ED8':'#64748B'} strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                          </div>
+                          <div>
+                            <div style={{fontSize:14,fontWeight:800,color:isWorking?'var(--blue)':'var(--ink)',letterSpacing:'-.2px'}}>Working Days</div>
+                            <div style={{fontSize:11,color:'var(--slate)',marginTop:1}}>Skips weekends (Sat &amp; Sun)</div>
+                          </div>
+                          {isWorking&&(
+                            <div style={{marginLeft:'auto',width:20,height:20,borderRadius:'50%',background:'var(--blue)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                              <Ic d={P.check} s={11} c="#fff"/>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{fontSize:12,color:'var(--slate)',lineHeight:1.6}}>
+                          Lead time counts only <strong style={{color:'var(--ink)'}}>Mon–Fri</strong>. Saturdays and Sundays are automatically skipped. A 7-day lead time pushes past any weekends in between.
+                        </div>
+                        {isWorking&&(
+                          <div style={{marginTop:12,padding:'8px 12px',background:'#DBEAFE',borderRadius:8,display:'flex',alignItems:'center',gap:7}}>
+                            <svg width="12" height="12" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <span style={{fontSize:11,fontWeight:700,color:'#1E40AF'}}>Currently active</span>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Live example preview */}
+                    <div style={{background:'var(--surf)',border:'1.5px solid var(--line)',borderRadius:12,padding:'18px 20px'}}>
+                      <div style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'.1em',color:'var(--slate)',marginBottom:14}}>Live Example — 7-Day Lead Time Item</div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+                        {/* Input side */}
+                        <div style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:10,padding:'14px 16px'}}>
+                          <div style={{fontSize:10,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.07em',marginBottom:10}}>Input</div>
+                          <div style={{display:'flex',flexDirection:'column',gap:7}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:12,color:'var(--slate)'}}>Today</span>
+                              <span style={{fontSize:12,fontWeight:700,color:'var(--ink)',fontFamily:'DM Mono,monospace'}}>{todayStr}</span>
+                            </div>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:12,color:'var(--slate)'}}>Lead Time</span>
+                              <span style={{fontSize:12,fontWeight:700,color:'var(--ink)'}}>7 days</span>
+                            </div>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:12,color:'var(--slate)'}}>Count Mode</span>
+                              <span style={{fontSize:12,fontWeight:700,color:'var(--blue)'}}>{leadTimeMode}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Result side */}
+                        <div style={{background:isWorking?'#EFF6FF':'#F0FDF4',border:`1.5px solid ${isWorking?'#BFDBFE':'#BBF7D0'}`,borderRadius:10,padding:'14px 16px',display:'flex',flexDirection:'column',justifyContent:'space-between'}}>
+                          <div style={{fontSize:10,fontWeight:700,color:isWorking?'#1D4ED8':'#065F46',textTransform:'uppercase',letterSpacing:'.07em',marginBottom:8}}>Result — Est. Delivery</div>
+                          <div>
+                            <div style={{fontSize:20,fontWeight:900,color:isWorking?'#1D4ED8':'#047857',letterSpacing:'-.4px',fontFamily:'DM Mono,monospace'}}>{resultStr}</div>
+                            <div style={{fontSize:11,color:isWorking?'#3B82F6':'#059669',marginTop:4,fontWeight:600}}>{resultLong}</div>
+                          </div>
+                          {isWorking&&calStr!==resultStr&&(
+                            <div style={{marginTop:10,padding:'6px 10px',background:'rgba(0,87,255,.06)',border:'1px solid #BFDBFE',borderRadius:7,display:'flex',alignItems:'center',gap:6}}>
+                              <svg width="11" height="11" fill="none" stroke="#1D4ED8" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              <span style={{fontSize:10,color:'#1E40AF',fontWeight:600}}>Calendar would be {calStr} — weekend skipped</span>
+                            </div>
+                          )}
+                          {!isWorking&&(
+                            <div style={{marginTop:10,padding:'6px 10px',background:'rgba(5,150,105,.06)',border:'1px solid #A7F3D0',borderRadius:7,display:'flex',alignItems:'center',gap:6}}>
+                              <svg width="11" height="11" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                              <span style={{fontSize:10,color:'#065F46',fontWeight:600}}>Counts all 7 days including any weekends</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Info note */}
+                    <div style={{marginTop:16,padding:'12px 16px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:10,display:'flex',alignItems:'flex-start',gap:10}}>
+                      <svg width="15" height="15" fill="none" stroke="#D97706" strokeWidth="2" viewBox="0 0 24 24" style={{flexShrink:0,marginTop:1}}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <div style={{fontSize:12,color:'#92400E',lineHeight:1.65}}>
+                        <strong>How this works:</strong> This setting is saved to your shop config and read by both <code style={{background:'#FEF3C7',padding:'1px 5px',borderRadius:4,fontSize:11}}>shop.html</code> and <code style={{background:'#FEF3C7',padding:'1px 5px',borderRadius:4,fontSize:11}}>cart.html</code> when computing the <strong>Est. delivery</strong> date. It applies globally to all products. Per-supplier adjustments in Lead Time Adjust are applied <em>on top of</em> this base computation.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           {/* ══ QUOTATION LAYOUT ══ */}
           {activeSection==='quotation'&&(

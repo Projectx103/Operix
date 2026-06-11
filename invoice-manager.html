@@ -13,334 +13,144 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-
 <style>
 :root {
-  --ink: #0C1220;
-  --ink2: #1E2D45;
-  --slate: #64748B;
-  --line: #E4EAF2;
-  --surf: #F4F7FB;
-  --white: #ffffff;
-  --blue: #050C9C;
-  --blue-mid: #1a24b8;
-  --blue-lt: #3B4FD8;
-  --blue-bg: #EEF0FF;
-  --green: #059669;
-  --green-bg: #ECFDF5;
-  --amber: #D97706;
-  --red: #DC2626;
-  --accent: #F59E0B;
+  --ink:#0C1220; --ink2:#1E2D45; --slate:#64748B; --line:#E4EAF2;
+  --surf:#F4F7FB; --white:#ffffff; --blue:#050C9C; --blue-mid:#1a24b8;
+  --blue-lt:#3B4FD8; --blue-bg:#EEF0FF; --green:#059669; --green-bg:#ECFDF5;
+  --amber:#D97706; --red:#DC2626; --accent:#F59E0B;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'DM Sans', sans-serif; background: var(--surf); color: var(--ink); min-height: 100vh; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);min-height:100vh;}
 
-/* ── TITLEBAR ── */
-.titlebar {
-  height: 38px;
-  background: var(--ink);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-  position: sticky; top: 0; z-index: 200;
-}
-.titlebar-brand { display: flex; align-items: center; gap: 10px; }
-.titlebar-brand span { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
-.titlebar-brand small { font-size: 9px; color: #64748B; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-.titlebar-file { font-size: 12px; color: #94A3B8; font-weight: 500; }
-.titlebar-actions { display: flex; align-items: center; gap: 8px; }
-.tb-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #94A3B8; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: all .15s; text-decoration: none; }
-.tb-pill:hover { color: #fff; background: rgba(255,255,255,.12); }
-.tb-pill.danger { color: #FCA5A5; }
-.tb-pill.danger:hover { background: rgba(220,38,38,.2); color: #fff; }
+/* TITLEBAR */
+.titlebar{height:38px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:200;}
+.titlebar-brand{display:flex;align-items:center;gap:10px;}
+.titlebar-brand span{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.titlebar-brand small{font-size:9px;color:#64748B;font-weight:600;letter-spacing:.12em;text-transform:uppercase;}
+.titlebar-file{font-size:12px;color:#94A3B8;font-weight:500;}
+.titlebar-actions{display:flex;align-items:center;gap:8px;}
+.tb-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#94A3B8;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;text-decoration:none;}
+.tb-pill:hover{color:#fff;background:rgba(255,255,255,.12);}
+.tb-pill.danger{color:#FCA5A5;}
+.tb-pill.danger:hover{background:rgba(220,38,38,.2);color:#fff;}
 
-/* ── RIBBON ── */
-.ribbon {
-  background: var(--white);
-  border-bottom: 1px solid var(--line);
-  position: sticky; top: 38px; z-index: 190;
-  box-shadow: 0 1px 6px rgba(0,0,0,.04);
-}
-.ribbon-tabs {
-  display: flex;
-  gap: 0;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--line);
-}
-.rtab {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--slate);
-  padding: 8px 14px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all .15s;
-  white-space: nowrap;
-}
-.rtab:hover { color: var(--ink); background: var(--surf); }
-.rtab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--blue-bg); }
+/* RIBBON */
+.ribbon{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:38px;z-index:190;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.ribbon-tabs{display:flex;padding:0 12px;border-bottom:1px solid var(--line);}
+.rtab{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--slate);padding:8px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+.rtab:hover{color:var(--ink);background:var(--surf);}
+.rtab.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-bg);}
+.ribbon-tools{display:flex;align-items:stretch;padding:4px 12px;gap:2px;min-height:62px;overflow-x:auto;}
+.rtool-group{display:flex;align-items:stretch;gap:1px;padding:0 6px;border-right:1px solid var(--line);position:relative;}
+.rtool-group:last-child{border-right:none;}
+.rtool-group-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);white-space:nowrap;}
+.rtool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;transition:all .14s;min-width:48px;}
+.rtool:hover{background:var(--surf);border-color:var(--line);}
+.rtool.active{background:var(--blue-bg);border-color:#c7ccf5;color:var(--blue);}
+.rtool.success{background:#ECFDF5;border-color:#A7F3D0;}
+.rtool.success:hover{background:var(--green);color:#fff;}
+.rtool.success:hover .rtool-icon,.rtool.success:hover .rtool-label{color:#fff!important;}
+.rtool-icon{color:var(--slate);transition:color .14s;}
+.rtool-icon svg{display:block;}
+.rtool-label{font-size:10px;font-weight:700;color:var(--slate);white-space:nowrap;transition:color .14s;text-align:center;}
+.rtool-separator{width:1px;background:var(--line);margin:4px 4px;align-self:stretch;}
+.ribbon-groups-row{display:flex;align-items:center;padding:6px 12px 24px;gap:0;overflow-x:auto;}
 
-.ribbon-tools {
-  display: flex;
-  align-items: stretch;
-  padding: 4px 12px;
-  gap: 2px;
-  min-height: 62px;
-  overflow-x: auto;
-}
+/* WORKSPACE */
+.workspace{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 140px);}
 
-.rtool-group {
-  display: flex;
-  align-items: stretch;
-  gap: 1px;
-  padding: 0 6px;
-  border-right: 1px solid var(--line);
-  position: relative;
-}
-.rtool-group:last-child { border-right: none; }
-.rtool-group-label {
-  position: absolute;
-  bottom: -18px;
-  left: 50%; transform: translateX(-50%);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--slate);
-  white-space: nowrap;
-}
+/* PANEL */
+.panel{background:var(--white);border-right:1px solid var(--line);overflow-y:auto;max-height:calc(100vh - 140px);position:sticky;top:140px;}
+.panel-section{border-bottom:1px solid var(--line);padding:14px 16px;}
+.panel-section-title{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.panel-section-title::after{content:'';flex:1;height:1px;background:var(--line);}
+.form-group{margin-bottom:10px;}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:4px;letter-spacing:.02em;}
+.form-input{width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surf);transition:all .15s;outline:none;}
+.form-input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(5,12,156,.08);}
+.form-textarea{resize:vertical;min-height:70px;}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
 
-.rtool {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  font-family: 'DM Sans', sans-serif;
-  transition: all .14s;
-  min-width: 48px;
-}
-.rtool:hover { background: var(--surf); border-color: var(--line); }
-.rtool.active { background: var(--blue-bg); border-color: #c7ccf5; color: var(--blue); }
-.rtool.primary:hover { background: var(--blue); color: #fff; }
-.rtool.primary:hover .rtool-icon { color: #fff !important; }
-.rtool.primary:hover .rtool-label { color: #fff !important; }
-.rtool.success { background: #ECFDF5; border-color: #A7F3D0; }
-.rtool.success:hover { background: var(--green); color: #fff; }
-.rtool.success:hover .rtool-icon, .rtool.success:hover .rtool-label { color: #fff !important; }
-.rtool-icon { color: var(--slate); transition: color .14s; }
-.rtool-icon svg { display: block; }
-.rtool-label { font-size: 10px; font-weight: 700; color: var(--slate); white-space: nowrap; transition: color .14s; text-align: center; }
+/* FIELD CHIP in panel */
+.field-chip{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1.5px solid var(--line);border-radius:7px;background:var(--surf);cursor:pointer;transition:all .15s;margin-bottom:5px;}
+.field-chip:hover{border-color:var(--blue-lt);background:var(--blue-bg);}
+.field-chip.placed{background:#F0FDF4;border-color:#A7F3D0;}
+.field-chip.placed:hover{background:#DCFCE7;border-color:#059669;}
 
-.rtool-separator { width: 1px; background: var(--line); margin: 4px 4px; align-self: stretch; }
+/* CANVAS */
+.canvas-area{background:#CBD5E1;padding:32px;overflow:auto;min-height:calc(100vh - 140px);display:flex;flex-direction:column;align-items:center;}
+.invoice-canvas{background:#fff;width:794px;min-height:1123px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.08);border-radius:2px;flex-shrink:0;overflow:visible;}
+.col-resize-handle{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize;z-index:10;}
+.canvas-field{position:absolute;cursor:move;user-select:none;box-sizing:border-box;}
+.canvas-grid-hint{background-image:linear-gradient(rgba(5,12,156,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(5,12,156,.04) 1px,transparent 1px);background-size:20px 20px;}
 
-/* ── RIBBON GROUP WRAPPER ── */
-.ribbon-groups-row {
-  display: flex;
-  align-items: center;
-  padding: 6px 12px 24px;
-  gap: 0;
-  overflow-x: auto;
-}
+/* TOGGLE */
+.toggle{width:28px;height:16px;border-radius:8px;background:#E2E8F0;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle.on::after{transform:translateX(12px);}
 
-/* ── WORKSPACE ── */
-.workspace {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 0;
-  min-height: calc(100vh - 140px);
-}
+/* COLOR SWATCH */
+.color-row{display:flex;gap:6px;align-items:center;}
+.color-swatch{width:32px;height:32px;border-radius:6px;border:2px solid var(--line);cursor:pointer;overflow:hidden;position:relative;flex-shrink:0;}
+.color-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;cursor:pointer;opacity:0;}
+.color-swatch-preview{position:absolute;inset:0;border-radius:4px;pointer-events:none;}
 
-/* ── PANEL ── */
-.panel {
-  background: var(--white);
-  border-right: 1px solid var(--line);
-  overflow-y: auto;
-  max-height: calc(100vh - 140px);
-  position: sticky;
-  top: 140px;
-}
-.panel-section {
-  border-bottom: 1px solid var(--line);
-  padding: 18px;
-}
-.panel-section-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--slate);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.panel-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+/* NUMBER SERIES */
+.series-preview{background:linear-gradient(135deg,var(--blue),var(--blue-lt));border-radius:10px;padding:12px;text-align:center;margin-top:10px;}
+.series-preview-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:4px;}
+.series-preview-number{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#fff;letter-spacing:.05em;}
 
-.form-group { margin-bottom: 12px; }
-.form-label { display: block; font-size: 11px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; letter-spacing: .02em; }
-.form-input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1.5px solid var(--line);
-  border-radius: 7px;
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  color: var(--ink);
-  background: var(--surf);
-  transition: all .15s;
-  outline: none;
-}
-.form-input:focus { border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px rgba(5,12,156,.08); }
-.form-textarea { resize: vertical; min-height: 80px; }
-.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surf);}
+.upload-zone:hover{border-color:var(--blue);background:var(--blue-bg);}
 
-/* ── NUMBER SERIES BLOCK ── */
-.series-preview {
-  background: linear-gradient(135deg, var(--blue), var(--blue-lt));
-  border-radius: 10px;
-  padding: 14px;
-  text-align: center;
-  margin-top: 10px;
-}
-.series-preview-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 4px; }
-.series-preview-number { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: #fff; letter-spacing: .05em; }
-
-/* ── PREVIEW AREA ── */
-.preview-area {
-  background: var(--surf);
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(100vh - 140px);
-}
-.preview-paper {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
-  padding: 32px;
-  max-width: 680px;
-  margin: 0 auto;
-  position: relative;
-}
-
-/* ── SECTION ITEM ── */
-.section-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1.5px solid var(--line);
-  border-radius: 8px;
-  background: var(--surf);
-  cursor: grab;
-  transition: all .15s;
-  margin-bottom: 6px;
-  user-select: none;
-}
-.section-item:hover { border-color: var(--blue-lt); background: var(--blue-bg); }
-.section-item.selected { border-color: var(--blue); background: var(--blue-bg); box-shadow: 0 0 0 3px rgba(5,12,156,.08); }
-.section-item.dragging { opacity: .4; transform: scale(.97); }
-.section-order { width: 22px; height: 22px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.section-name { flex: 1; font-size: 12px; font-weight: 700; color: var(--ink); }
-.section-vis { width: 20px; height: 12px; border-radius: 6px; background: #E2E8F0; position: relative; cursor: pointer; transition: background .15s; }
-.section-vis.on { background: var(--green); }
-.section-vis::after { content: ''; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
-.section-vis.on::after { transform: translateX(8px); }
-
-/* ── COLOR SWATCH ── */
-.color-row { display: flex; gap: 6px; align-items: center; }
-.color-swatch { width: 36px; height: 36px; border-radius: 7px; border: 2px solid var(--line); cursor: pointer; overflow: hidden; position: relative; flex-shrink: 0; }
-.color-swatch input[type=color] { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); border: none; cursor: pointer; opacity: 0; }
-.color-swatch-preview { position: absolute; inset: 0; border-radius: 5px; pointer-events: none; }
-
-/* ── SAVE TOAST ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--ink);
-  color: #fff;
-  padding: 12px 18px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.2);
-  z-index: 9999;
-  animation: toastIn .2s ease;
-}
-.toast.success { background: var(--green); }
-.toast.error { background: var(--red); }
-@keyframes toastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-/* ── UPLOAD ZONE ── */
-.upload-zone {
-  border: 2px dashed var(--line);
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all .15s;
-  background: var(--surf);
-}
-.upload-zone:hover { border-color: var(--blue); background: var(--blue-bg); }
-
-/* ── LOADING ── */
-.loader { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; display: inline-block; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: #D1D9E6; border-radius: 99px; }
-
-/* number series counter animation */
-@keyframes countUp { from { transform: translateY(4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.series-preview-number { animation: countUp .25s ease; }
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;animation:toastIn .2s ease;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+@keyframes toastIn{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.loader{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#D1D9E6;border-radius:99px;}
+@keyframes countUp{from{transform:translateY(4px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.series-preview-number{animation:countUp .25s ease;}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
-/* ─────────── SVG ICONS ─────────── */
-const Icon = ({ d, size=16, stroke=2 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-    {typeof d === 'string' ? <path d={d} /> : d}
+/* ── ICONS ── */
+const Ic = ({ d, size=16, sw=2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {typeof d==='string'?<path d={d}/>:d}
   </svg>
 );
-const SaveIcon = () => <Icon size={18} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8" />;
-const UploadIcon = () => <Icon size={18} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
-const EyeIcon = () => <Icon size={18} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 100 6 3 3 0 000-6z" />;
-const LayoutIcon = () => <Icon size={18} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5zM14 11a1 1 0 011-1h4a1 1 0 011 1v8a1 1 0 01-1 1h-4a1 1 0 01-1-1v-8z" />;
-const PaletteIcon = () => <Icon size={18} d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.69 0 1.28-.57 1.28-1.28 0-.34-.13-.64-.32-.87-.19-.24-.31-.53-.31-.85 0-.69.57-1.28 1.28-1.28h1.51c3.03 0 5.56-2.48 5.56-5.56C21.5 6.18 17.21 2 12 2z" />;
-const HashIcon = () => <Icon size={18} d={[<line key="1" x1="4" y1="9" x2="20" y2="9"/>,<line key="2" x1="4" y1="15" x2="20" y2="15"/>,<line key="3" x1="10" y1="3" x2="8" y2="21"/>,<line key="4" x1="16" y1="3" x2="14" y2="21"/>]} />;
-const SignIcon = () => <Icon size={18} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />;
-const GearIcon = () => <Icon size={18} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" />;
-const ImageIcon = () => <Icon size={18} d="M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h3l2-3h4l2 3h3a2 2 0 012 2z M12 13a3 3 0 100-6 3 3 0 000 6z" />;
-const TypeIcon = () => <Icon size={18} d="M4 7V4h16v3M9 20h6M12 4v16" />;
-const MoveIcon = () => <Icon size={16} d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />;
-const CheckIcon = () => <Icon size={16} stroke={2.5} d="M20 6L9 17l-5-5" />;
-const XIcon = () => <Icon size={16} stroke={2.5} d="M18 6L6 18M6 6l12 12" />;
-const RefreshIcon = () => <Icon size={18} d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />;
-const DragIcon = () => <Icon size={14} d="M9 5h2M9 10h2M9 15h2M13 5h2M13 10h2M13 15h2" stroke={2.5} />;
-const BuildIcon = () => <Icon size={18} d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />;
-const HomeIcon = () => <Icon size={16} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10" />;
-const LogoutIcon = () => <Icon size={14} d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />;
-const InfoIcon = () => <Icon size={14} d="M12 16v-4M12 8h.01M22 12a10 10 0 11-20 0 10 10 0 0120 0z" />;
+const SaveIcon    = () => <Ic size={18} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/>;
+const UploadIcon  = () => <Ic size={18} d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>;
+const EyeIcon     = () => <Ic size={16} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 100 6 3 3 0 000-6z"/>;
+const LayoutIcon  = () => <Ic size={18} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5zM14 11a1 1 0 011-1h4a1 1 0 011 1v8a1 1 0 01-1 1h-4a1 1 0 01-1-1v-8z"/>;
+const PaletteIcon = () => <Ic size={18} d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.69 0 1.28-.57 1.28-1.28 0-.34-.13-.64-.32-.87-.19-.24-.31-.53-.31-.85 0-.69.57-1.28 1.28-1.28h1.51c3.03 0 5.56-2.48 5.56-5.56C21.5 6.18 17.21 2 12 2z"/>;
+const HashIcon    = () => <Ic size={18} d={[<line key="1" x1="4" y1="9" x2="20" y2="9"/>,<line key="2" x1="4" y1="15" x2="20" y2="15"/>,<line key="3" x1="10" y1="3" x2="8" y2="21"/>,<line key="4" x1="16" y1="3" x2="14" y2="21"/>]}/>;
+const SignIcon    = () => <Ic size={18} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>;
+const GearIcon    = () => <Ic size={18} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>;
+const ImageIcon   = () => <Ic size={18} d="M21 19a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h3l2-3h4l2 3h3a2 2 0 012 2z M12 13a3 3 0 100-6 3 3 0 000 6z"/>;
+const TypeIcon    = () => <Ic size={18} d="M4 7V4h16v3M9 20h6M12 4v16"/>;
+const CheckIcon   = () => <Ic size={16} sw={2.5} d="M20 6L9 17l-5-5"/>;
+const XIcon       = () => <Ic size={16} sw={2.5} d="M18 6L6 18M6 6l12 12"/>;
+const RefreshIcon = () => <Ic size={18} d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>;
+const BuildIcon   = () => <Ic size={18} d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>;
+const HomeIcon    = () => <Ic size={16} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10"/>;
+const LogoutIcon  = () => <Ic size={14} d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>;
+const InfoIcon    = () => <Ic size={14} d="M12 16v-4M12 8h.01M22 12a10 10 0 11-20 0 10 10 0 0120 0z"/>;
+const GridIcon    = () => <Ic size={16} d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>;
+const ResetIcon   = () => <Ic size={16} d="M3 12a9 9 0 109-9M3 3v9h9" sw={2}/>;
+const PlusIcon    = () => <Ic size={16} d="M12 5v14M5 12h14"/>;
+const TextIcon    = () => <Ic size={16} d="M4 6h16M4 12h10M4 18h14"/>;
 
 const OperixLogo = () => (
   <svg width="26" height="26" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
@@ -350,166 +160,201 @@ const OperixLogo = () => (
   </svg>
 );
 
-/* ─────────── TOAST ─────────── */
-function Toast({ message, type = 'success', onDone }) {
+function Toast({ message, type='success', onDone }) {
   useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
-  return (
-    <div className={`toast ${type}`}>
-      {type === 'success' ? <CheckIcon /> : <XIcon />}
-      {message}
-    </div>
-  );
+  return <div className={`toast ${type}`}>{type==='success'?<CheckIcon/>:<XIcon/>}{message}</div>;
 }
 
-/* ─────────── MAIN APP ─────────── */
+/* ══════════════════════════════════════════════════
+   FIELD DEFINITIONS
+   Each field is a standalone draggable unit.
+   source: INV = from invoice doc, CUST = customer data, USER = company settings
+══════════════════════════════════════════════════ */
+const FIELD_GROUPS = [
+  {
+    group: '🖼️ Branding',
+    fields: [
+      { id:'logo',           label:'Logo Image',        defaultWidth:120, source:'USER', preview:'[Logo]' },
+    ]
+  },
+  {
+    group: '📄 Invoice Header',
+    fields: [
+      { id:'invoice_title',  label:'Invoice Title',     defaultWidth:200, source:'INV',  preview:'INVOICE' },
+      { id:'invoice_no',     label:'Invoice No.',       defaultWidth:200, source:'INV',  preview:'WQI-0001' },
+      { id:'invoice_date',   label:'Invoice Date',      defaultWidth:160, source:'INV',  preview:'01/01/2025' },
+      { id:'due_date',       label:'Due Date',          defaultWidth:160, source:'INV',  preview:'01/31/2025' },
+    ]
+  },
+  {
+    group: '🏢 Company (Seller)',
+    fields: [
+      { id:'company_name',   label:'Company Name',      defaultWidth:220, source:'USER', preview:'Your Company Name' },
+      { id:'company_tin',    label:'Company TIN',       defaultWidth:180, source:'USER', preview:'XXX-XXX-XXX' },
+      { id:'company_address',label:'Company Address',   defaultWidth:240, source:'USER', preview:'123 Business St., City' },
+    ]
+  },
+  {
+    group: '👤 Customer (Buyer)',
+    fields: [
+      { id:'customer_company',label:'Customer Company', defaultWidth:220, source:'CUST', preview:'Buyer Company Name' },
+      { id:'customer_name',  label:'Customer Name',     defaultWidth:220, source:'CUST', preview:'Customer Name' },
+      { id:'customer_tin',   label:'Customer TIN',      defaultWidth:180, source:'CUST', preview:'N/A' },
+      { id:'customer_address',label:'Customer Address', defaultWidth:240, source:'CUST', preview:'Customer Address' },
+    ]
+  },
+  {
+    group: '🛒 Items & Totals',
+    fields: [
+      { id:'items_table',    label:'Items Table',       defaultWidth:754, source:'INV',  preview:'[Items Table]' },
+      { id:'subtotal',       label:'Subtotal',          defaultWidth:180, source:'INV',  preview:'₱250.00' },
+      { id:'vat_amount',     label:'VAT Amount',        defaultWidth:180, source:'INV',  preview:'₱30.00' },
+      { id:'grand_total',    label:'Grand Total',       defaultWidth:180, source:'INV',  preview:'₱280.00' },
+    ]
+  },
+  {
+    group: '📋 Details',
+    fields: [
+      { id:'payment_method', label:'Payment Method',   defaultWidth:220, source:'INV',  preview:'Cash on Delivery' },
+      { id:'payment_terms',  label:'Payment Terms',    defaultWidth:220, source:'INV',  preview:'Net 30' },
+      { id:'cost_centre',    label:'Cost Centre',      defaultWidth:220, source:'INV',  preview:'CC-OPERATIONS-01' },
+      { id:'po_number',      label:'PO / Order Ref.',  defaultWidth:220, source:'INV',  preview:'PO-2025-0042' },
+      { id:'order_notes',    label:'Special Instructions', defaultWidth:400, source:'INV', preview:'Handle with care. Deliver before noon.' },
+      { id:'terms',          label:'Terms & Conditions',defaultWidth:500, source:'USER', preview:'[Terms & Conditions]' },
+    ]
+  },
+  {
+    group: '✍️ Signature',
+    fields: [
+      { id:'signature_img',  label:'Signature Image',  defaultWidth:150, source:'USER', preview:'[Signature]' },
+      { id:'signed_by',      label:'Signed By',        defaultWidth:200, source:'USER', preview:'Authorized Signatory' },
+      { id:'customer_sig',   label:'Customer Signature',defaultWidth:150, source:'CUST', preview:'[Customer Sig]' },
+    ]
+  },
+  {
+    group: '📝 Footer',
+    fields: [
+      { id:'footer_note',    label:'Footer Note',      defaultWidth:500, source:'USER', preview:'Thank you for your business!' },
+    ]
+  },
+];
+
+const FIELD_DEFS = FIELD_GROUPS.flatMap(g => g.fields);
+
+const SOURCE_COLOR = { INV:'#050C9C', USER:'#0891b2', CUST:'#7c3aed' };
+
+/* ══════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════ */
 function InvoiceManager() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [activeRibbonTab, setActiveRibbonTab] = useState('home');
-  const [activePanel, setActivePanel] = useState('sections');
-  const [toast, setToast] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [selectedSection, setSelectedSection] = useState(null);
-  const [draggedSection, setDraggedSection] = useState(null);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [user,setUser]               = useState(null);
+  const [loading,setLoading]         = useState(true);
+  const [activeRibbonTab,setActiveRibbonTab] = useState('home');
+  const [activePanel,setActivePanel] = useState('fields');
+  const [toast,setToast]             = useState(null);
+  const [saving,setSaving]           = useState(false);
+  const [selectedFieldId,setSelectedFieldId] = useState(null);
+  const [customerCompanyName,setCustomerCompanyName] = useState('Buyer Company Name');
+  const [uploadingBg,setUploadingBg] = useState(false);
+  const [uploadingLogo,setUploadingLogo] = useState(false);
+  const [uploadingSig,setUploadingSig]   = useState(false);
+  const [showGrid,setShowGrid]       = useState(true);
+  const [customTextInput,setCustomTextInput] = useState('');
+  const nextCustomId = useRef(1);
+
+  // Drag state refs (no re-render during drag)
+  const draggingId = useRef(null);
+  const dragOffset = useRef({ x:0, y:0 });
+  const canvasRef  = useRef(null);
 
   const [invoiceSettings, setInvoiceSettings] = useState({
-    companyName: '',
-    companyTIN: '',
-    companyAddress: '',
-    defaultVAT: '12',
-    invoicePrefix: 'WQI',
-    startingInvoiceNumber: 1,
-    numberPadding: 4,
-    numberSeparator: '-',
-    termsAndConditions: '',
-    signatureUrl: '',
-    signedBy: ''
+    companyName:'', companyTIN:'', companyAddress:'',
+    defaultVAT:'12', invoicePrefix:'WQI',
+    startingInvoiceNumber:1, numberPadding:4, numberSeparator:'-',
+    termsAndConditions:'', signatureUrl:'', signedBy:'',
+    customerCompanyLabel:'Company Name',
   });
 
-  const [invoiceLayoutConfig, setInvoiceLayoutConfig] = useState({
-    sections: {
-      header:      { visible: true, order: 1, fontSize: 24, color: '#050C9C', fontWeight: 'bold' },
-      companyInfo: { visible: true, order: 2, columns: 2, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      itemsTable:  { visible: true, order: 3, fontSize: 10, color: '#000000', headerBgColor: '#050C9C' },
-      totals:      { visible: true, order: 4, position: 'right', fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      paymentMethod: { visible: true, order: 5, fontSize: 10, color: '#050C9C', fontWeight: 'normal' },
-      terms:       { visible: true, order: 6, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-signature:          { visible: true, order: 7, columns: 2, fontSize: 10, color: '#000000', fontWeight: 'normal' },
-      specialInstructions: { visible: true, order: 8, fontSize: 10, color: '#78350F', fontWeight: 'normal' },
-      footer:             { visible: true, order: 9, fontSize: 10, color: '#666666', fontWeight: 'normal' }
-    },
-    styling: {
-      primaryColor: '#050C9C',
-      secondaryColor: '#3B4FD8',
-      fontFamily: 'Arial',
-      fontSize: 10,
-      headerSize: 24
-    },
+  // Layout: placed fields array + styling + background + logo + itemsTable config
+  const [layout, setLayout] = useState({
+    placedFields: [],       // { id, label, source, x, y, width, fontSize, color, bold, fontFamily, visible, isCustom, text? }
+    customTexts:  [],       // { id, text, x, y, width, fontSize, color, bold, fontFamily }  (legacy, merged into placedFields)
+    backgroundUrl: '',
     logoUrl: '',
-    logoPosition: 'top'
+    styling: { primaryColor:'#050C9C', secondaryColor:'#3B4FD8', fontFamily:'Arial', fontSize:10 },
+    itemsTable: { showHeader:true, headerBgColor:'#050C9C', headerTextColor:'#ffffff', borderColor:'#e5e7eb', columnWidths:[340,60,100,100] },
   });
 
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type });
-  };
+  const showToast = (msg, type='success') => setToast({ msg, type });
 
-  // ── Firebase Init ──
+  /* ── Firebase ── */
   useEffect(() => {
-    const firebaseConfig = {
-      apiKey: "AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
-      authDomain: "operix-c8a8c.firebaseapp.com",
-      projectId: "operix-c8a8c",
-      storageBucket: "operix-c8a8c.firebasestorage.app",
-      messagingSenderId: "794223223499",
-      appId: "1:794223223499:web:f059007b909cc15766f14e",
-      measurementId: "G-6E4BD657K1"
+    const cfg = {
+      apiKey:"AIzaSyB56dPmBwgO4uWyXakhY9SJBCAz7bk0Do8",
+      authDomain:"operix-c8a8c.firebaseapp.com",
+      projectId:"operix-c8a8c",
+      storageBucket:"operix-c8a8c.firebasestorage.app",
+      messagingSenderId:"794223223499",
+      appId:"1:794223223499:web:f059007b909cc15766f14e"
     };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    auth.onAuthStateChanged(async (currentUser) => {
-      if (currentUser) {
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    firebase.auth().onAuthStateChanged(async u => {
+      if (u) {
         const db = firebase.firestore();
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists && userDoc.data().role === 'admin') {
-          setUser({ uid: currentUser.uid, email: currentUser.email, displayName: userDoc.data().fullName || currentUser.email, ...userDoc.data() });
-          await loadInvoiceSettings(db, currentUser.uid);
-          await loadLayoutConfig(db, currentUser.uid);
-        } else {
-          window.location.href = 'dashboard.html';
-        }
-      } else {
-        window.location.href = 'login.html';
-      }
+        const ud = await db.collection('users').doc(u.uid).get();
+        if (ud.exists && ud.data().role==='admin') {
+          setUser({ uid:u.uid, email:u.email, displayName:ud.data().fullName||u.email, ...ud.data() });
+          await loadSettings(db, u.uid);
+          await loadLayout(db, u.uid);
+        } else { window.location.href='dashboard.html'; }
+      } else { window.location.href='login.html'; }
       setLoading(false);
     });
   }, []);
 
-  const loadInvoiceSettings = async (db, uid) => {
+  const loadSettings = async (db, uid) => {
     try {
-      const doc = await db.collection('invoiceSettings').doc(uid).get();
-      if (doc.exists) {
-        const s = doc.data();
+      const d = await db.collection('invoiceSettings').doc(uid).get();
+      if (d.exists) {
+        const s = d.data();
         setInvoiceSettings({
-          companyName: s.companyName || '',
-          companyTIN: s.companyTIN || '',
-          companyAddress: s.companyAddress || '',
-          defaultVAT: s.defaultVAT || '12',
-          invoicePrefix: s.invoicePrefix || 'WQI',
-          startingInvoiceNumber: s.startingInvoiceNumber || 1,
-          numberPadding: s.numberPadding || 4,
-          numberSeparator: s.numberSeparator || '-',
-          termsAndConditions: s.termsAndConditions || '',
-          signatureUrl: s.signatureUrl || '',
-          signedBy: s.signedBy || ''
+          companyName:s.companyName||'', companyTIN:s.companyTIN||'',
+          companyAddress:s.companyAddress||'', defaultVAT:s.defaultVAT||'12',
+          invoicePrefix:s.invoicePrefix||'WQI', startingInvoiceNumber:s.startingInvoiceNumber||1,
+          numberPadding:s.numberPadding||4, numberSeparator:s.numberSeparator||'-',
+          termsAndConditions:s.termsAndConditions||'', signatureUrl:s.signatureUrl||'', signedBy:s.signedBy||'',
+          customerCompanyLabel:s.customerCompanyLabel||'Company Name',
         });
       }
-    } catch (e) { console.error(e); }
+    } catch(e){ console.error(e); }
   };
 
-  const loadLayoutConfig = async (db, uid) => {
+  const loadLayout = async (db, uid) => {
     try {
-      const doc = await db.collection('invoiceLayoutConfigs').doc(uid).get();
-      if (doc.exists) {
-        const cfg = doc.data();
-        if (!cfg.sections.footer) cfg.sections.footer = { visible: true, order: 9 };
-        if (!cfg.sections.specialInstructions) cfg.sections.specialInstructions = { visible: true, order: 8, fontSize: 10, color: '#78350F', fontWeight: 'normal' };
-
-        setInvoiceLayoutConfig(cfg);
+      const d = await db.collection('invoiceLayoutConfigs').doc(uid).get();
+      if (d.exists) {
+        const cfg = d.data();
+        setLayout(prev => ({
+          ...prev,
+          placedFields: cfg.placedFields || [],
+          backgroundUrl: cfg.backgroundUrl || '',
+          logoUrl: cfg.logoUrl || '',
+          styling: cfg.styling || prev.styling,
+          itemsTable: cfg.itemsTable ? { ...prev.itemsTable, ...cfg.itemsTable, columnWidths: cfg.itemsTable.columnWidths || prev.itemsTable.columnWidths } : prev.itemsTable,
+        }));
       }
-    } catch (e) { console.error(e); }
+    } catch(e){ console.error(e); }
   };
 
+  /* ── Save ── */
   const saveAll = async () => {
     setSaving(true);
     try {
       const db = firebase.firestore();
-      await db.collection('invoiceSettings').doc(user.uid).set({
-        ...invoiceSettings,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      await db.collection('invoiceLayoutConfigs').doc(user.uid).set({
-        ...invoiceLayoutConfig,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showToast('All changes saved successfully!');
-    } catch (e) {
-      showToast('Save failed: ' + e.message, 'error');
-    }
-    setSaving(false);
-  };
-
-  const saveSettings = async () => {
-    setSaving(true);
-    try {
-      const db = firebase.firestore();
-      await db.collection('invoiceSettings').doc(user.uid).set({
-        ...invoiceSettings,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showToast('Settings saved!');
-    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+      await db.collection('invoiceSettings').doc(user.uid).set({ ...invoiceSettings, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('invoiceLayoutConfigs').doc(user.uid).set({ ...layout, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      showToast('All changes saved!');
+    } catch(e){ showToast('Save failed: '+e.message,'error'); }
     setSaving(false);
   };
 
@@ -517,855 +362,1086 @@ signature:          { visible: true, order: 7, columns: 2, fontSize: 10, color: 
     setSaving(true);
     try {
       const db = firebase.firestore();
-      await db.collection('invoiceLayoutConfigs').doc(user.uid).set({
-        ...invoiceLayoutConfig,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      await db.collection('invoiceLayoutConfigs').doc(user.uid).set({ ...layout, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
       showToast('Layout saved!');
-    } catch (e) { showToast('Error: ' + e.message, 'error'); }
+    } catch(e){ showToast('Error: '+e.message,'error'); }
     setSaving(false);
   };
 
-  // ── Reset Counter ──
-  const resetCounter = async () => {
-    if (!window.confirm(`Reset invoice counter to start from ${invoiceSettings.invoicePrefix}${invoiceSettings.numberSeparator}${String(invoiceSettings.startingInvoiceNumber).padStart(invoiceSettings.numberPadding, '0')}?\n\nThis does NOT delete existing invoices.`)) return;
+  const saveSettings = async () => {
+    setSaving(true);
     try {
       const db = firebase.firestore();
-      await db.collection('counters').doc('orderCounter').set({ count: invoiceSettings.startingInvoiceNumber - 1 });
-      showToast('Counter reset! Next invoice: ' + previewNumber);
-    } catch(e) { showToast('Reset failed: ' + e.message, 'error'); }
+      await db.collection('invoiceSettings').doc(user.uid).set({ ...invoiceSettings, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      showToast('Settings saved!');
+    } catch(e){ showToast('Error: '+e.message,'error'); }
+    setSaving(false);
   };
 
-  // ── Drag & Drop ──
-  const handleDragStart = (key) => setDraggedSection(key);
-  const handleDragOver = (e, targetKey) => {
-    e.preventDefault();
-    if (!draggedSection || draggedSection === targetKey) return;
-    const draggedOrder = invoiceLayoutConfig.sections[draggedSection].order;
-    const targetOrder = invoiceLayoutConfig.sections[targetKey].order;
-    if (draggedOrder === targetOrder) return;
-    const ns = { ...invoiceLayoutConfig.sections };
-    Object.keys(ns).forEach(k => {
-      if (draggedOrder < targetOrder) {
-        if (ns[k].order > draggedOrder && ns[k].order <= targetOrder) ns[k].order--;
-      } else {
-        if (ns[k].order >= targetOrder && ns[k].order < draggedOrder) ns[k].order++;
-      }
-    });
-    ns[draggedSection].order = targetOrder;
-    setInvoiceLayoutConfig({ ...invoiceLayoutConfig, sections: ns });
-  };
-  const handleDragEnd = () => setDraggedSection(null);
-
-  // ── Cloudinary Upload ──
-  const upload = async (file, type = 'logo') => {
-    if (!file) return;
-    if (type === 'logo') setUploadingLogo(true); else setUploadingSignature(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', 'operix_products');
-    fd.append('folder', type === 'logo' ? 'operix-logos' : 'operix-signatures');
+  /* ── Reset counter ── */
+  const resetCounter = async () => {
+    if (!window.confirm(`Reset counter to start from ${previewNumber}?`)) return;
     try {
-      const res = await fetch('https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (type === 'logo') {
-        setInvoiceLayoutConfig(p => ({ ...p, logoUrl: data.secure_url }));
-      } else {
-        setInvoiceSettings(p => ({ ...p, signatureUrl: data.secure_url }));
-      }
-      showToast(`${type === 'logo' ? 'Logo' : 'Signature'} uploaded!`);
-    } catch (e) { showToast('Upload failed', 'error'); }
-    if (type === 'logo') setUploadingLogo(false); else setUploadingSignature(false);
+      await firebase.firestore().collection('counters').doc('orderCounter').set({ count: invoiceSettings.startingInvoiceNumber-1 });
+      showToast('Counter reset!');
+    } catch(e){ showToast('Reset failed: '+e.message,'error'); }
   };
 
-  const getSortedSections = () =>
-    Object.entries(invoiceLayoutConfig.sections)
-      .sort((a, b) => a[1].order - b[1].order)
-      .map(([k]) => k);
+  /* ── Field management ── */
+  const isPlaced = (id) => layout.placedFields.some(f => f.id === id);
 
-const sectionLabels = {
-    header: 'Invoice Header', companyInfo: 'Company Info',
-    itemsTable: 'Items Table', totals: 'Totals Block',
-    paymentMethod: 'Payment Method', terms: 'Terms & Conditions',
-    signature: 'Signature', specialInstructions: 'Special Instructions', footer: 'Footer'
+  const addField = (fieldDef) => {
+    if (isPlaced(fieldDef.id)) { showToast('Field already on canvas','error'); return; }
+    const newField = {
+      id: fieldDef.id, label: fieldDef.label, source: fieldDef.source,
+      x: 40, y: 40 + layout.placedFields.length * 28,
+      width: fieldDef.defaultWidth,
+      fontSize: 11, color: '#111827', bold: false, fontFamily: 'Arial',
+      visible: true, isCustom: false,
+    };
+    setLayout(p => ({ ...p, placedFields: [...p.placedFields, newField] }));
   };
 
-  const updateSection = (key, props) => {
-    setInvoiceLayoutConfig(p => ({
+  const addCustomText = () => {
+    const txt = customTextInput.trim() || 'Custom Text';
+    const id = 'custom_' + Date.now() + '_' + nextCustomId.current++;
+    const newField = {
+      id, label: txt, source: 'CUSTOM',
+      x: 40, y: 40 + layout.placedFields.length * 28,
+      width: 200, fontSize: 11, color: '#111827', bold: false, fontFamily: 'Arial',
+      visible: true, isCustom: true, text: txt,
+    };
+    setLayout(p => ({ ...p, placedFields: [...p.placedFields, newField] }));
+    setCustomTextInput('');
+    setSelectedFieldId(id);
+  };
+
+  const removeField = (id) => {
+    setLayout(p => ({ ...p, placedFields: p.placedFields.filter(f => f.id !== id) }));
+    if (selectedFieldId === id) setSelectedFieldId(null);
+  };
+
+  const updateField = (id, props) => {
+    setLayout(p => ({
       ...p,
-      sections: { ...p.sections, [key]: { ...p.sections[key], ...props } }
+      placedFields: p.placedFields.map(f => f.id===id ? { ...f, ...props } : f)
     }));
   };
 
-  const updateStyling = (props) => {
-    setInvoiceLayoutConfig(p => ({ ...p, styling: { ...p.styling, ...props } }));
+  /* ── Drag ── */
+  const handleMouseDown = (e, id) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const canvasScrollParent = canvasRef.current.closest('.canvas-area');
+    const scrollTop  = canvasScrollParent ? canvasScrollParent.scrollTop  : 0;
+    const scrollLeft = canvasScrollParent ? canvasScrollParent.scrollLeft : 0;
+    const field = layout.placedFields.find(f => f.id===id);
+    if (!field) return;
+    draggingId.current = id;
+    dragOffset.current = { x: e.clientX - rect.left + scrollLeft - field.x, y: e.clientY - rect.top + scrollTop - field.y };
+    setSelectedFieldId(id);
   };
 
-  // ── Preview number ──
-  const previewNumber = `${invoiceSettings.invoicePrefix}${invoiceSettings.numberSeparator}${String(invoiceSettings.startingInvoiceNumber).padStart(invoiceSettings.numberPadding || 4, '0')}`;
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!draggingId.current || !canvasRef.current) return;
+      const rect  = canvasRef.current.getBoundingClientRect();
+      const canvasScrollParent = canvasRef.current.closest('.canvas-area');
+      const scrollTop  = canvasScrollParent ? canvasScrollParent.scrollTop  : 0;
+      const scrollLeft = canvasScrollParent ? canvasScrollParent.scrollLeft : 0;
+      const newX = Math.max(0, e.clientX - rect.left + scrollLeft - dragOffset.current.x);
+      const newY = Math.max(0, e.clientY - rect.top  + scrollTop  - dragOffset.current.y);
+      updateField(draggingId.current, { x: newX, y: newY });
+    };
+    const onUp = () => { draggingId.current = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup',   onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [layout.placedFields]);
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0C1220' }}>
-      <div style={{ textAlign: 'center' }}>
-        <OperixLogo />
-        <div style={{ marginTop: 20, width: 32, height: 32, border: '2px solid rgba(255,255,255,.2)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .6s linear infinite', margin: '20px auto 0' }} />
-        <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: 'DM Sans, sans-serif' }}>Loading Invoice Manager...</p>
-      </div>
-    </div>
-  );
+  /* ── Cloudinary uploads ── */
+  const cloudinaryUpload = (file, folder, onSuccess) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'operix_products');
+    fd.append('folder', folder);
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      if (xhr.status===200) onSuccess(JSON.parse(xhr.responseText).secure_url);
+      else showToast('Upload failed','error');
+    };
+    xhr.onerror = () => showToast('Upload error','error');
+    xhr.open('POST','https://api.cloudinary.com/v1_1/dmrtrl4er/image/upload');
+    xhr.send(fd);
+  };
 
-  /* ─────────── RIBBON TOOLS PER TAB ─────────── */
+  const uploadBackground = (file) => {
+    if (!file||!file.type.startsWith('image/')) { showToast('Please upload an image file','error'); return; }
+    setUploadingBg(true);
+    cloudinaryUpload(file,'operix-invoice-layouts', url => {
+      setLayout(p => ({ ...p, backgroundUrl: url }));
+      showToast('Background uploaded!');
+      setUploadingBg(false);
+    });
+  };
+
+  const uploadLogo = (file) => {
+    if (!file||!file.type.startsWith('image/')) return;
+    setUploadingLogo(true);
+    cloudinaryUpload(file,'operix-logos', url => {
+      setLayout(p => ({ ...p, logoUrl: url }));
+      showToast('Logo uploaded!');
+      setUploadingLogo(false);
+    });
+  };
+
+  const uploadSignature = (file) => {
+    if (!file||!file.type.startsWith('image/')) return;
+    setUploadingSig(true);
+    cloudinaryUpload(file,'operix-signatures', url => {
+      setInvoiceSettings(p => ({ ...p, signatureUrl: url }));
+      showToast('Signature uploaded!');
+      setUploadingSig(false);
+    });
+  };
+
+  /* ── Helpers ── */
+  const previewNumber = `${invoiceSettings.invoicePrefix}${invoiceSettings.numberSeparator}${String(invoiceSettings.startingInvoiceNumber).padStart(invoiceSettings.numberPadding||4,'0')}`;
+  const selectedField = layout.placedFields.find(f => f.id===selectedFieldId);
+
+  /* ══════════════════════════════════════════════════
+     RIBBON
+  ══════════════════════════════════════════════════ */
   const ribbonContent = {
     home: (
       <div className="ribbon-groups-row">
         <div className="rtool-group">
-          <button className={`rtool success`} onClick={saveAll} disabled={saving}>
-            <span className="rtool-icon" style={{color: saving ? '#9CA3AF' : '#059669'}}>
-              {saving ? <div className="loader" style={{borderTopColor:'#059669', borderColor:'rgba(5,150,105,.2)'}} /> : <SaveIcon />}
+          <button className="rtool success" onClick={saveAll} disabled={saving}>
+            <span className="rtool-icon" style={{color:saving?'#9CA3AF':'#059669'}}>
+              {saving?<div className="loader" style={{borderTopColor:'#059669',borderColor:'rgba(5,150,105,.2)'}}/>:<SaveIcon/>}
             </span>
-            <span className="rtool-label" style={{color: saving ? '#9CA3AF' : '#059669'}}>Save All</span>
+            <span className="rtool-label" style={{color:saving?'#9CA3AF':'#059669'}}>Save All</span>
           </button>
-          <div className="rtool-separator" />
-          <button className="rtool" onClick={saveSettings}>
-            <span className="rtool-icon"><GearIcon /></span>
-            <span className="rtool-label">Settings</span>
-          </button>
-          <button className="rtool" onClick={saveLayout}>
-            <span className="rtool-icon"><LayoutIcon /></span>
-            <span className="rtool-label">Layout</span>
-          </button>
+          <div className="rtool-separator"/>
+          <button className="rtool" onClick={saveSettings}><span className="rtool-icon"><GearIcon/></span><span className="rtool-label">Settings</span></button>
+          <button className="rtool" onClick={saveLayout}><span className="rtool-icon"><LayoutIcon/></span><span className="rtool-label">Layout Save</span></button>
           <span className="rtool-group-label">Save</span>
         </div>
-
         <div className="rtool-group">
-          <button className="rtool" onClick={() => { setActiveRibbonTab('numbering'); setActivePanel('numbering'); }}>
-            <span className="rtool-icon"><HashIcon /></span>
-            <span className="rtool-label">Number Series</span>
-          </button>
-          <button className="rtool" onClick={() => { setActiveRibbonTab('company'); setActivePanel('company'); }}>
-            <span className="rtool-icon"><BuildIcon /></span>
-            <span className="rtool-label">Company</span>
-          </button>
-          <button className="rtool" onClick={() => { setActiveRibbonTab('design'); setActivePanel('styling'); }}>
-            <span className="rtool-icon"><PaletteIcon /></span>
-            <span className="rtool-label">Branding</span>
-          </button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('numbering'); setActivePanel('numbering'); }}><span className="rtool-icon"><HashIcon/></span><span className="rtool-label">Number Series</span></button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('company'); setActivePanel('company'); }}><span className="rtool-icon"><BuildIcon/></span><span className="rtool-label">Company</span></button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('design'); setActivePanel('styling'); }}><span className="rtool-icon"><PaletteIcon/></span><span className="rtool-label">Branding</span></button>
+          <button className="rtool" onClick={() => { setActiveRibbonTab('layout'); setActivePanel('background'); }}><span className="rtool-icon"><UploadIcon/></span><span className="rtool-label">Background</span></button>
           <span className="rtool-group-label">Configure</span>
         </div>
-
         <div className="rtool-group">
-          <button className="rtool" onClick={() => window.location.href = 'dashboard.html'}>
-            <span className="rtool-icon"><HomeIcon /></span>
-            <span className="rtool-label">Dashboard</span>
-          </button>
-          <button className="rtool" onClick={async () => { await firebase.auth().signOut(); window.location.href = 'login.html'; }}>
-            <span className="rtool-icon"><LogoutIcon /></span>
-            <span className="rtool-label">Logout</span>
-          </button>
+          <button className="rtool" onClick={() => window.location.href='dashboard.html'}><span className="rtool-icon"><HomeIcon/></span><span className="rtool-label">Dashboard</span></button>
+          <button className="rtool" onClick={async()=>{ await firebase.auth().signOut(); window.location.href='login.html'; }}><span className="rtool-icon"><LogoutIcon/></span><span className="rtool-label">Logout</span></button>
           <span className="rtool-group-label">Navigate</span>
         </div>
       </div>
     ),
-
     layout: (
       <div className="ribbon-groups-row">
         <div className="rtool-group">
-          <button className={`rtool ${activePanel === 'sections' ? 'active' : ''}`} onClick={() => setActivePanel('sections')}>
-            <span className="rtool-icon"><MoveIcon /></span>
-            <span className="rtool-label">Sections</span>
-          </button>
-          <button className={`rtool ${activePanel === 'section-style' ? 'active' : ''}`} onClick={() => { setActivePanel('section-style'); if (!selectedSection) setSelectedSection('header'); }}>
-            <span className="rtool-icon"><TypeIcon /></span>
-            <span className="rtool-label">Style</span>
-          </button>
-          <span className="rtool-group-label">Sections</span>
+          <button className={`rtool ${activePanel==='fields'?'active':''}`} onClick={() => setActivePanel('fields')}><span className="rtool-icon"><LayoutIcon/></span><span className="rtool-label">Fields</span></button>
+          <button className={`rtool ${activePanel==='background'?'active':''}`} onClick={() => setActivePanel('background')}><span className="rtool-icon"><ImageIcon/></span><span className="rtool-label">Background</span></button>
+          <button className={`rtool ${activePanel==='fieldstyle'?'active':''}`} onClick={() => { setActivePanel('fieldstyle'); if(!selectedFieldId&&layout.placedFields.length) setSelectedFieldId(layout.placedFields[0].id); }}><span className="rtool-icon"><TypeIcon/></span><span className="rtool-label">Style</span></button>
+          <span className="rtool-group-label">Layout</span>
         </div>
         <div className="rtool-group">
-          {getSortedSections().map(k => (
-            <button key={k} className={`rtool ${selectedSection === k ? 'active' : ''}`} onClick={() => { setSelectedSection(k); setActivePanel('section-style'); }}>
-              <span className="rtool-icon">
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: invoiceLayoutConfig.sections[k].visible ? '#059669' : '#E2E8F0', margin: 'auto' }} />
-              </span>
-              <span className="rtool-label" style={{ fontSize: 9, maxWidth: 52 }}>{sectionLabels[k].split(' ')[0]}</span>
-            </button>
-          ))}
-          <span className="rtool-group-label">Quick Select</span>
+          <button className={`rtool ${showGrid?'active':''}`} onClick={() => setShowGrid(g=>!g)}><span className="rtool-icon"><GridIcon/></span><span className="rtool-label">Grid</span></button>
+          <button className="rtool" onClick={() => { if(window.confirm('Clear all placed fields?')) { setLayout(p=>({...p,placedFields:[]})); setSelectedFieldId(null); } }}><span className="rtool-icon" style={{color:'#DC2626'}}><ResetIcon/></span><span className="rtool-label" style={{color:'#DC2626'}}>Clear All</span></button>
+          <span className="rtool-group-label">Canvas</span>
         </div>
         <div className="rtool-group">
-          <button className="rtool success" onClick={saveLayout}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669'}}>Save Layout</span>
-          </button>
+          <button className="rtool success" onClick={saveLayout}><span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span><span className="rtool-label" style={{color:'#059669'}}>Save Layout</span></button>
           <span className="rtool-group-label">Save</span>
         </div>
       </div>
     ),
-
     design: (
       <div className="ribbon-groups-row">
         <div className="rtool-group">
-          <button className={`rtool ${activePanel === 'styling' ? 'active' : ''}`} onClick={() => setActivePanel('styling')}>
-            <span className="rtool-icon"><PaletteIcon /></span>
-            <span className="rtool-label">Colors & Font</span>
-          </button>
-          <button className={`rtool ${activePanel === 'logo' ? 'active' : ''}`} onClick={() => setActivePanel('logo')}>
-            <span className="rtool-icon"><ImageIcon /></span>
-            <span className="rtool-label">Logo</span>
-          </button>
+          <button className={`rtool ${activePanel==='styling'?'active':''}`} onClick={() => setActivePanel('styling')}><span className="rtool-icon"><PaletteIcon/></span><span className="rtool-label">Colors</span></button>
           <span className="rtool-group-label">Design</span>
         </div>
         <div className="rtool-group">
           {['Arial','Times New Roman','Helvetica','Courier New','Georgia'].map(f => (
-            <button key={f} className={`rtool ${invoiceLayoutConfig.styling.fontFamily === f ? 'active' : ''}`}
-              onClick={() => updateStyling({ fontFamily: f })}>
-              <span className="rtool-icon" style={{ fontFamily: f, fontSize: 16, lineHeight: 1, color: 'var(--slate)' }}>Aa</span>
-              <span className="rtool-label" style={{ fontSize: 9 }}>{f.split(' ')[0]}</span>
+            <button key={f} className={`rtool ${layout.styling.fontFamily===f?'active':''}`} onClick={() => setLayout(p=>({...p,styling:{...p.styling,fontFamily:f}}))}>
+              <span className="rtool-icon" style={{fontFamily:f,fontSize:15,lineHeight:1,color:'var(--slate)'}}>Aa</span>
+              <span className="rtool-label" style={{fontSize:9}}>{f.split(' ')[0]}</span>
             </button>
           ))}
           <span className="rtool-group-label">Font</span>
         </div>
         <div className="rtool-group">
-          <button className="rtool success" onClick={saveLayout}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669'}}>Save Design</span>
-          </button>
+          <button className="rtool success" onClick={saveLayout}><span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span><span className="rtool-label" style={{color:'#059669'}}>Save</span></button>
           <span className="rtool-group-label">Save</span>
         </div>
       </div>
     ),
-
     numbering: (
       <div className="ribbon-groups-row">
         <div className="rtool-group">
-          <button className={`rtool ${activePanel === 'numbering' ? 'active' : ''}`} onClick={() => setActivePanel('numbering')}>
-            <span className="rtool-icon"><HashIcon /></span>
-            <span className="rtool-label">Series Config</span>
-          </button>
-          <button className="rtool" onClick={resetCounter} style={{ color: '#D97706' }}>
-            <span className="rtool-icon" style={{color:'#D97706'}}><RefreshIcon /></span>
-            <span className="rtool-label" style={{color:'#D97706'}}>Reset Counter</span>
-          </button>
+          <button className={`rtool ${activePanel==='numbering'?'active':''}`} onClick={() => setActivePanel('numbering')}><span className="rtool-icon"><HashIcon/></span><span className="rtool-label">Series Config</span></button>
+          <button className="rtool" onClick={resetCounter}><span className="rtool-icon" style={{color:'#D97706'}}><RefreshIcon/></span><span className="rtool-label" style={{color:'#D97706'}}>Reset Counter</span></button>
           <span className="rtool-group-label">Number Series</span>
         </div>
         <div className="rtool-group">
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '4px 12px' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--slate)', marginBottom: 4 }}>Next Invoice Preview</div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 500, color: 'var(--blue)', letterSpacing: '.04em', background: 'var(--blue-bg)', padding: '4px 12px', borderRadius: 6, border: '1px solid #c7ccf5' }}>{previewNumber}</div>
+          <div style={{display:'flex',flexDirection:'column',justifyContent:'center',padding:'4px 12px'}}>
+            <div style={{fontSize:9,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--slate)',marginBottom:4}}>Preview</div>
+            <div style={{fontFamily:"'DM Mono',monospace",fontSize:15,fontWeight:500,color:'var(--blue)',letterSpacing:'.04em',background:'var(--blue-bg)',padding:'4px 12px',borderRadius:6,border:'1px solid #c7ccf5'}}>{previewNumber}</div>
           </div>
           <span className="rtool-group-label">Preview</span>
         </div>
         <div className="rtool-group">
-          <button className="rtool success" onClick={saveSettings}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669'}}>Save Series</span>
-          </button>
+          <button className="rtool success" onClick={saveSettings}><span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span><span className="rtool-label" style={{color:'#059669'}}>Save Series</span></button>
           <span className="rtool-group-label">Save</span>
         </div>
       </div>
     ),
-
     company: (
       <div className="ribbon-groups-row">
         <div className="rtool-group">
-          <button className={`rtool ${activePanel === 'company' ? 'active' : ''}`} onClick={() => setActivePanel('company')}>
-            <span className="rtool-icon"><BuildIcon /></span>
-            <span className="rtool-label">Info</span>
-          </button>
-          <button className={`rtool ${activePanel === 'signature' ? 'active' : ''}`} onClick={() => setActivePanel('signature')}>
-            <span className="rtool-icon"><SignIcon /></span>
-            <span className="rtool-label">Signature</span>
-          </button>
-          <button className={`rtool ${activePanel === 'terms' ? 'active' : ''}`} onClick={() => setActivePanel('terms')}>
-            <span className="rtool-icon"><TypeIcon /></span>
-            <span className="rtool-label">Terms</span>
-          </button>
+          <button className={`rtool ${activePanel==='company'?'active':''}`} onClick={() => setActivePanel('company')}><span className="rtool-icon"><BuildIcon/></span><span className="rtool-label">Info</span></button>
+          <button className={`rtool ${activePanel==='signature'?'active':''}`} onClick={() => setActivePanel('signature')}><span className="rtool-icon"><SignIcon/></span><span className="rtool-label">Signature</span></button>
+          <button className={`rtool ${activePanel==='terms'?'active':''}`} onClick={() => setActivePanel('terms')}><span className="rtool-icon"><TypeIcon/></span><span className="rtool-label">Terms</span></button>
           <span className="rtool-group-label">Company</span>
         </div>
         <div className="rtool-group">
-          <button className="rtool success" onClick={saveSettings}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669'}}>Save Settings</span>
-          </button>
+          <button className="rtool success" onClick={saveSettings}><span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span><span className="rtool-label" style={{color:'#059669'}}>Save Settings</span></button>
           <span className="rtool-group-label">Save</span>
         </div>
       </div>
     ),
   };
 
-  /* ─────────── PANELS ─────────── */
+  /* ══════════════════════════════════════════════════
+     LEFT PANEL
+  ══════════════════════════════════════════════════ */
   const renderPanel = () => {
-    if (activePanel === 'sections') return (
-      <>
+
+    /* ── FIELDS LIBRARY ── */
+    if (activePanel==='fields') return (
+      <div>
+        {/* Custom Text adder */}
         <div className="panel-section">
-          <div className="panel-section-title"><MoveIcon /> Section Order</div>
-          <p style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 12 }}>Drag to reorder • toggle to show/hide</p>
-          {Object.entries(invoiceLayoutConfig.sections)
-            .sort((a, b) => a[1].order - b[1].order)
-            .map(([k, cfg]) => (
-              <div key={k}
-                className={`section-item ${selectedSection === k ? 'selected' : ''} ${draggedSection === k ? 'dragging' : ''}`}
-                draggable
-                onDragStart={() => handleDragStart(k)}
-                onDragOver={(e) => handleDragOver(e, k)}
-                onDragEnd={handleDragEnd}
-                onClick={() => { setSelectedSection(k); setActivePanel('section-style'); }}
-              >
-                <DragIcon />
-                <div className="section-order">{cfg.order}</div>
-                <span className="section-name">{sectionLabels[k]}</span>
-                <div className={`section-vis ${cfg.visible ? 'on' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); updateSection(k, { visible: !cfg.visible }); }} />
+          <div className="panel-section-title"><TextIcon/> Add Custom Text</div>
+          <div style={{display:'flex',gap:6}}>
+            <input className="form-input" style={{flex:1,fontSize:12}} placeholder="e.g. Prepared by:"
+              value={customTextInput} onChange={e=>setCustomTextInput(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&addCustomText()} />
+            <button onClick={addCustomText}
+              style={{flexShrink:0,padding:'0 12px',background:'var(--blue)',color:'#fff',border:'none',borderRadius:7,cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:4}}>
+              <PlusIcon/> Add
+            </button>
+          </div>
+          <p style={{fontSize:10,color:'var(--slate)',marginTop:5}}>Type your text then click Add. It will appear on the canvas for you to drag.</p>
+        </div>
+
+        {/* Field library groups */}
+        {FIELD_GROUPS.map(g => (
+          <div className="panel-section" key={g.group}>
+            <div className="panel-section-title" style={{fontSize:9}}>{g.group}</div>
+            {g.fields.map(fd => {
+              const placed = isPlaced(fd.id);
+              const srcColor = SOURCE_COLOR[fd.source]||'#64748B';
+              return (
+                <div key={fd.id} className={`field-chip ${placed?'placed':''}`}
+                  onClick={() => placed ? null : addField(fd)}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:srcColor,flexShrink:0}}/>
+                  <span style={{flex:1,fontSize:11,fontWeight:700,color:'var(--ink)'}}>{fd.label}</span>
+                  <span style={{fontSize:8,fontWeight:900,color:'#fff',background:srcColor,borderRadius:3,padding:'1px 5px',letterSpacing:'.04em'}}>{fd.source}</span>
+                  {placed
+                    ? <span style={{fontSize:10,color:'var(--green)'}}>✓</span>
+                    : <span style={{fontSize:10,color:'var(--blue)',fontWeight:800}}>+</span>
+                  }
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Placed fields quick list */}
+        {layout.placedFields.length > 0 && (
+          <div className="panel-section">
+            <div className="panel-section-title">📌 On Canvas ({layout.placedFields.length})</div>
+            {layout.placedFields.map(f => (
+              <div key={f.id} style={{display:'flex',alignItems:'center',gap:6,padding:'5px 0',borderBottom:'1px solid var(--line)'}}>
+                <div className={`toggle ${f.visible?'on':''}`} style={{width:22,height:12}} onClick={()=>updateField(f.id,{visible:!f.visible})}/>
+                <span style={{flex:1,fontSize:11,fontWeight:600,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                <button onClick={()=>removeField(f.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#DC2626',fontSize:13,fontWeight:900,lineHeight:1}}>×</button>
               </div>
             ))}
-        </div>
-      </>
-    );
-
-    if (activePanel === 'section-style' && selectedSection) {
-      const sec = invoiceLayoutConfig.sections[selectedSection];
-      return (
-        <div className="panel-section">
-          <div className="panel-section-title"><TypeIcon /> {sectionLabels[selectedSection]}</div>
-          <div className="form-group">
-            <label className="form-label">Font Size (px)</label>
-            <input type="range" min="8" max="48" value={sec.fontSize || 10}
-              onChange={e => updateSection(selectedSection, { fontSize: +e.target.value })}
-              style={{ width: '100%' }} />
-            <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--slate)', marginTop: 2 }}>{sec.fontSize || 10}px</div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Text Color</label>
-            <div className="color-row">
-              <div className="color-swatch">
-                <div className="color-swatch-preview" style={{ background: sec.color || '#000' }} />
-                <input type="color" value={sec.color || '#000000'} onChange={e => updateSection(selectedSection, { color: e.target.value })} />
-              </div>
-              <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
-                value={sec.color || '#000000'} onChange={e => updateSection(selectedSection, { color: e.target.value })} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Font Weight</label>
-            <select className="form-input form-select" value={sec.fontWeight || 'normal'}
-              onChange={e => updateSection(selectedSection, { fontWeight: e.target.value })}>
-              <option value="300">Light (300)</option>
-              <option value="normal">Normal (400)</option>
-              <option value="600">Semi-Bold (600)</option>
-              <option value="bold">Bold (700)</option>
-            </select>
-          </div>
-          {selectedSection === 'itemsTable' && (
-            <div className="form-group">
-              <label className="form-label">Table Header Background</label>
-              <div className="color-row">
-                <div className="color-swatch">
-                  <div className="color-swatch-preview" style={{ background: sec.headerBgColor || '#050C9C' }} />
-                  <input type="color" value={sec.headerBgColor || '#050C9C'} onChange={e => updateSection(selectedSection, { headerBgColor: e.target.value })} />
-                </div>
-                <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
-                  value={sec.headerBgColor || '#050C9C'} onChange={e => updateSection(selectedSection, { headerBgColor: e.target.value })} />
-              </div>
-            </div>
-          )}
-          {(selectedSection === 'companyInfo' || selectedSection === 'signature') && (
-            <div className="form-group">
-              <label className="form-label">Columns</label>
-              <select className="form-input form-select" value={sec.columns || 2}
-                onChange={e => updateSection(selectedSection, { columns: +e.target.value })}>
-                <option value="1">1 Column (Full Width)</option>
-                <option value="2">2 Columns (Split)</option>
-              </select>
-            </div>
-          )}
-          {selectedSection === 'totals' && (
-            <div className="form-group">
-              <label className="form-label">Block Position</label>
-              <select className="form-input form-select" value={sec.position || 'right'}
-                onChange={e => updateSection(selectedSection, { position: e.target.value })}>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-          )}
-          <button className="rtool success" style={{ width: '100%', flexDirection: 'row', gap: 8, height: 38, borderRadius: 8, justifyContent: 'center' }} onClick={saveLayout}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669', fontSize: 12}}>Apply & Save</span>
-          </button>
-        </div>
-      );
-    }
-
-    if (activePanel === 'styling') return (
-      <div className="panel-section">
-        <div className="panel-section-title"><PaletteIcon /> Colors & Typography</div>
-        <div className="form-group">
-          <label className="form-label">Primary Brand Color</label>
-          <div className="color-row">
-            <div className="color-swatch">
-              <div className="color-swatch-preview" style={{ background: invoiceLayoutConfig.styling.primaryColor }} />
-              <input type="color" value={invoiceLayoutConfig.styling.primaryColor} onChange={e => updateStyling({ primaryColor: e.target.value })} />
-            </div>
-            <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
-              value={invoiceLayoutConfig.styling.primaryColor} onChange={e => updateStyling({ primaryColor: e.target.value })} />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Secondary Color</label>
-          <div className="color-row">
-            <div className="color-swatch">
-              <div className="color-swatch-preview" style={{ background: invoiceLayoutConfig.styling.secondaryColor }} />
-              <input type="color" value={invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'} onChange={e => updateStyling({ secondaryColor: e.target.value })} />
-            </div>
-            <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}
-              value={invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'} onChange={e => updateStyling({ secondaryColor: e.target.value })} />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Font Family</label>
-          <select className="form-input form-select" value={invoiceLayoutConfig.styling.fontFamily}
-            onChange={e => updateStyling({ fontFamily: e.target.value })}>
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Helvetica">Helvetica</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Georgia">Georgia</option>
-          </select>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div className="form-group">
-            <label className="form-label">Body Size (px)</label>
-            <input className="form-input" type="number" min="8" max="16"
-              value={invoiceLayoutConfig.styling.fontSize}
-              onChange={e => updateStyling({ fontSize: +e.target.value })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Header Size (px)</label>
-            <input className="form-input" type="number" min="16" max="48"
-              value={invoiceLayoutConfig.styling.headerSize}
-              onChange={e => updateStyling({ headerSize: +e.target.value })} />
-          </div>
-        </div>
-      </div>
-    );
-
-    if (activePanel === 'logo') return (
-      <div className="panel-section">
-        <div className="panel-section-title"><ImageIcon /> Company Logo</div>
-        <div className="form-group">
-          <label className="form-label">Logo Position</label>
-          <select className="form-input form-select" value={invoiceLayoutConfig.logoPosition}
-            onChange={e => setInvoiceLayoutConfig(p => ({ ...p, logoPosition: e.target.value }))}>
-            <option value="top">Top (Centered above title)</option>
-            <option value="left">Left (Inline with title)</option>
-          </select>
-        </div>
-        <div className="upload-zone" onClick={() => document.getElementById('logoUpload').click()}>
-          <input type="file" id="logoUpload" accept="image/*" style={{display:'none'}}
-            onChange={e => { if (e.target.files[0]) upload(e.target.files[0], 'logo'); }} />
-          {uploadingLogo ? (
-            <div style={{ color: 'var(--slate)', fontSize: 13 }}>Uploading...</div>
-          ) : invoiceLayoutConfig.logoUrl ? (
-            <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 48, maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
-          ) : (
-            <>
-              <div style={{ color: 'var(--slate)', marginBottom: 4 }}><ImageIcon /></div>
-              <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>Click to upload logo</div>
-              <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 2 }}>PNG, JPG, SVG • Max 5MB</div>
-            </>
-          )}
-        </div>
-        {invoiceLayoutConfig.logoUrl && (
-          <button onClick={() => setInvoiceLayoutConfig(p => ({ ...p, logoUrl: '' }))}
-            style={{ marginTop: 8, fontSize: 11, color: 'var(--red)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, padding: 0 }}>
-            ✕ Remove logo
-          </button>
         )}
       </div>
     );
 
-    if (activePanel === 'numbering') return (
+    /* ── FIELD STYLE ── */
+    if (activePanel==='fieldstyle') {
+      if (!selectedField) return (
+        <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+          <div style={{fontSize:13,fontWeight:600}}>Click a field on the canvas to style it</div>
+        </div>
+      );
+      const f = selectedField;
+      const srcColor = SOURCE_COLOR[f.source]||'#64748B';
+      return (
+        <div>
+          <div className="panel-section">
+            <div className="panel-section-title" style={{color:srcColor}}>
+              <div style={{width:7,height:7,borderRadius:'50%',background:srcColor}}/>
+              {f.label}
+            </div>
+
+            {/* Custom text edit */}
+            {f.isCustom && (
+              <div className="form-group">
+                <label className="form-label">Text Content</label>
+                <input className="form-input" value={f.text||f.label}
+                  onChange={e=>updateField(f.id,{text:e.target.value,label:e.target.value})}/>
+              </div>
+            )}
+
+            {/* Items table special controls */}
+            {f.id==='items_table' && (
+              <div style={{padding:10,background:'var(--blue-bg)',border:'1px solid #c7ccf5',borderRadius:8,marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:'var(--ink2)',marginBottom:8}}>Table Header Row</div>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                  <span style={{fontSize:12,fontWeight:600,color:layout.itemsTable.showHeader?'var(--green)':'var(--slate)'}}>
+                    {layout.itemsTable.showHeader?'Header Visible':'Header Hidden'}
+                  </span>
+                  <div className={`toggle ${layout.itemsTable.showHeader?'on':''}`}
+                    onClick={()=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,showHeader:!p.itemsTable.showHeader}}))}/>
+                </div>
+                {layout.itemsTable.showHeader && (<>
+                  <div className="form-group" style={{marginBottom:6}}>
+                    <label className="form-label">Header Background</label>
+                    <div className="color-row">
+                      <div className="color-swatch">
+                        <div className="color-swatch-preview" style={{background:layout.itemsTable.headerBgColor}}/>
+                        <input type="color" value={layout.itemsTable.headerBgColor}
+                          onChange={e=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,headerBgColor:e.target.value}}))}/>
+                      </div>
+                      <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                        value={layout.itemsTable.headerBgColor}
+                        onChange={e=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,headerBgColor:e.target.value}}))}/>
+                    </div>
+                  </div>
+                  <div className="form-group" style={{marginBottom:0}}>
+                    <label className="form-label">Header Text Color</label>
+                    <div className="color-row">
+                      <div className="color-swatch">
+                        <div className="color-swatch-preview" style={{background:layout.itemsTable.headerTextColor||'#fff'}}/>
+                        <input type="color" value={layout.itemsTable.headerTextColor||'#ffffff'}
+                          onChange={e=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,headerTextColor:e.target.value}}))}/>
+                      </div>
+                      <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                        value={layout.itemsTable.headerTextColor||'#ffffff'}
+                        onChange={e=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,headerTextColor:e.target.value}}))}/>
+                    </div>
+                  </div>
+                </>)}
+
+                {/* Column Width Controls */}
+                <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid #c7ccf5'}}>
+                  <div style={{fontSize:11,fontWeight:700,color:'var(--ink2)',marginBottom:6,display:'flex',alignItems:'center',gap:6}}>
+                    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                    Column Widths (px)
+                  </div>
+                  <div style={{fontSize:9,color:'var(--slate)',marginBottom:8,lineHeight:1.4}}>💡 Drag the resize handles on the table header, or type widths below</div>
+                  {['Item Description','Qty','Unit Price','Total'].map((col,i) => (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                      <span style={{fontSize:10,fontWeight:600,color:'var(--ink2)',width:90,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{col}</span>
+                      <input type="number" className="form-input" min="20" max="600"
+                        style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'4px 6px',flex:1}}
+                        value={Math.round((layout.itemsTable.columnWidths||[340,60,100,100])[i])}
+                        onChange={e=>{
+                          const newCols=[...(layout.itemsTable.columnWidths||[340,60,100,100])];
+                          newCols[i]=Math.max(20,+e.target.value);
+                          setLayout(p=>({...p,itemsTable:{...p.itemsTable,columnWidths:newCols}}));
+                        }}/>
+                      <span style={{fontSize:10,color:'var(--slate)',flexShrink:0}}>px</span>
+                    </div>
+                  ))}
+                  <button onClick={()=>setLayout(p=>({...p,itemsTable:{...p.itemsTable,columnWidths:[340,60,100,100]}}))}
+                    style={{fontSize:10,fontWeight:700,color:'var(--slate)',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:5,padding:'4px 10px',cursor:'pointer',fontFamily:'DM Sans,sans-serif',marginTop:2,width:'100%'}}>
+                    ↺ Reset Column Widths
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Logo upload shortcut */}
+            {f.id==='logo' && (
+              <div className="form-group">
+                <label className="form-label">Logo Image</label>
+                <div className="upload-zone" onClick={()=>document.getElementById('logoUpInField').click()}
+                  style={{padding:10,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:4}}>
+                  <input type="file" id="logoUpInField" accept="image/*" style={{display:'none'}}
+                    onChange={e=>{if(e.target.files[0])uploadLogo(e.target.files[0]);e.target.value='';}}/>
+                  {uploadingLogo ? <div style={{fontSize:12,color:'var(--slate)'}}>Uploading...</div>
+                    : layout.logoUrl
+                    ? <><img src={layout.logoUrl} style={{height:32,maxWidth:'100%',objectFit:'contain'}}/><span style={{fontSize:10,color:'var(--slate)'}}>Click to replace</span></>
+                    : <><ImageIcon/><span style={{fontSize:11,color:'var(--slate)',fontWeight:600}}>Click to upload logo</span></>
+                  }
+                </div>
+                {layout.logoUrl&&<button onClick={()=>setLayout(p=>({...p,logoUrl:''}))} style={{fontSize:10,color:'var(--red)',border:'none',background:'none',cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,marginTop:4}}>✕ Remove</button>}
+              </div>
+            )}
+
+            {/* Signature upload shortcut */}
+            {f.id==='signature_img' && (
+              <div className="form-group">
+                <label className="form-label">Signature Image</label>
+                <div className="upload-zone" onClick={()=>document.getElementById('sigUpInField').click()}
+                  style={{padding:10,minHeight:60,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:4}}>
+                  <input type="file" id="sigUpInField" accept="image/*" style={{display:'none'}}
+                    onChange={e=>{if(e.target.files[0])uploadSignature(e.target.files[0]);e.target.value='';}}/>
+                  {uploadingSig ? <div style={{fontSize:12,color:'var(--slate)'}}>Uploading...</div>
+                    : invoiceSettings.signatureUrl
+                    ? <><img src={invoiceSettings.signatureUrl} style={{height:32,maxWidth:'100%',objectFit:'contain'}}/><span style={{fontSize:10,color:'var(--slate)'}}>Click to replace</span></>
+                    : <><SignIcon/><span style={{fontSize:11,color:'var(--slate)',fontWeight:600}}>Click to upload signature</span></>
+                  }
+                </div>
+                {invoiceSettings.signatureUrl&&<button onClick={()=>setInvoiceSettings(p=>({...p,signatureUrl:''}))} style={{fontSize:10,color:'var(--red)',border:'none',background:'none',cursor:'pointer',fontFamily:'DM Sans,sans-serif',fontWeight:700,marginTop:4}}>✕ Remove</button>}
+              </div>
+            )}
+
+            {/* Position controls */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10,padding:8,background:'var(--surf)',borderRadius:8,border:'1px solid var(--line)'}}>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>X</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={Math.round(f.x)} onChange={e=>updateField(f.id,{x:+e.target.value})}/>
+              </div>
+              <div>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>Y</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={Math.round(f.y)} onChange={e=>updateField(f.id,{y:+e.target.value})}/>
+              </div>
+              <div style={{gridColumn:'1/-1'}}>
+                <div style={{fontSize:9,fontWeight:700,color:'var(--slate)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:3}}>Width (px)</div>
+                <input type="number" className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11,padding:'5px 8px'}}
+                  value={f.width||200} onChange={e=>updateField(f.id,{width:+e.target.value})}/>
+              </div>
+            </div>
+
+            {/* Visibility */}
+            <div className="form-group" style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 10px',background:f.visible?'var(--green-bg)':'var(--surf)',borderRadius:7,border:`1px solid ${f.visible?'#A7F3D0':'var(--line)'}`}}>
+              <span style={{fontSize:12,fontWeight:700,color:f.visible?'var(--green)':'var(--slate)'}}>{f.visible?'● Visible':'○ Hidden'}</span>
+              <div className={`toggle ${f.visible?'on':''}`} onClick={()=>updateField(f.id,{visible:!f.visible})}/>
+            </div>
+
+            {['po_number','cost_centre','order_notes'].includes(f.id) && (
+              <div className="form-group" style={{marginTop:8,padding:'8px 10px',background:f.showLabel===false?'var(--surf)':'#EFF6FF',borderRadius:7,border:`1px solid ${f.showLabel===false?'var(--line)':'#BFDBFE'}`}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:f.showLabel===false?'var(--slate)':'var(--blue)'}}>Show Label / Header</div>
+                    <div style={{fontSize:10,color:'var(--slate)',marginTop:1}}>
+                      {f.id==='po_number'   && (f.showLabel===false ? 'Value only' : '"PO / Ref.:" prefix shows')}
+                      {f.id==='cost_centre' && (f.showLabel===false ? 'Value only' : '"Cost Centre:" prefix shows')}
+                      {f.id==='order_notes' && (f.showLabel===false ? 'Notes only' : '"Special Instructions:" header shows')}
+                    </div>
+                  </div>
+                  <div className={`toggle ${f.showLabel!==false?'on':''}`}
+                    onClick={()=>updateField(f.id,{showLabel: f.showLabel===false ? true : false })}/>
+                </div>
+              </div>
+            )}
+
+            {/* Typography */}
+            <div className="form-group" style={{marginTop:10}}>
+              <label className="form-label">Font Size (px)</label>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <input type="range" min="7" max="72" value={f.fontSize||11} style={{flex:1}}
+                  onChange={e=>updateField(f.id,{fontSize:+e.target.value})}/>
+                <span style={{fontSize:11,color:'var(--slate)',fontFamily:'DM Mono,monospace',minWidth:28}}>{f.fontSize||11}</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Color</label>
+              <div className="color-row">
+                <div className="color-swatch">
+                  <div className="color-swatch-preview" style={{background:f.color||'#111827'}}/>
+                  <input type="color" value={f.color||'#111827'} onChange={e=>updateField(f.id,{color:e.target.value})}/>
+                </div>
+                <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}}
+                  value={f.color||'#111827'} onChange={e=>updateField(f.id,{color:e.target.value})}/>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Font</label>
+              <select className="form-input form-select" value={f.fontFamily||'Arial'}
+                onChange={e=>updateField(f.id,{fontFamily:e.target.value})}>
+                {['Arial','Times New Roman','Helvetica','Courier New','Georgia'].map(fn=><option key={fn} value={fn}>{fn}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Weight</label>
+              <select className="form-input form-select" value={f.bold?'bold':'normal'}
+                onChange={e=>updateField(f.id,{bold:e.target.value==='bold'})}>
+                <option value="normal">Normal</option>
+                <option value="bold">Bold</option>
+              </select>
+            </div>
+
+            <div style={{display:'flex',gap:6,marginTop:4}}>
+              <button className="rtool success" style={{flex:1,flexDirection:'row',gap:6,height:34,borderRadius:7,justifyContent:'center'}} onClick={saveLayout}>
+                <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+                <span className="rtool-label" style={{color:'#059669',fontSize:11}}>Save Layout</span>
+              </button>
+              <button onClick={()=>removeField(f.id)}
+                style={{padding:'0 12px',height:34,borderRadius:7,border:'1.5px solid #FECACA',background:'#FEF2F2',color:'#DC2626',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}>
+                Remove
+              </button>
+            </div>
+            <button style={{width:'100%',marginTop:6,fontSize:11,fontWeight:700,color:'var(--slate)',background:'var(--surf)',border:'1px solid var(--line)',borderRadius:7,padding:'6px 0',cursor:'pointer',fontFamily:'DM Sans,sans-serif'}}
+              onClick={()=>setActivePanel('fields')}>← Back to Fields</button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── BACKGROUND ── */
+    if (activePanel==='background') return (
       <div className="panel-section">
-        <div className="panel-section-title"><HashIcon /> Invoice Number Series</div>
-        <div style={{ background: 'var(--blue-bg)', border: '1px solid #c7ccf5', borderRadius: 8, padding: 10, marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-          <span style={{ color: 'var(--blue)', flexShrink: 0, marginTop: 1 }}><InfoIcon /></span>
-          <p style={{ fontSize: 11, color: 'var(--ink2)', lineHeight: 1.5 }}>
-            This controls the invoice number format used when customers place orders. Changes affect all <em>new</em> orders. Existing invoices are unchanged.
-          </p>
+        <div className="panel-section-title"><ImageIcon/> Invoice Background</div>
+        <div style={{background:'var(--blue-bg)',border:'1px solid #c7ccf5',borderRadius:8,padding:10,marginBottom:12,display:'flex',gap:8,alignItems:'flex-start'}}>
+          <span style={{color:'var(--blue)',flexShrink:0,marginTop:1}}><InfoIcon/></span>
+          <p style={{fontSize:11,color:'var(--ink2)',lineHeight:1.5}}>Upload your official invoice template or letterhead (PNG/JPG, A4 recommended: 794×1123px). Place your data fields on top.</p>
+        </div>
+        <input type="file" id="bgUpload" accept="image/*" style={{display:'none'}}
+          onChange={e=>{ if(e.target.files[0])uploadBackground(e.target.files[0]); e.target.value=''; }}/>
+        <div className="upload-zone"
+          onClick={()=>document.getElementById('bgUpload').click()}
+          onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor='var(--blue)';}}
+          onDragLeave={e=>{e.currentTarget.style.borderColor='';}}
+          onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor='';if(e.dataTransfer.files[0])uploadBackground(e.dataTransfer.files[0]);}}
+          style={{minHeight:100,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6}}>
+          {uploadingBg
+            ? <><div className="loader" style={{borderTopColor:'var(--blue)',borderColor:'rgba(5,12,156,.15)',width:24,height:24}}/><div style={{fontSize:12,color:'var(--slate)',fontWeight:600}}>Uploading...</div></>
+            : layout.backgroundUrl
+            ? <><img src={layout.backgroundUrl} style={{maxHeight:110,maxWidth:'100%',objectFit:'contain',borderRadius:4,border:'1px solid var(--line)'}}/><div style={{fontSize:11,color:'var(--green)',fontWeight:700,display:'flex',alignItems:'center',gap:4}}><CheckIcon/> Uploaded</div><div style={{fontSize:10,color:'var(--slate)'}}>Click to replace</div></>
+            : <><UploadIcon/><div style={{fontSize:12,color:'var(--slate)',fontWeight:600}}>Click or drag to upload</div><div style={{fontSize:10,color:'var(--slate)'}}>PNG, JPG • 794×1123px recommended</div></>
+          }
+        </div>
+        {layout.backgroundUrl&&<button onClick={()=>{if(window.confirm('Remove background?'))setLayout(p=>({...p,backgroundUrl:''}));}} style={{marginTop:8,fontSize:11,color:'var(--red)',cursor:'pointer',background:'none',border:'none',fontFamily:'DM Sans,sans-serif',fontWeight:700,padding:0,display:'flex',alignItems:'center',gap:4}}><XIcon/> Remove background</button>}
+        <button className="rtool success" style={{width:'100%',flexDirection:'row',gap:8,height:36,borderRadius:8,justifyContent:'center',marginTop:14}} onClick={saveLayout}>
+          <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+          <span className="rtool-label" style={{color:'#059669',fontSize:12}}>Save Layout</span>
+        </button>
+      </div>
+    );
+
+    /* ── STYLING ── */
+    if (activePanel==='styling') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><PaletteIcon/> Colors & Typography</div>
+        {[['Primary Color','primaryColor'],['Secondary Color','secondaryColor']].map(([lbl,key])=>(
+          <div className="form-group" key={key}>
+            <label className="form-label">{lbl}</label>
+            <div className="color-row">
+              <div className="color-swatch">
+                <div className="color-swatch-preview" style={{background:layout.styling[key]||'#050C9C'}}/>
+                <input type="color" value={layout.styling[key]||'#050C9C'} onChange={e=>setLayout(p=>({...p,styling:{...p.styling,[key]:e.target.value}}))}/>
+              </div>
+              <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:11}} value={layout.styling[key]||'#050C9C'} onChange={e=>setLayout(p=>({...p,styling:{...p.styling,[key]:e.target.value}}))}/>
+            </div>
+          </div>
+        ))}
+        <div className="form-group">
+          <label className="form-label">Font Family</label>
+          <select className="form-input form-select" value={layout.styling.fontFamily} onChange={e=>setLayout(p=>({...p,styling:{...p.styling,fontFamily:e.target.value}}))}>
+            {['Arial','Times New Roman','Helvetica','Courier New','Georgia'].map(f=><option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+      </div>
+    );
+
+    /* ── NUMBERING ── */
+    if (activePanel==='numbering') return (
+      <div className="panel-section">
+        <div className="panel-section-title"><HashIcon/> Invoice Number Series</div>
+        <div style={{background:'var(--blue-bg)',border:'1px solid #c7ccf5',borderRadius:8,padding:10,marginBottom:12,display:'flex',gap:8,alignItems:'flex-start'}}>
+          <span style={{color:'var(--blue)',flexShrink:0}}><InfoIcon/></span>
+          <p style={{fontSize:11,color:'var(--ink2)',lineHeight:1.5}}>Controls the invoice number format for new orders. Existing invoices are unchanged.</p>
         </div>
         <div className="form-group">
           <label className="form-label">Invoice Prefix</label>
-          <input className="form-input" style={{ fontFamily: 'DM Mono, monospace', fontSize: 14, fontWeight: 600, letterSpacing: '.05em' }}
-            type="text" maxLength="8" placeholder="e.g. WQI"
-            value={invoiceSettings.invoicePrefix}
-            onChange={e => setInvoiceSettings(p => ({ ...p, invoicePrefix: e.target.value.toUpperCase() }))} />
-          <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 3 }}>Up to 8 characters. Uppercase automatically.</div>
+          <input className="form-input" style={{fontFamily:'DM Mono,monospace',fontSize:13,fontWeight:600}} type="text" maxLength="8" placeholder="e.g. WQI"
+            value={invoiceSettings.invoicePrefix} onChange={e=>setInvoiceSettings(p=>({...p,invoicePrefix:e.target.value.toUpperCase()}))}/>
         </div>
         <div className="form-group">
           <label className="form-label">Separator</label>
-          <select className="form-input form-select"
-            value={invoiceSettings.numberSeparator}
-            onChange={e => setInvoiceSettings(p => ({ ...p, numberSeparator: e.target.value }))}>
-            <option value="-">Hyphen ( - )</option>
-            <option value="/">Slash ( / )</option>
-            <option value=".">Period ( . )</option>
-            <option value="">None</option>
+          <select className="form-input form-select" value={invoiceSettings.numberSeparator} onChange={e=>setInvoiceSettings(p=>({...p,numberSeparator:e.target.value}))}>
+            <option value="-">Hyphen ( - )</option><option value="/">Slash ( / )</option>
+            <option value=".">Period ( . )</option><option value="">None</option>
           </select>
         </div>
         <div className="form-group">
           <label className="form-label">Starting Number</label>
-          <input className="form-input" type="number" min="1" max="99999"
-            value={invoiceSettings.startingInvoiceNumber}
-            onChange={e => setInvoiceSettings(p => ({ ...p, startingInvoiceNumber: Math.max(1, +e.target.value) }))} />
-          <div style={{ fontSize: 10, color: 'var(--slate)', marginTop: 3 }}>Use "Reset Counter" from the ribbon to apply this to the live counter.</div>
+          <input className="form-input" type="number" min="1" value={invoiceSettings.startingInvoiceNumber}
+            onChange={e=>setInvoiceSettings(p=>({...p,startingInvoiceNumber:Math.max(1,+e.target.value)}))}/>
         </div>
         <div className="form-group">
-          <label className="form-label">Number Padding (digits)</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
-            {[3,4,5,6,7].map(n => (
-              <button key={n}
-                onClick={() => setInvoiceSettings(p => ({ ...p, numberPadding: n }))}
-                style={{
-                  padding: '6px 4px', borderRadius: 6, fontSize: 11, fontFamily: 'DM Mono, monospace',
-                  border: '1.5px solid', cursor: 'pointer', fontWeight: 600, transition: 'all .15s',
-                  borderColor: invoiceSettings.numberPadding === n ? 'var(--blue)' : 'var(--line)',
-                  background: invoiceSettings.numberPadding === n ? 'var(--blue-bg)' : 'var(--surf)',
-                  color: invoiceSettings.numberPadding === n ? 'var(--blue)' : 'var(--slate)'
-                }}>
-                {String(1).padStart(n, '0')}
+          <label className="form-label">Number Padding</label>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5}}>
+            {[3,4,5,6,7].map(n=>(
+              <button key={n} onClick={()=>setInvoiceSettings(p=>({...p,numberPadding:n}))}
+                style={{padding:'5px 2px',borderRadius:5,fontSize:10,fontFamily:'DM Mono,monospace',border:'1.5px solid',cursor:'pointer',fontWeight:600,
+                  borderColor:invoiceSettings.numberPadding===n?'var(--blue)':'var(--line)',
+                  background:invoiceSettings.numberPadding===n?'var(--blue-bg)':'var(--surf)',
+                  color:invoiceSettings.numberPadding===n?'var(--blue)':'var(--slate)'}}>
+                {String(1).padStart(n,'0')}
               </button>
             ))}
           </div>
         </div>
         <div className="series-preview">
-          <div className="series-preview-label">Next Invoice Number Preview</div>
+          <div className="series-preview-label">Next Invoice Preview</div>
           <div className="series-preview-number" key={previewNumber}>{previewNumber}</div>
         </div>
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-          <button className="rtool success" style={{ flex: 1, flexDirection: 'row', gap: 8, height: 38, borderRadius: 8, justifyContent: 'center' }} onClick={saveSettings}>
-            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon /></span>
-            <span className="rtool-label" style={{color:'#059669', fontSize: 12}}>Save Series</span>
+        <div style={{marginTop:10,display:'flex',gap:7}}>
+          <button className="rtool success" style={{flex:1,flexDirection:'row',gap:6,height:36,borderRadius:7,justifyContent:'center'}} onClick={saveSettings}>
+            <span className="rtool-icon" style={{color:'#059669'}}><SaveIcon/></span>
+            <span className="rtool-label" style={{color:'#059669',fontSize:11}}>Save Series</span>
           </button>
-          <button style={{ flex: 1, height: 38, borderRadius: 8, border: '1.5px solid #FDE68A', background: '#FFFBEB', color: '#D97706', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', transition: 'all .15s' }} onClick={resetCounter}>
-            <RefreshIcon />
-            Reset Counter
+          <button onClick={resetCounter} style={{flex:1,height:36,borderRadius:7,border:'1.5px solid #FDE68A',background:'#FFFBEB',color:'#D97706',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:5,fontFamily:'DM Sans,sans-serif'}}>
+            <RefreshIcon/> Reset
           </button>
         </div>
       </div>
     );
 
-    if (activePanel === 'company') return (
+    /* ── COMPANY ── */
+    if (activePanel==='company') return (
       <div className="panel-section">
-        <div className="panel-section-title"><BuildIcon /> Company Information</div>
-        <div className="form-group">
-          <label className="form-label">Company Name *</label>
-          <input className="form-input" type="text" placeholder="Your Company Name"
-            value={invoiceSettings.companyName}
-            onChange={e => setInvoiceSettings(p => ({ ...p, companyName: e.target.value }))} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">TIN / Tax ID</label>
-          <input className="form-input" type="text" placeholder="XXX-XXX-XXX-XXX"
-            value={invoiceSettings.companyTIN}
-            onChange={e => setInvoiceSettings(p => ({ ...p, companyTIN: e.target.value }))} />
-        </div>
+        <div className="panel-section-title"><BuildIcon/> Company Information</div>
+        {[['Company Name *','text','companyName','Your Company Name'],['TIN / Tax ID','text','companyTIN','XXX-XXX-XXX-XXX']].map(([lbl,type,key,ph])=>(
+          <div className="form-group" key={key}>
+            <label className="form-label">{lbl}</label>
+            <input className="form-input" type={type} placeholder={ph} value={invoiceSettings[key]}
+              onChange={e=>setInvoiceSettings(p=>({...p,[key]:e.target.value}))}/>
+          </div>
+        ))}
         <div className="form-group">
           <label className="form-label">Business Address</label>
-          <textarea className="form-input form-textarea" placeholder="Complete business address"
-            value={invoiceSettings.companyAddress}
-            onChange={e => setInvoiceSettings(p => ({ ...p, companyAddress: e.target.value }))} />
+          <textarea className="form-input form-textarea" placeholder="Complete business address" value={invoiceSettings.companyAddress}
+            onChange={e=>setInvoiceSettings(p=>({...p,companyAddress:e.target.value}))}/>
         </div>
         <div className="form-group">
           <label className="form-label">Default VAT Rate (%)</label>
-          <input className="form-input" type="number" step=".01" min="0" max="100" placeholder="12"
-            value={invoiceSettings.defaultVAT}
-            onChange={e => setInvoiceSettings(p => ({ ...p, defaultVAT: e.target.value }))} />
+          <input className="form-input" type="number" step=".01" min="0" max="100" placeholder="12" value={invoiceSettings.defaultVAT}
+            onChange={e=>setInvoiceSettings(p=>({...p,defaultVAT:e.target.value}))}/>
+        </div>
+        <div style={{paddingTop:12,marginTop:4,borderTop:'1px solid var(--line)'}}>
+          <div className="panel-section-title" style={{marginBottom:8}}>👤 Customer (Buyer) Field Labels</div>
+          <div className="form-group">
+            <label className="form-label">Customer Company Name Label</label>
+            <input className="form-input" type="text" placeholder="e.g. Company Name"
+              value={invoiceSettings.customerCompanyLabel||'Company Name'}
+              onChange={e=>setInvoiceSettings(p=>({...p,customerCompanyLabel:e.target.value}))}/>
+            <span style={{fontSize:10,color:'var(--slate)',marginTop:4,display:'block'}}>This is the field label / placeholder shown on the invoice for the buyer's company name. At print time it will be filled from the customer's own profile (ownCompanyName).</span>
+          </div>
         </div>
       </div>
     );
 
-    if (activePanel === 'signature') return (
+    /* ── SIGNATURE ── */
+    if (activePanel==='signature') return (
       <div className="panel-section">
-        <div className="panel-section-title"><SignIcon /> Signature</div>
+        <div className="panel-section-title"><SignIcon/> Signature</div>
         <div className="form-group">
           <label className="form-label">Signatory Name & Title</label>
           <input className="form-input" type="text" placeholder="e.g. Jane Doe, Manager"
-            value={invoiceSettings.signedBy}
-            onChange={e => setInvoiceSettings(p => ({ ...p, signedBy: e.target.value }))} />
+            value={invoiceSettings.signedBy} onChange={e=>setInvoiceSettings(p=>({...p,signedBy:e.target.value}))}/>
         </div>
-        <div className="upload-zone" onClick={() => document.getElementById('sigUpload').click()}>
-          <input type="file" id="sigUpload" accept="image/*" style={{display:'none'}}
-            onChange={e => { if (e.target.files[0]) upload(e.target.files[0], 'signature'); }} />
-          {uploadingSignature ? (
-            <div style={{ color: 'var(--slate)', fontSize: 13 }}>Uploading...</div>
-          ) : invoiceSettings.signatureUrl ? (
-            <img src={invoiceSettings.signatureUrl} alt="Signature" style={{ height: 40, maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
-          ) : (
-            <>
-              <div style={{ color: 'var(--slate)', marginBottom: 4 }}><SignIcon /></div>
-              <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>Click to upload signature image</div>
-            </>
-          )}
+        <div className="upload-zone" onClick={()=>document.getElementById('sigUp').click()} style={{padding:12,minHeight:80,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5}}>
+          <input type="file" id="sigUp" accept="image/*" style={{display:'none'}} onChange={e=>{if(e.target.files[0])uploadSignature(e.target.files[0]);e.target.value='';}}/>
+          {uploadingSig?<div style={{fontSize:12,color:'var(--slate)'}}>Uploading...</div>
+            :invoiceSettings.signatureUrl?<><img src={invoiceSettings.signatureUrl} style={{height:36,maxWidth:'100%',objectFit:'contain'}}/><span style={{fontSize:10,color:'var(--slate)'}}>Click to replace</span></>
+            :<><SignIcon/><div style={{fontSize:12,color:'var(--slate)',fontWeight:600}}>Click to upload signature</div></>
+          }
         </div>
-        {invoiceSettings.signatureUrl && (
-          <button onClick={() => setInvoiceSettings(p => ({ ...p, signatureUrl: '' }))}
-            style={{ marginTop: 8, fontSize: 11, color: 'var(--red)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, padding: 0 }}>
-            ✕ Remove signature
-          </button>
-        )}
+        {invoiceSettings.signatureUrl&&<button onClick={()=>setInvoiceSettings(p=>({...p,signatureUrl:''}))} style={{marginTop:7,fontSize:11,color:'var(--red)',cursor:'pointer',background:'none',border:'none',fontFamily:'DM Sans,sans-serif',fontWeight:700,padding:0}}>✕ Remove signature</button>}
       </div>
     );
 
-    if (activePanel === 'terms') return (
+    /* ── TERMS ── */
+    if (activePanel==='terms') return (
       <div className="panel-section">
-        <div className="panel-section-title"><TypeIcon /> Terms & Conditions</div>
-        <div className="form-group">
-          <label className="form-label">Terms Text</label>
-          <textarea className="form-input form-textarea" rows="10" placeholder="Enter your terms and conditions..."
-            value={invoiceSettings.termsAndConditions}
-            onChange={e => setInvoiceSettings(p => ({ ...p, termsAndConditions: e.target.value }))} />
-        </div>
+        <div className="panel-section-title"><TypeIcon/> Terms & Conditions</div>
+        <textarea className="form-input form-textarea" rows="12" placeholder="Enter your terms and conditions..."
+          value={invoiceSettings.termsAndConditions} onChange={e=>setInvoiceSettings(p=>({...p,termsAndConditions:e.target.value}))}/>
       </div>
     );
 
-    // default
     return (
-      <div className="panel-section">
-        <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--slate)' }}>
-          <div style={{ marginBottom: 10, opacity: .5 }}><LayoutIcon /></div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>Select a tool from the ribbon</div>
-        </div>
+      <div className="panel-section" style={{textAlign:'center',padding:'32px 16px',color:'var(--slate)'}}>
+        <div style={{opacity:.5,marginBottom:8}}><LayoutIcon/></div>
+        <div style={{fontSize:13,fontWeight:600}}>Select a tool from the ribbon</div>
       </div>
     );
   };
 
-  /* ─────────── LIVE PREVIEW ─────────── */
-  const renderPreviewSection = (key) => {
-    const section = invoiceLayoutConfig.sections[key];
-    if (!section.visible) return null;
+  /* ══════════════════════════════════════════════════
+     CANVAS FIELD CONTENT RENDERER
+  ══════════════════════════════════════════════════ */
+  const renderFieldContent = (f) => {
+    const fs    = f.fontSize || 11;
+    const color = f.color || '#111827';
+    const fw    = f.bold ? '700' : '400';
+    const ff    = f.fontFamily || 'Arial';
+    const style = { fontSize:fs, color, fontWeight:fw, fontFamily:ff, lineHeight:1.4, wordBreak:'break-word' };
 
-    switch (key) {
-      case 'header': {
-        const isLogoLeft = invoiceLayoutConfig.logoPosition === 'left' && invoiceLayoutConfig.logoUrl;
-        return (
-          <div key={key} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #e5e7eb' }}>
-            <div style={{ display: isLogoLeft ? 'flex' : 'block', alignItems: 'center', gap: 12, textAlign: isLogoLeft ? 'left' : 'center' }}>
-              {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'top' && (
-                <div style={{ marginBottom: 6 }}>
-                  <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 40, margin: '0 auto', objectFit: 'contain', display: 'block' }} />
-                </div>
-              )}
-              {invoiceLayoutConfig.logoUrl && invoiceLayoutConfig.logoPosition === 'left' && (
-                <img src={invoiceLayoutConfig.logoUrl} alt="Logo" style={{ height: 36, objectFit: 'contain' }} />
-              )}
-              <div style={{ flex: 1 }}>
-                <h1 style={{ color: section.color, fontSize: `${section.fontSize}px`, fontWeight: section.fontWeight, marginBottom: 2 }}>INVOICE</h1>
-                <div style={{ fontSize: `${section.fontSize * 0.42}px`, color: section.color }}>
-                  <strong>Invoice No:</strong> {previewNumber} &nbsp;|&nbsp; <strong>Date:</strong> {new Date().toLocaleDateString()}
-                </div>
+    // Sample data used throughout the preview so the user can see realistic output
+    const sampleCompany  = invoiceSettings.companyName    || 'Waterquest Industries, Inc.';
+    const sampleTIN      = invoiceSettings.companyTIN     || '123-456-789-000';
+    const sampleAddress  = invoiceSettings.companyAddress || '45 Rizal Street, Caloocan City, Metro Manila 1400';
+    const sampleSigned   = invoiceSettings.signedBy       || 'Maria Santos';
+    const sampleTerms    = invoiceSettings.termsAndConditions || '1. All invoices are due upon receipt unless otherwise stated.\n2. Late payments are subject to a 2% monthly interest charge.\n3. Goods remain property of the seller until full payment is received.';
+
+    switch(f.id) {
+      case 'logo':
+        return layout.logoUrl
+          ? <img src={layout.logoUrl} alt="Logo" style={{maxWidth:'100%',maxHeight:80,objectFit:'contain',display:'block'}}/>
+          : <div style={{width:'100%',height:48,display:'flex',alignItems:'center',justifyContent:'flex-start',gap:8,opacity:.35}}>
+              <div style={{width:40,height:40,borderRadius:6,background:'#050C9C',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#fff" fillOpacity=".9"/><path d="M20 10C25 10 28 13 28 18C28 23 25 26 20 26C15 26 12 23 12 18C12 13 15 10 20 10Z M20 14C17 14 16 15.5 16 18C16 20.5 17 22 20 22C23 22 24 20.5 24 18C24 15.5 23 14 20 14Z" fill="#050C9C"/></svg>
               </div>
-            </div>
-          </div>
-        );
-      }
-      case 'companyInfo': return (
-        <div key={key} style={{ display: 'grid', gridTemplateColumns: section.columns === 2 ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 10 }}>
-          <div style={{ border: '1px solid #e5e7eb', padding: 8, borderRadius: 4, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-            <p style={{ fontWeight: 700, marginBottom: 4, color: invoiceLayoutConfig.styling.primaryColor }}>Seller Information</p>
-            <p><strong>Name:</strong> {invoiceSettings.companyName || 'Your Company'}</p>
-            <p><strong>TIN:</strong> {invoiceSettings.companyTIN || 'XXX-XXX-XXX'}</p>
-            <p><strong>Address:</strong> {invoiceSettings.companyAddress || 'Company Address'}</p>
-          </div>
-          <div style={{ border: '1px solid #e5e7eb', padding: 8, borderRadius: 4, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-            <p style={{ fontWeight: 700, marginBottom: 4, color: invoiceLayoutConfig.styling.primaryColor }}>Buyer Information</p>
-            <p><strong>Name:</strong> Customer Name</p>
-            <p><strong>TIN:</strong> N/A</p>
-            <p><strong>Address:</strong> Customer Address</p>
-          </div>
-        </div>
-      );
-      case 'itemsTable': return (
-        <div key={key} style={{ marginBottom: 10, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: `${section.fontSize}px`, color: section.color }}>
-            <thead>
-              <tr style={{ backgroundColor: section.headerBgColor || invoiceLayoutConfig.styling.primaryColor, color: '#fff' }}>
-                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'left' }}>Item</th>
-                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'center' }}>Qty</th>
-                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>Price</th>
-                <th style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>Total</th>
-              </tr>
-            </thead>
+              <span style={{fontSize:15,fontWeight:800,color:'#050C9C',fontFamily:'sans-serif',letterSpacing:'-0.5px'}}>Your Logo</span>
+            </div>;
+
+      case 'invoice_title':
+        return <div style={{...style}}>{f.text||'INVOICE'}</div>;
+
+      case 'invoice_no':
+        return <div style={{...style}}>{previewNumber}</div>;
+
+      case 'invoice_date':
+        return <div style={{...style}}>{new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})}</div>;
+
+      case 'due_date':
+        return <div style={{...style}}>{new Date(Date.now()+30*864e5).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})}</div>;
+
+      case 'company_name':
+        return <div style={{...style}}>{sampleCompany}</div>;
+
+      case 'company_tin':
+        return <div style={{...style}}>TIN: {sampleTIN}</div>;
+
+      case 'company_address':
+        return <div style={{...style,whiteSpace:'pre-line'}}>{sampleAddress}</div>;
+
+      case 'customer_company':
+        return <div style={{...style}}>{invoiceSettings.customerCompanyLabel||'ABC Trading Corporation'}</div>;
+
+      case 'customer_name':
+        return <div style={{...style}}>Juan Dela Cruz</div>;
+
+      case 'customer_tin':
+        return <div style={{...style}}>TIN: 987-654-321-000</div>;
+
+      case 'customer_address':
+        return <div style={{...style,whiteSpace:'pre-line'}}>{'78 Bonifacio Ave., Quezon City\nMetro Manila 1100'}</div>;
+
+      case 'items_table': {
+        const it = layout.itemsTable;
+        const cols = it.columnWidths || [340,60,100,100];
+        const colLabels = ['Item Description','Qty','Unit Price','Total'];
+        const colAlign  = ['left','center','right','right'];
+        const sampleRows = [
+          ['Premium Water Dispenser — Floor Standing (Hot & Cold)', '2', '4,500.00', '9,000.00'],
+          ['Replacement Filter Cartridge (5-Stage)', '5', '380.00', '1,900.00'],
+          ['Installation & Delivery Fee', '1', '500.00', '500.00'],
+        ];
+
+        const handleColResize = (colIdx, e) => {
+          e.preventDefault(); e.stopPropagation();
+          const startX = e.clientX;
+          const startW = cols[colIdx];
+          const onMove = (mv) => {
+            const delta = mv.clientX - startX;
+            const newW  = Math.max(30, startW + delta);
+            const newCols = [...cols];
+            newCols[colIdx] = newW;
+            setLayout(p => ({ ...p, itemsTable: { ...p.itemsTable, columnWidths: newCols } }));
+          };
+          const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+          window.addEventListener('mousemove', onMove);
+          window.addEventListener('mouseup', onUp);
+        };
+
+        return (
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:fs,color,fontFamily:ff,tableLayout:'fixed',background:'transparent'}}>
+            <colgroup>{cols.map((w,i)=><col key={i} style={{width:w}}/>)}</colgroup>
+            {it.showHeader && (
+              <thead>
+                <tr style={{backgroundColor:it.headerBgColor||'#050C9C',color:it.headerTextColor||'#ffffff'}}>
+                  {colLabels.map((lbl,i)=>(
+                    <th key={i} style={{padding:'5px 7px',textAlign:colAlign[i],fontWeight:700,position:'relative',userSelect:'none',border:'none'}}>
+                      {lbl}
+                      <span
+                        onMouseDown={e=>handleColResize(i,e)}
+                        style={{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'col-resize',background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10}}
+                        title="Drag to resize column"
+                      >
+                        <span style={{width:1.5,height:'60%',background:'rgba(255,255,255,0.6)',borderRadius:1,display:'block'}}/>
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            )}
             <tbody>
-              <tr>
-                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px' }}>Sample Product</td>
-                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'center' }}>2</td>
-                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right' }}>₱100.00</td>
-                <td style={{ border: '1px solid #e5e7eb', padding: '4px 6px', textAlign: 'right', fontWeight: 600 }}>₱200.00</td>
-              </tr>
+              {sampleRows.map((row,ri)=>(
+                <tr key={ri} style={{background:'transparent'}}>
+                  <td style={{padding:'5px 7px',border:'none',background:'transparent',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{row[0]}</td>
+                  <td style={{padding:'5px 7px',border:'none',background:'transparent',textAlign:'center'}}>{row[1]}</td>
+                  <td style={{padding:'5px 7px',border:'none',background:'transparent',textAlign:'right'}}>{row[2]}</td>
+                  <td style={{padding:'5px 7px',border:'none',background:'transparent',textAlign:'right',fontWeight:600}}>{row[3]}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
-      );
-      case 'totals': {
-        const vat = parseFloat(invoiceSettings.defaultVAT) || 12;
-        return (
-          <div key={key} style={{ marginBottom: 10, marginLeft: section.position === 'right' ? 'auto' : section.position === 'center' ? 'auto' : '0', marginRight: section.position === 'center' ? 'auto' : '0', width: 180 }}>
-            <div style={{ fontSize: `${section.fontSize}px`, color: section.color }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: 3, marginBottom: 3 }}>
-                <span>Subtotal:</span><span>₱200.00</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: 3, marginBottom: 3 }}>
-                <span>VAT ({vat}%):</span><span>₱{(200 * vat/100).toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, padding: '4px 6px', borderRadius: 4, background: invoiceLayoutConfig.styling.primaryColor, color: '#fff' }}>
-                <span>Grand Total:</span><span>₱{(200 * (1 + vat/100)).toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
         );
       }
-      case 'paymentMethod': return (
-        <div key={key} style={{ paddingTop: 8, borderTop: '1px solid #e5e7eb', marginBottom: 8, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-          <span style={{ fontWeight: 600 }}>Payment Method: </span>Cash on Delivery
-        </div>
-      );
-      case 'terms': return (
-        <div key={key} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #e5e7eb', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-          {invoiceSettings.termsAndConditions ? (
-            <>
-              <p style={{ fontWeight: 700, color: invoiceLayoutConfig.styling.primaryColor, marginBottom: 3 }}>Terms & Conditions</p>
-              <p style={{ whiteSpace: 'pre-line' }}>{invoiceSettings.termsAndConditions}</p>
-            </>
-          ) : (
-            <p style={{ fontStyle: 'italic', color: '#9CA3AF' }}>Terms and conditions will appear here.</p>
-          )}
-        </div>
-      );
-      case 'signature': return (
-        <div key={key} style={{ display: 'grid', gridTemplateColumns: section.columns === 2 ? '1fr 1fr' : '1fr', gap: 16, padding: '10px 0', marginBottom: 8, fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ borderTop: '1px solid #9CA3AF', width: 100, margin: '0 auto 4px' }} />
-            <p>Customer Signature</p>
+
+      case 'subtotal':
+        return <div style={{...style,display:'flex',justifyContent:'space-between'}}><span>Subtotal:</span><span>₱11,400.00</span></div>;
+
+      case 'vat_amount': {
+        const vat = parseFloat(invoiceSettings.defaultVAT)||12;
+        return <div style={{...style,display:'flex',justifyContent:'space-between'}}><span>VAT ({vat}%):</span><span>₱{(11400*vat/100).toFixed(2)}</span></div>;
+      }
+
+      case 'grand_total': {
+        const vat = parseFloat(invoiceSettings.defaultVAT)||12;
+        return <div style={{...style,fontWeight:'700'}}>₱{(11400*(1+vat/100)).toFixed(2)}</div>;
+      }
+
+      case 'payment_method':
+        return <div style={{...style}}>Payment Method: Cash on Delivery</div>;
+
+      case 'payment_terms':
+        return <div style={{...style}}>Payment Terms: {f.text||'Net 30'}</div>;
+
+      case 'cost_centre':
+        return f.showLabel===false
+          ? <div style={{...style,fontFamily:'DM Mono,monospace',fontWeight:700}}>CC-OPERATIONS-01</div>
+          : <div style={{...style,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontWeight:600,color:color||'#374151'}}>Cost Centre:</span>
+              <span style={{fontFamily:'DM Mono,monospace',fontWeight:700}}>CC-OPERATIONS-01</span>
+            </div>;
+
+      case 'po_number':
+        return f.showLabel===false
+          ? <div style={{...style,fontFamily:'DM Mono,monospace',fontWeight:700}}>PO-2025-0042</div>
+          : <div style={{...style,display:'flex',alignItems:'center',gap:6}}>
+              <span style={{fontWeight:600,color:color||'#374151'}}>PO / Ref.:</span>
+              <span style={{fontFamily:'DM Mono,monospace',fontWeight:700}}>PO-2025-0042</span>
+            </div>;
+
+      case 'order_notes':
+        return f.showLabel===false
+          ? <div style={{...style,whiteSpace:'pre-line'}}>Handle with care. Deliver before noon.</div>
+          : <div style={{...style,whiteSpace:'pre-line'}}>
+              <span style={{fontWeight:600,display:'block',marginBottom:2}}>Special Instructions:</span>
+              Handle with care. Deliver before noon.
+            </div>;
+
+      case 'terms':
+        return <div style={{...style,whiteSpace:'pre-line'}}>{sampleTerms}</div>;
+
+      case 'signature_img':
+        return invoiceSettings.signatureUrl
+          ? <img src={invoiceSettings.signatureUrl} alt="Signature" style={{maxWidth:'100%',maxHeight:50,objectFit:'contain',display:'block'}}/>
+          : <div style={{...style,color:'#94A3B8',fontStyle:'italic',fontSize:Math.max(fs-1,9)}}>[Signature — upload via Style panel]</div>;
+
+      case 'signed_by':
+        return (
+          <div style={{...style,textAlign:'center'}}>
+            <div style={{borderTop:'1px solid #9CA3AF',width:90,margin:'0 auto 4px'}}/>
+            <div style={{fontWeight:'700'}}>{sampleSigned}</div>
+            <div style={{fontSize:Math.max(fs-1,9),color:'#6B7280'}}>Authorized Signatory</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            {invoiceSettings.signatureUrl && <img src={invoiceSettings.signatureUrl} alt="Sig" style={{ height: 28, margin: '0 auto 4px', display: 'block', objectFit: 'contain' }} />}
-            <div style={{ borderTop: '1px solid #9CA3AF', width: 100, margin: '0 auto 4px' }} />
-            <p style={{ fontWeight: 700 }}>{invoiceSettings.signedBy || 'Company Representative'}</p>
-            <p style={{ color: '#6B7280' }}>Authorized Signature</p>
+        );
+
+      case 'customer_sig':
+        return (
+          <div style={{...style,textAlign:'center'}}>
+            <div style={{borderTop:'1px solid #9CA3AF',width:90,margin:'0 auto 4px'}}/>
+            <div>Juan Dela Cruz</div>
+            <div style={{fontSize:Math.max(fs-1,9),color:'#6B7280'}}>Customer Signature</div>
           </div>
-        </div>
-      );
+        );
 
+      case 'footer_note':
+        return <div style={{...style,textAlign:'center'}}>{f.text||'Thank you for your business!'}</div>;
 
-
-case 'specialInstructions': return (
-        <div key={key} style={{ marginTop: 12, padding: 10, border: '1px solid #FDE68A', borderRadius: 6, background: '#FFFBEB', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-          <p style={{ fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Special Instructions</p>
-          <p style={{ margin: 0, fontStyle: 'italic', color: section.color }}>Customer notes and per-item need-by dates will appear here.</p>
-        </div>
-      );
-
-      case 'footer': return (
-        <div key={key} style={{ paddingTop: 8, borderTop: '1px solid #e5e7eb', textAlign: 'center', fontSize: `${section.fontSize}px`, color: section.color, fontWeight: section.fontWeight }}>
-          <p>Thank you for your business!</p>
-          <p style={{ marginTop: 2 }}>For inquiries: contact@{(invoiceSettings.companyName||'yourcompany').toLowerCase().replace(/\s+/g,'')}.com</p>
-        </div>
-      );
-      default: return null;
+      default:
+        // Custom text
+        return <div style={{...style}}>{f.text||f.label}</div>;
     }
   };
 
+  /* ══════════════════════════════════════════════════
+     LOADING
+  ══════════════════════════════════════════════════ */
+  if (loading) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0C1220'}}>
+      <div style={{textAlign:'center'}}>
+        <OperixLogo/>
+        <div style={{marginTop:20,width:32,height:32,border:'2px solid rgba(255,255,255,.2)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .6s linear infinite',margin:'20px auto 0'}}/>
+        <p style={{color:'#64748B',fontSize:13,marginTop:12,fontFamily:'DM Sans,sans-serif'}}>Loading Invoice Manager...</p>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════
+     RENDER
+  ══════════════════════════════════════════════════ */
   return (
     <div>
-      {/* ── TITLEBAR ── */}
+      {/* TITLEBAR */}
       <div className="titlebar">
         <div className="titlebar-brand">
-          <OperixLogo />
-          <div>
-            <span>Operix</span>
-            <small>Invoice Manager</small>
-          </div>
+          <OperixLogo/>
+          <div><span>Operix</span><small>Invoice Manager</small></div>
         </div>
         <div className="titlebar-file">invoice-template.operix</div>
         <div className="titlebar-actions">
-          <span style={{ fontSize: 11, color: '#64748B', marginRight: 6 }}>{user?.displayName}</span>
-          <a href="dashboard.html" className="tb-pill"><HomeIcon />Dashboard</a>
-          <button className="tb-pill danger" onClick={async () => { await firebase.auth().signOut(); window.location.href = 'login.html'; }}>
-            <LogoutIcon />Logout
-          </button>
+          <span style={{fontSize:11,color:'#64748B',marginRight:6}}>{user?.displayName}</span>
+          <a href="dashboard.html" className="tb-pill"><HomeIcon/>Dashboard</a>
+          <button className="tb-pill danger" onClick={async()=>{await firebase.auth().signOut();window.location.href='login.html';}}><LogoutIcon/>Logout</button>
         </div>
       </div>
 
-      {/* ── RIBBON ── */}
+      {/* RIBBON */}
       <div className="ribbon">
         <div className="ribbon-tabs">
-          {[
-            { id: 'home', label: 'Home' },
-            { id: 'layout', label: 'Layout' },
-            { id: 'design', label: 'Design' },
-            { id: 'numbering', label: 'Numbering' },
-            { id: 'company', label: 'Company' },
-          ].map(({ id, label }) => (
-            <div key={id} className={`rtab ${activeRibbonTab === id ? 'active' : ''}`}
-              onClick={() => {
+          {[{id:'home',label:'Home'},{id:'layout',label:'Layout'},{id:'design',label:'Design'},{id:'numbering',label:'Numbering'},{id:'company',label:'Company'}].map(({id,label})=>(
+            <div key={id} className={`rtab ${activeRibbonTab===id?'active':''}`}
+              onClick={()=>{
                 setActiveRibbonTab(id);
-                if (id === 'layout') setActivePanel('sections');
-                if (id === 'design') setActivePanel('styling');
-                if (id === 'numbering') setActivePanel('numbering');
-                if (id === 'company') setActivePanel('company');
-              }}>
-              {label}
-            </div>
+                if(id==='layout')    setActivePanel('fields');
+                if(id==='design')    setActivePanel('styling');
+                if(id==='numbering') setActivePanel('numbering');
+                if(id==='company')   setActivePanel('company');
+              }}>{label}</div>
           ))}
         </div>
-        <div className="ribbon-tools">
-          {ribbonContent[activeRibbonTab] || ribbonContent['home']}
-        </div>
+        <div className="ribbon-tools">{ribbonContent[activeRibbonTab]||ribbonContent.home}</div>
       </div>
 
-      {/* ── WORKSPACE ── */}
+      {/* WORKSPACE */}
       <div className="workspace">
-        {/* Panel */}
-        <div className="panel">
-          {renderPanel()}
-        </div>
 
-        {/* Preview */}
-        <div className="preview-area">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, maxWidth: 680, margin: '0 auto 16px' }}>
-            <div style={{ display: 'flex', align: 'center', gap: 8 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--slate)' }}>
-                <EyeIcon />
-                Live Preview
-              </span>
+        {/* LEFT PANEL */}
+        <div className="panel">{renderPanel()}</div>
+
+        {/* CANVAS AREA */}
+        <div className="canvas-area">
+
+          {/* Canvas top bar */}
+          <div style={{width:794,display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,fontWeight:700,color:'#fff',opacity:.85}}><EyeIcon/> Invoice Canvas</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.45)',fontFamily:'DM Mono,monospace'}}>794×1123px (A4)</span>
+              {layout.backgroundUrl
+                ? <span style={{fontSize:10,fontWeight:700,color:'#fff',background:'rgba(5,150,105,.6)',padding:'2px 8px',borderRadius:4,display:'flex',alignItems:'center',gap:3}}><CheckIcon/> BG Set</span>
+                : <button onClick={()=>{setActiveRibbonTab('layout');setActivePanel('background');}} style={{fontSize:10,fontWeight:700,color:'#fff',background:'rgba(245,158,11,.3)',border:'1px solid rgba(245,158,11,.5)',padding:'2px 8px',borderRadius:4,cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:3}}><UploadIcon/> Upload BG</button>
+              }
+              <span style={{fontSize:10,color:'rgba(255,255,255,.45)'}}>·</span>
+              <span style={{fontSize:10,color:'rgba(255,255,255,.6)',fontWeight:600}}>{layout.placedFields.length} field{layout.placedFields.length!==1?'s':''} placed</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--slate)', background: 'var(--white)', border: '1px solid var(--line)', padding: '3px 10px', borderRadius: 5 }}>
-                {invoiceLayoutConfig.styling.fontFamily}
-              </span>
-              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'var(--slate)', background: 'var(--white)', border: '1px solid var(--line)', padding: '3px 10px', borderRadius: 5 }}>
-                {previewNumber}
-              </span>
+            <div style={{display:'flex',gap:5}}>
+              <button onClick={()=>setShowGrid(g=>!g)} style={{fontSize:10,fontWeight:700,padding:'4px 10px',borderRadius:5,border:'1px solid rgba(255,255,255,.2)',background:showGrid?'rgba(5,12,156,.5)':'rgba(255,255,255,.08)',color:showGrid?'#fff':'rgba(255,255,255,.5)',cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:4}}>
+                <GridIcon/> {showGrid?'Grid On':'Grid Off'}
+              </button>
+              <button onClick={saveLayout} disabled={saving} title="Saves canvas layout only. Use 'Save All Changes' below to also save company settings." style={{fontSize:10,fontWeight:700,padding:'4px 12px',borderRadius:5,border:'none',background:'#059669',color:'#fff',cursor:'pointer',fontFamily:'DM Sans,sans-serif',display:'flex',alignItems:'center',gap:4}}>
+                <SaveIcon/> Save Layout
+              </button>
             </div>
           </div>
 
-          <div className="preview-paper" style={{ fontFamily: invoiceLayoutConfig.styling.fontFamily, fontSize: `${invoiceLayoutConfig.styling.fontSize}px` }}>
-            {/* Color bar accent */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${invoiceLayoutConfig.styling.primaryColor}, ${invoiceLayoutConfig.styling.secondaryColor || '#3B4FD8'})`, borderRadius: '4px 4px 0 0' }} />
-            {getSortedSections().map(k => renderPreviewSection(k))}
+          {/* THE CANVAS */}
+          <div ref={canvasRef}
+            className={`invoice-canvas ${showGrid&&!layout.backgroundUrl?'canvas-grid-hint':''}`}
+            onClick={()=>setSelectedFieldId(null)}>
+
+            {/* Background image */}
+            {layout.backgroundUrl
+              ? <img src={layout.backgroundUrl} alt="BG" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'fill',borderRadius:2,zIndex:0,pointerEvents:'none',userSelect:'none'}}/>
+              : <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,pointerEvents:'none',zIndex:0}}>
+                  <div style={{opacity:.1}}><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#050C9C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                  <p style={{fontSize:13,color:'#94A3B8',fontWeight:700}}>No background image</p>
+                  <p style={{fontSize:11,color:'#CBD5E1'}}>Layout → Background to upload your template</p>
+                </div>
+            }
+
+            {/* Accent bar (no background only) */}
+            {!layout.backgroundUrl&&<div style={{position:'absolute',top:0,left:0,right:0,height:4,background:`linear-gradient(90deg,${layout.styling.primaryColor},${layout.styling.secondaryColor||'#3B4FD8'})`,borderRadius:'2px 2px 0 0',pointerEvents:'none',zIndex:1}}/>}
+
+            {/* DRAGGABLE FIELD BLOCKS */}
+            {layout.placedFields.map(f => {
+              const isSelected = selectedFieldId === f.id;
+              const srcColor   = f.isCustom ? '#059669' : (SOURCE_COLOR[f.source]||'#64748B');
+              return (
+                <div key={f.id}
+                  style={{
+                    position:'absolute',
+                    left: f.x, top: f.y,
+                    width: f.width || 200,
+                    zIndex: isSelected ? 20 : 5,
+                    opacity: f.visible ? 1 : 0.3,
+                    cursor: 'move',
+                    userSelect: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                  onMouseDown={e => handleMouseDown(e, f.id)}
+                  onClick={e => { e.stopPropagation(); setSelectedFieldId(f.id); setActivePanel('fieldstyle'); setActiveRibbonTab('layout'); }}
+                >
+                  {/* Label tag strip — floats ABOVE the field box, does not push content down */}
+                  <div style={{position:'absolute',top:-14,left:0,right:0,display:'flex',alignItems:'center',gap:4,padding:'1px 5px',background:`${srcColor}dd`,borderRadius:'3px 3px 0 0',lineHeight:1,userSelect:'none',zIndex:10,pointerEvents:'none'}}>
+                    <div style={{width:4,height:4,borderRadius:'50%',background:'#fff',flexShrink:0,opacity:.8}}/>
+                    <span style={{fontSize:6.5,fontWeight:800,color:'#fff',textTransform:'uppercase',letterSpacing:'.07em',fontFamily:'DM Sans,sans-serif',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.label}</span>
+                    <span style={{fontSize:6,fontWeight:900,color:srcColor,background:'#fff',borderRadius:2,padding:'0 3px',letterSpacing:'.04em',textTransform:'uppercase',flexShrink:0}}>{f.isCustom?'TXT':f.source}</span>
+                    <span style={{fontSize:6,color:'rgba(255,255,255,.7)',fontFamily:'DM Mono,monospace',flexShrink:0}}>{Math.round(f.x)},{Math.round(f.y)}</span>
+                    {!f.visible&&<span style={{fontSize:6,fontWeight:700,color:'#fff',background:'rgba(0,0,0,.3)',borderRadius:2,padding:'0 3px',flexShrink:0}}>HIDDEN</span>}
+                    {isSelected&&(
+                      <div onMouseDown={e=>{e.stopPropagation();removeField(f.id);}}
+                        style={{width:11,height:11,borderRadius:'50%',background:'#ef4444',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:7.5,cursor:'pointer',fontWeight:900,flexShrink:0,lineHeight:1,pointerEvents:'all'}}>×</div>
+                    )}
+                  </div>
+                  {/* Outline box — visual only, sits behind content */}
+                  <div style={{position:'absolute',inset:0,border: isSelected ? `2px solid ${srcColor}` : `1.5px dashed ${srcColor}55`,borderRadius:3,boxShadow:isSelected?`0 0 0 3px ${srcColor}18`:undefined,background:isSelected?`${srcColor}08`:'transparent',pointerEvents:'none'}}/>
+                  {/* Content — rendered at EXACTLY f.y with no padding offset */}
+                  <div style={{position:'relative',pointerEvents:'none'}}>
+                    {renderFieldContent(f)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div style={{ maxWidth: 680, margin: '16px auto 0', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={saveAll} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 18px', background: saving ? '#E2E8F0' : 'var(--blue)', color: saving ? 'var(--slate)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', fontFamily: 'DM Sans, sans-serif', transition: 'all .15s' }}>
-              {saving ? <div className="loader" /> : <SaveIcon />}
-              {saving ? 'Saving...' : 'Save All Changes'}
+          {/* Below canvas actions */}
+          <div style={{width:794,display:'flex',gap:8,justifyContent:'flex-end',alignItems:'center',marginTop:14}}>
+            <span style={{fontSize:11,color:'rgba(255,255,255,.45)',fontStyle:'italic'}}>⚠️ Use this to save company settings + layout together</span>
+            <button onClick={saveAll} disabled={saving}
+              style={{display:'flex',alignItems:'center',gap:7,padding:'8px 20px',background:saving?'rgba(255,255,255,.1)':'var(--blue)',color:saving?'rgba(255,255,255,.4)':'#fff',border:'none',borderRadius:8,fontSize:13,fontWeight:700,cursor:saving?'default':'pointer',fontFamily:'DM Sans,sans-serif',transition:'all .15s'}}>
+              {saving?<div className="loader"/>:<SaveIcon/>}
+              {saving?'Saving...':'Save All Changes'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── TOAST ── */}
-      {toast && <Toast message={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
     </div>
   );
 }
